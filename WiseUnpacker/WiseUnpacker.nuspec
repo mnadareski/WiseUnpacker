@@ -1,0 +1,26 @@
+﻿<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>WiseUnpacker</id>
+    <version>1.0.0</version>
+    <title>WiseUnpacker</title>
+    <authors>Matt Nadareski, kannegieser.net, Jägermeister Markus</authors>
+    <owners>Matt Nadareski</owners>
+    <licenseUrl>https://www.gnu.org/licenses/gpl-3.0.txt</licenseUrl>
+    <projectUrl>https://github.com/mnadareski/WiseUnpacker</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Wise installer unpacker based on E_WISE and HWUN</description>
+    <copyright>Copyright (c)2020 Matt Nadareski</copyright>
+    <tags>extraction unpack wise installer</tags>
+  </metadata>
+  <files>
+    <file src="bin\Debug\net462\WiseUnpacker.dll" target="lib\net462\WiseUnpacker.dll" />
+    <file src="bin\Debug\net462\WiseUnpacker.pdb" target="lib\net462\WiseUnpacker.pdb" />
+    <file src="bin\Debug\net472\WiseUnpacker.dll" target="lib\net472\WiseUnpacker.dll" />
+    <file src="bin\Debug\net472\WiseUnpacker.pdb" target="lib\net472\WiseUnpacker.pdb" />
+    <file src="bin\Debug\net48\WiseUnpacker.dll" target="lib\net48\WiseUnpacker.dll" />
+    <file src="bin\Debug\net48\WiseUnpacker.pdb" target="lib\net48\WiseUnpacker.pdb" />
+    <file src="bin\Debug\netcoreapp3.1\WiseUnpacker.dll" target="lib\netcoreapp3.1\WiseUnpacker.dll" />
+    <file src="bin\Debug\netcoreapp3.1\WiseUnpacker.pdb" target="lib\netcoreapp3.1\WiseUnpacker.pdb" />
+  </files>
+</package>
