@@ -2,10 +2,23 @@
 
   <PropertyGroup>
     <TargetFrameworks>net462;net472;net48;netcoreapp3.1</TargetFrameworks>
+    <Title>WiseUnpacker</Title>
+    <AssemblyName>WiseUnpacker</AssemblyName>
+    <Description>Wise installer unpacker based on E_WISE and HWUN</Description>
+    <Authors>Matt Nadareski;kannegieser.net;Jägermeister Markus</Authors>
+    <Product>WiseUnpacker</Product>
+    <Copyright>Copyright (c)2020 Matt Nadareski</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/mnadareski/WiseUnpacker</RepositoryUrl>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <FileVersion>1.0.1</FileVersion>
+    <IncludeSource>true</IncludeSource>
+    <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <ItemGroup>
+    <None Include="LICENSE.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+  </ItemGroup>
 
 </Project>
