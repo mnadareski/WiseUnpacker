@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using WiseUnpacker.Files;
 using WiseUnpacker.Inflation;
 
@@ -365,23 +366,42 @@ namespace WiseUnpacker
             IMAGE_FILE_HEADER ifh = IMAGE_FILE_HEADER.Deserialize(inputFile);
             IMAGE_OPTIONAL_HEADER ioh = IMAGE_OPTIONAL_HEADER.Deserialize(inputFile);
 
-            // .text Section
-            IMAGE_SECTION_HEADER text = IMAGE_SECTION_HEADER.Deserialize(inputFile);
-            currentFormat.LCode = text.VirtualSize;
+            // Read sections until we have the ones we need
+            IMAGE_SECTION_HEADER temp = null;
+            IMAGE_SECTION_HEADER resource = null;
+            for (int i = 0; i < ifh.NumberOfSections; i++)
+            {
+                IMAGE_SECTION_HEADER sectionHeader = IMAGE_SECTION_HEADER.Deserialize(inputFile);
+                string headerName = Encoding.ASCII.GetString(sectionHeader.Name, 0, 8);
 
-            // .rdata Section
-            IMAGE_SECTION_HEADER rdata = IMAGE_SECTION_HEADER.Deserialize(inputFile);
+                // .text
+                if (headerName.StartsWith(".text"))
+                {
+                    currentFormat.LCode = sectionHeader.VirtualSize;
+                }
 
-            // .data Section
-            IMAGE_SECTION_HEADER data = IMAGE_SECTION_HEADER.Deserialize(inputFile);
-            currentFormat.LData = data.VirtualSize;
+                // .rdata
+                else if (headerName.StartsWith(".rdata"))
+                {
+                    // No-op
+                }
 
-            // .resource Section
-            IMAGE_SECTION_HEADER resource = IMAGE_SECTION_HEADER.Deserialize(inputFile);
+                // .data
+                else if (headerName.StartsWith(".data"))
+                {
+                    currentFormat.LData = sectionHeader.VirtualSize;
+                    if ((ifh.Characteristics & (1 << 0)) == 0)
+                        temp = sectionHeader;
+                }
 
-            IMAGE_SECTION_HEADER temp = data;
-            if ((ifh.Characteristics & (1 << 0)) != 0)
-                temp = resource;
+                // .rsrc
+                else if (headerName.StartsWith(".rsrc"))
+                {
+                    resource = sectionHeader;
+                    if ((ifh.Characteristics & (1 << 0)) != 0)
+                        temp = sectionHeader;
+                }
+            }
 
             // the unpacker of the self-extractor does not use any resource functions either.
             if (temp.SizeOfRawData > 20000)
@@ -402,9 +422,6 @@ namespace WiseUnpacker
                         break;
                     }
                 }
-
-                inputFile.Seek(dataBase + currentFormat.ExecutableLength + 4 + 20 /* sizeof(ifh) */ + ifh.SizeOfOptionalHeader + (ifh.NumberOfSections - 1) * 40 /* sizeof(sek) */);
-                resource = IMAGE_SECTION_HEADER.Deserialize(inputFile);
             }
 
             currentFormat.ExecutableLength = (int)(resource.PointerToRawData + resource.SizeOfRawData);
