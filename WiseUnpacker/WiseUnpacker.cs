@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using WiseUnpacker.Files;
+using WiseUnpacker.Files.Microsoft;
 using WiseUnpacker.Inflation;
 
 namespace WiseUnpacker
@@ -16,7 +17,7 @@ namespace WiseUnpacker
         private bool pkzip;
 
         // Deterministic values
-        private FormatProperty[] knownFormats;
+        private static readonly FormatProperty[] knownFormats = FormatProperty.GenerateKnownFormats();
         private FormatProperty currentFormat;
         private long dataBase;
 
@@ -33,7 +34,6 @@ namespace WiseUnpacker
         public WiseUnpacker()
         {
             inflate = null;
-            LoadDataBase();
         }
 
         /// <summary>
@@ -138,50 +138,20 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Construct known formats array
-        /// </summary>
-        private void LoadDataBase()
-        {
-            knownFormats = new FormatProperty[]
-            {
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x84b0, Dll = false, ArchiveStart = 0x11, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, LCode = -1,     LData = -1,     NoCrc = true  },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3e10, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3e50, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3c20, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3c30, Dll = false, ArchiveStart = 0x22, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3660, Dll = false, ArchiveStart = 0x40, ArchiveEnd = 0x3c, InitText = false, FilenamePosition = 0x04, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x36f0, Dll = false, ArchiveStart = 0x48, ArchiveEnd = 0x44, InitText = false, FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3770, Dll = false, ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3780, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x37b0, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x37d0, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3c80, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3bd0, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.NE, ExecutableLength = 0x3c10, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x6e00, Dll = false, ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = 0x3cf4, LData = 0x1528, NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = 0x3cf4, LData = 0x1568, NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = 0x3d54, LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = 0x3d44, LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = 0x3d04, LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x3000, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x3800, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-                new FormatProperty() { ExecutableType = ExecutableType.PE, ExecutableLength = 0x3a00, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, LCode = -1,     LData = -1,     NoCrc = false },
-            };
-        }
-
-        /// <summary>
         /// Open a potentially-multipart file for analysis and extraction
         /// </summary>
-        /// <param name="fn">Possible wise installer base</param>
+        /// <param name="file">Possible wise installer base</param>
         /// <returns>True if the file could be opened, false otherwise</returns>
-        private bool Open(string fn)
+        private bool Open(string file)
         {
-            inputFile = new MultiPartFile(fn);
-            fn = Path.Combine(Path.GetDirectoryName(fn), Path.GetFileNameWithoutExtension(fn));
+            inputFile = MultiPartFile.Create(file);
+            if (inputFile == null)
+                return false;
+
+            file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
 
             int fileno = 2;
-            while (inputFile.Append($"{fn}.w{fileno / 10 + 48}{fileno % 10 + 48}"))
+            while (inputFile.Append($"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}"))
             {
                 fileno++;
             }
@@ -292,16 +262,16 @@ namespace WiseUnpacker
                 inputFile.Seek(dataBase + currentFormat.ExecutableLength);
                 IMAGE_DOS_HEADER exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
 
-                if ((exeHdr.e_magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.e_magic == Constants.IMAGE_DOS_SIGNATURE)
-                    && exeHdr.e_cparhdr >= 4
-                    && exeHdr.e_lfanew >= 0x40)
+                if ((exeHdr.Magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.Magic == Constants.IMAGE_DOS_SIGNATURE)
+                    && exeHdr.HeaderParagraphSize >= 4
+                    && exeHdr.NewExeHeaderAddr >= 0x40)
                 {
-                    currentFormat.ExecutableLength = exeHdr.e_lfanew;
+                    currentFormat.ExecutableLength = exeHdr.NewExeHeaderAddr;
                     inputFile.Seek(dataBase + currentFormat.ExecutableLength);
                     exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
                 }
 
-                switch (exeHdr.e_magic)
+                switch (exeHdr.Magic)
                 {
                     case Constants.IMAGE_OS2_SIGNATURE:
                         currentFormat.ExecutableType = ProcessNe();
@@ -328,24 +298,24 @@ namespace WiseUnpacker
             IMAGE_OS2_HEADER ne = IMAGE_OS2_HEADER.Deserialize(inputFile);
             long o = currentFormat.ExecutableLength;
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.ne_segtab + 0 * 8 /* sizeof(NewSeg) */);
+            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */);
             NewSeg codeSegInfo = NewSeg.Deserialize(inputFile);
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.ne_segtab + 2 * 8 /* sizeof(NewSeg) */);
+            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */);
             NewSeg dataSegInfo = NewSeg.Deserialize(inputFile);
 
             // Assumption: there are resources and they are at the end ..
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.ne_rsrctab);
+            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.ResourceTableOffset);
             short rsAlign = inputFile.ReadInt16();
 
             // ne.ne_cres is 0 so you have to cheat
-            while (inputFile.Position + 8 /* sizeof(rsType) */ <= dataBase + currentFormat.ExecutableLength + ne.ne_restab)
+            while (inputFile.Position + 8 /* sizeof(rsType) */ <= dataBase + currentFormat.ExecutableLength + ne.ResidentNameTableOffset)
             {
                 RsrcTypeInfo rsType = RsrcTypeInfo.Deserialize(inputFile);
                 for (int z2 = 1; z2 < rsType.rt_nres; z2++)
                 {
                     RsrcNameInfo rsName = RsrcNameInfo.Deserialize(inputFile);
-                    int a = rsName.rn_offset << rsAlign + rsName.rn_length << rsAlign;
+                    int a = rsName.Offset << rsAlign + rsName.Length << rsAlign;
                     if (o < a)
                         o = a;
                 }
@@ -411,10 +381,10 @@ namespace WiseUnpacker
                     inputFile.Seek(dataBase + temp.PointerToRawData + f);
                     IMAGE_DOS_HEADER exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
 
-                    if ((exeHdr.e_magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.e_magic == Constants.IMAGE_DOS_SIGNATURE)
-                        && exeHdr.e_cparhdr >= 4
-                        && exeHdr.e_lfanew >= 0x40
-                        && (exeHdr.e_crlc == 0 || exeHdr.e_crlc == 3))
+                    if ((exeHdr.Magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.Magic == Constants.IMAGE_DOS_SIGNATURE)
+                        && exeHdr.HeaderParagraphSize >= 4
+                        && exeHdr.NewExeHeaderAddr >= 0x40
+                        && (exeHdr.Relocations == 0 || exeHdr.Relocations == 3))
                     {
                         currentFormat.ExecutableLength = (int)temp.PointerToRawData + f;
                         fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.DataDirectory[2].Size);

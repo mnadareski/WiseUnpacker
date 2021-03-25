@@ -5,7 +5,7 @@ namespace WiseUnpacker.Files
 {
     internal class ReadOnlyFile
     {
-        private Stream fileStream;
+        private readonly Stream stream;
         private byte[] buffer;
         private long bufferOffset;
         private long position;
@@ -13,25 +13,39 @@ namespace WiseUnpacker.Files
         public string Name { get; private set; }
         public long Length { get; private set; }
 
-        public ReadOnlyFile(string filename)
+        #region Constructors
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        private ReadOnlyFile(string name) : this(name, File.OpenRead(name)) { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public ReadOnlyFile(string directory, string filename) : this(Path.Combine(directory, filename)) { }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        private ReadOnlyFile(string name, Stream stream)
         {
-            fileStream = File.OpenRead(filename);
-            Name = filename;
-            buffer = new byte[0x8000];
-            Length = fileStream.Length;
-            bufferOffset = 0xffff0000;
-            position = 0;
+            this.stream = stream;
+            this.Name = name;
+            this.buffer = new byte[0x8000];
+            this.Length = stream.Length;
+            this.bufferOffset = 0xffff0000;
+            this.position = 0;
         }
 
-        public ReadOnlyFile(string directory, string filename)
-            : this(Path.Combine(directory, filename))
-        {
-        }
+        #endregion
+
+        #region Stream Wrappers
 
         public void Close()
         {
             buffer = null;
-            fileStream.Close();
+            stream.Close();
         }
 
         public bool EOF()
@@ -185,16 +199,18 @@ namespace WiseUnpacker.Files
             if (bufferOffset < 0)
             {
                 bufferOffset = 0;
-                fileStream.Seek(bufferOffset, SeekOrigin.Begin);
-                fileStream.Read(buffer, 0, (int)Length);
+                stream.Seek(bufferOffset, SeekOrigin.Begin);
+                stream.Read(buffer, 0, (int)Length);
             }
             else
             {
-                fileStream.Seek(bufferOffset, SeekOrigin.Begin);
-                fileStream.Read(buffer, 0, 0x8000);
+                stream.Seek(bufferOffset, SeekOrigin.Begin);
+                stream.Read(buffer, 0, 0x8000);
             }
 
             position = p;
         }
+    
+        #endregion
     }
 }

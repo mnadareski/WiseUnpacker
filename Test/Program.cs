@@ -1,5 +1,4 @@
-﻿using WiseUnpacker;
-using System;
+﻿using System;
 
 namespace Test
 {
