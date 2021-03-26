@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Test
 {
@@ -6,9 +7,15 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            WiseUnpacker.WiseUnpacker h = new WiseUnpacker.WiseUnpacker();
-            h.ExtractTo(args[0], args[1]);
-            Console.WriteLine("Extracted");
+            var unpacker = new WiseUnpacker.WiseUnpacker();
+
+            string input = Path.GetFullPath(args[0]);
+            string outdir = Path.Combine(Path.GetDirectoryName(input), Path.GetFileNameWithoutExtension(input));
+            if (args.Length > 1)
+                outdir = Path.GetFullPath(args[1]);
+
+            unpacker.ExtractTo(input, outdir);
+            Console.WriteLine($"Extracted {input} to {outdir}");
             Console.ReadKey();
         }
     }
