@@ -14,8 +14,11 @@ namespace Test
             if (args.Length > 1)
                 outdir = Path.GetFullPath(args[1]);
 
-            unpacker.ExtractTo(input, outdir);
-            Console.WriteLine($"Extracted {input} to {outdir}");
+            if (unpacker.ExtractTo(input, outdir))
+                Console.WriteLine($"Extracted {input} to {outdir}");
+            else
+                Console.WriteLine($"Failed to extract {input}!");
+
             Console.ReadKey();
         }
     }

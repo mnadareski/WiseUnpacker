@@ -41,7 +41,7 @@ namespace WiseUnpacker
         /// </summary>
         /// <param name="file">Possible Wise installer</param>
         /// <param name="outputPath">Output directory for extracted files</param>
-        public void ExtractTo(string file, string outputPath)
+        public bool ExtractTo(string file, string outputPath)
         {
             file = Path.GetFullPath(file);
             outputPath = Path.GetFullPath(outputPath);
@@ -72,6 +72,8 @@ namespace WiseUnpacker
                         {
                             ExtractFiles(outputPath);
                             RenameFiles(outputPath);
+                            Close();
+                            return true;
                         }
                     }
                     else
@@ -79,10 +81,12 @@ namespace WiseUnpacker
                         offsetReal = offsetApproximate;
                         ExtractFiles(outputPath);
                         RenameFiles(outputPath);
+                        Close();
+                        return true;
                     }
 
                     Close();
-                    return;
+                    return false;
                 }
 
                 // Skip over the addditional DLL name, if we expect it
@@ -108,7 +112,7 @@ namespace WiseUnpacker
                 {
                     int flags = inputFile.ReadInt32();
                     if ((flags & 0x0100) != 0)
-                        return;
+                        return false;
                 }
 
                 if (currentFormat.ArchiveEnd > 0)
@@ -134,7 +138,10 @@ namespace WiseUnpacker
                 RenameFiles(outputPath);
 
                 Close();
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
