@@ -703,7 +703,11 @@ namespace WiseUnpacker
                         l1 = (l5 + 0x4) / 0x4;
                         if (res == 0)
                         {
-                            newName = newName.Replace("%", string.Empty).Replace("\\\\", "\\");
+                            newName = newName
+                                .Replace("%", string.Empty)
+                                .Replace("\\\\", "\\")
+                                .Replace('\\', Path.DirectorySeparatorChar);
+
                             newName = Path.Combine(outputPath, newName);
 
                             string fname = Path.Combine(outputPath, $"WISE{l1.ToString("X").PadLeft(4, '0')}");
