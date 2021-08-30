@@ -46,102 +46,100 @@ namespace WiseUnpacker
             file = Path.GetFullPath(file);
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(outputPath);
-                        
-            if (Open(file))
-            {
-                // Move to data and determine if this is a known format
-                JumpToTheData();
-                inputFile.Seek(dataBase + currentFormat.ExecutableLength);
-                for (int i = 0; i < knownFormats.Length; i++)
-                {
-                    if (currentFormat.Equals(knownFormats[i]))
-                    {
-                        currentFormat = knownFormats[i];
-                        break;
-                    }
-                }
 
-                // Fall back on heuristics if we couldn't match
-                if (currentFormat.ArchiveEnd == 0)
+            if (!Open(file))
+                return false;
+                        
+            // Move to data and determine if this is a known format
+            JumpToTheData();
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
+            for (int i = 0; i < knownFormats.Length; i++)
+            {
+                if (currentFormat.Equals(knownFormats[i]))
                 {
-                    inputFile.Seek(0);
-                    Approximate();
-                    if (!pkzip)
+                    currentFormat = knownFormats[i];
+                    break;
+                }
+            }
+
+            // Fall back on heuristics if we couldn't match
+            if (currentFormat.ArchiveEnd == 0)
+            {
+                inputFile.Seek(0);
+                Approximate();
+                if (!pkzip)
+                {
+                    if (FindReal(outputPath))
                     {
-                        if (FindReal(outputPath))
-                        {
-                            ExtractFiles(outputPath);
-                            RenameFiles(outputPath);
-                            Close();
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        offsetReal = offsetApproximate;
                         ExtractFiles(outputPath);
                         RenameFiles(outputPath);
                         Close();
                         return true;
                     }
-
+                }
+                else
+                {
+                    offsetReal = offsetApproximate;
+                    ExtractFiles(outputPath);
+                    RenameFiles(outputPath);
                     Close();
-                    return false;
+                    return true;
                 }
-
-                // Skip over the addditional DLL name, if we expect it
-                long dataStart = currentFormat.ExecutableLength;
-                if (currentFormat.Dll)
-                {
-                    byte[] dll = new byte[256];
-                    inputFile.Read(dll, 0, 1);
-                    dataStart++;
-
-                    if (dll[0] != 0x00)
-                    {
-                        inputFile.Read(dll, 1, dll[0]);
-                        dataStart += dll[0];
-
-                        int dllLength = inputFile.ReadInt32();
-                        dataStart += 4;
-                    }
-                }
-
-                // Check if flags are consistent
-                if (!currentFormat.NoCrc)
-                {
-                    int flags = inputFile.ReadInt32();
-                    if ((flags & 0x0100) != 0)
-                        return false;
-                }
-
-                if (currentFormat.ArchiveEnd > 0)
-                {
-                    inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveEnd);
-                    int archiveEndLoaded = inputFile.ReadInt32();
-                    if (archiveEndLoaded != 0)
-                        currentFormat.ArchiveEnd = archiveEndLoaded + dataBase;
-                }
-
-                inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveStart);
-
-                // Skip over the initialization text, if we expect it
-                if (currentFormat.InitText)
-                {
-                    byte[] waitingBytes = new byte[256];
-                    inputFile.Read(waitingBytes, 0, 1);
-                    inputFile.Read(waitingBytes, 1, waitingBytes[0]);
-                }
-
-                offsetReal = inputFile.Position;
-                ExtractFiles(outputPath);
-                RenameFiles(outputPath);
 
                 Close();
-                return true;
+                return false;
             }
 
-            return false;
+            // Skip over the addditional DLL name, if we expect it
+            long dataStart = currentFormat.ExecutableOffset;
+            if (currentFormat.Dll)
+            {
+                byte[] dll = new byte[256];
+                inputFile.Read(dll, 0, 1);
+                dataStart++;
+
+                if (dll[0] != 0x00)
+                {
+                    inputFile.Read(dll, 1, dll[0]);
+                    dataStart += dll[0];
+
+                    int dllLength = inputFile.ReadInt32();
+                    dataStart += 4;
+                }
+            }
+
+            // Check if flags are consistent
+            if (!currentFormat.NoCrc)
+            {
+                int flags = inputFile.ReadInt32();
+                if ((flags & 0x0100) != 0)
+                    return false;
+            }
+
+            if (currentFormat.ArchiveEnd > 0)
+            {
+                inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveEnd);
+                int archiveEndLoaded = inputFile.ReadInt32();
+                if (archiveEndLoaded != 0)
+                    currentFormat.ArchiveEnd = archiveEndLoaded + dataBase;
+            }
+
+            inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveStart);
+
+            // Skip over the initialization text, if we expect it
+            if (currentFormat.InitText)
+            {
+                byte[] waitingBytes = new byte[256];
+                inputFile.Read(waitingBytes, 0, 1);
+                inputFile.Read(waitingBytes, 1, waitingBytes[0]);
+            }
+
+            offsetReal = inputFile.Position;
+            ExtractFiles(outputPath);
+            RenameFiles(outputPath);
+
+            Close();
+            return true;
         }
 
         /// <summary>
@@ -255,26 +253,26 @@ namespace WiseUnpacker
             currentFormat = new FormatProperty();
             currentFormat.ExecutableType = ExecutableType.Unknown;
             dataBase = 0;
-            currentFormat.LCode = 0;
-            currentFormat.ExecutableLength = 0; // dataStart
+            currentFormat.CodeSectionLength = 0;
+            currentFormat.ExecutableOffset = 0; // dataStart
 
             bool searchAgainAtEnd = true;
             do
             {
                 searchAgainAtEnd = false;
-                dataBase += currentFormat.ExecutableLength;
-                currentFormat.ExecutableLength = 0;
+                dataBase += currentFormat.ExecutableOffset;
+                currentFormat.ExecutableOffset = 0;
 
                 currentFormat.ExecutableType = ExecutableType.Unknown;
-                inputFile.Seek(dataBase + currentFormat.ExecutableLength);
+                inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
                 IMAGE_DOS_HEADER exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
 
                 if ((exeHdr.Magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.Magic == Constants.IMAGE_DOS_SIGNATURE)
                     && exeHdr.HeaderParagraphSize >= 4
                     && exeHdr.NewExeHeaderAddr >= 0x40)
                 {
-                    currentFormat.ExecutableLength = exeHdr.NewExeHeaderAddr;
-                    inputFile.Seek(dataBase + currentFormat.ExecutableLength);
+                    currentFormat.ExecutableOffset = exeHdr.NewExeHeaderAddr;
+                    inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
                     exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
                 }
 
@@ -301,22 +299,22 @@ namespace WiseUnpacker
         {
             ExecutableType foundExe = ExecutableType.Unknown;
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
             IMAGE_OS2_HEADER ne = IMAGE_OS2_HEADER.Deserialize(inputFile);
-            long o = currentFormat.ExecutableLength;
+            long o = currentFormat.ExecutableOffset;
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */);
             NewSeg codeSegInfo = NewSeg.Deserialize(inputFile);
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */);
             NewSeg dataSegInfo = NewSeg.Deserialize(inputFile);
 
             // Assumption: there are resources and they are at the end ..
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + ne.ResourceTableOffset);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.ResourceTableOffset);
             short rsAlign = inputFile.ReadInt16();
 
             // ne.ne_cres is 0 so you have to cheat
-            while (inputFile.Position + 8 /* sizeof(rsType) */ <= dataBase + currentFormat.ExecutableLength + ne.ResidentNameTableOffset)
+            while (inputFile.Position + 8 /* sizeof(rsType) */ <= dataBase + currentFormat.ExecutableOffset + ne.ResidentNameTableOffset)
             {
                 RsrcTypeInfo rsType = RsrcTypeInfo.Deserialize(inputFile);
                 for (int z2 = 1; z2 < rsType.rt_nres; z2++)
@@ -327,7 +325,7 @@ namespace WiseUnpacker
                         o = a;
                 }
 
-                currentFormat.ExecutableLength = 0;
+                currentFormat.ExecutableOffset = 0;
                 foundExe = ExecutableType.NE;
             }
 
@@ -339,7 +337,7 @@ namespace WiseUnpacker
         /// </summary>
         private ExecutableType ProcessPe(ref bool searchAgainAtEnd)
         {
-            inputFile.Seek(dataBase + currentFormat.ExecutableLength + 4);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + 4);
             IMAGE_FILE_HEADER ifh = IMAGE_FILE_HEADER.Deserialize(inputFile);
             IMAGE_OPTIONAL_HEADER ioh = IMAGE_OPTIONAL_HEADER.Deserialize(inputFile);
 
@@ -354,7 +352,7 @@ namespace WiseUnpacker
                 // .text
                 if (headerName.StartsWith(".text"))
                 {
-                    currentFormat.LCode = sectionHeader.VirtualSize;
+                    currentFormat.CodeSectionLength = sectionHeader.VirtualSize;
                 }
 
                 // .rdata
@@ -366,7 +364,7 @@ namespace WiseUnpacker
                 // .data
                 else if (headerName.StartsWith(".data"))
                 {
-                    currentFormat.LData = sectionHeader.VirtualSize;
+                    currentFormat.DataSectionLength = sectionHeader.VirtualSize;
                     if ((ifh.Characteristics & (1 << 0)) == 0)
                         temp = sectionHeader;
                 }
@@ -393,7 +391,7 @@ namespace WiseUnpacker
                         && exeHdr.NewExeHeaderAddr >= 0x40
                         && (exeHdr.Relocations == 0 || exeHdr.Relocations == 3))
                     {
-                        currentFormat.ExecutableLength = (int)temp.PointerToRawData + f;
+                        currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
                         fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.DataDirectory[2].Size);
                         searchAgainAtEnd = true;
                         break;
@@ -401,7 +399,7 @@ namespace WiseUnpacker
                 }
             }
 
-            currentFormat.ExecutableLength = (int)(resource.PointerToRawData + resource.SizeOfRawData);
+            currentFormat.ExecutableOffset = (int)(resource.PointerToRawData + resource.SizeOfRawData);
             return ExecutableType.PE;
         }
 
