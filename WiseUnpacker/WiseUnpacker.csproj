@@ -7,12 +7,12 @@
     <Description>Wise installer unpacker based on E_WISE and HWUN</Description>
     <Authors>Matt Nadareski;kannegieser.net;Jägermeister Markus</Authors>
     <Product>WiseUnpacker</Product>
-    <Copyright>Copyright (c)2021 Matt Nadareski</Copyright>
+    <Copyright>Copyright (c)2021-2022 Matt Nadareski</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RepositoryUrl>https://github.com/mnadareski/WiseUnpacker</RepositoryUrl>
-    <Version>1.0.2</Version>
-    <AssemblyVersion>1.0.2</AssemblyVersion>
-    <FileVersion>1.0.2</FileVersion>
+    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.3</AssemblyVersion>
+    <FileVersion>1.0.3</FileVersion>
     <IncludeSource>true</IncludeSource>
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>

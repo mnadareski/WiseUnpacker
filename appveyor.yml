@@ -1,5 +1,5 @@
 # version format
-version: 1.0.2-{build}
+version: 1.0.3-{build}
 
 # pull request template
 pull_requests:
@@ -37,6 +37,7 @@ after_build:
 - 7z a WiseUnpacker_net48.zip net48\*
 - 7z a WiseUnpacker_netcoreapp3.1.zip netcoreapp3.1\*
 - 7z a WiseUnpacker_net5.0.zip net5.0\*
+- 7z a WiseUnpacker_net6.0.zip net6.0\*
 
 # success/failure tracking
 on_success:
@@ -54,3 +55,5 @@ artifacts:
   name: WiseUnpacker (.NET Core 3.1)
 - path: Test\bin\Debug\WiseUnpacker_net5.0.zip
   name: WiseUnpacker (.NET 5.0)
+- path: Test\bin\Debug\WiseUnpacker_net6.0.zip
+  name: WiseUnpacker (.NET 6.0)
