@@ -8,36 +8,32 @@ pull_requests:
 # vm template
 image: Visual Studio 2022
 
-# environment variables
-environment:
-  EnableNuGetPackageRestore: true
-
 # msbuild configuration
-platform:
-- Any CPU
 configuration:
 - Debug
 
-# install dependencies
-install:
-- ps: appveyor DownloadFile https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-
-# pre-build script
-before_build:
-- nuget restore
-
 # build step
-build:
-  verbosity: minimal
-  project: WiseUnpacker.sln
+build_script:
+  - cmd: dotnet restore
+  - cmd: dotnet build Test\Test.csproj --framework net48
+  - cmd: dotnet publish Test\Test.csproj --framework net6.0 --runtime win-x86 --self-contained true -p:PublishSingleFile=true
+  - cmd: dotnet publish Test\Test.csproj --framework net6.0 --runtime win-x64 --self-contained true -p:PublishSingleFile=true
+  - cmd: dotnet publish Test\Test.csproj --framework net6.0 --runtime linux-x64 --self-contained true -p:PublishSingleFile=true
+  - cmd: dotnet publish Test\Test.csproj --framework net6.0 --runtime osx-x64 --self-contained true -p:PublishSingleFile=true
+  - cmd: dotnet pack WiseUnpacker\WiseUnpacker.csproj --output %APPVEYOR_BUILD_FOLDER%
 
-# post-build step
+# post-build script
 after_build:
-- cd Test\bin\Debug
-- 7z a WiseUnpacker_net48.zip net48\*
-- 7z a WiseUnpacker_netcoreapp3.1.zip netcoreapp3.1\*
-- 7z a WiseUnpacker_net5.0.zip net5.0\*
-- 7z a WiseUnpacker_net6.0.zip net6.0\*
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\Test\bin\Debug\net48
+  - cmd: 7z a -tzip %APPVEYOR_BUILD_FOLDER%\WiseUnpacker_net48.zip *
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\Test\bin\Debug\net6.0\win-x86\publish\
+  - cmd: 7z a -tzip %APPVEYOR_BUILD_FOLDER%\WiseUnpacker_net6.0_win-x86.zip *
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\Test\bin\Debug\net6.0\win-x64\publish\
+  - cmd: 7z a -tzip %APPVEYOR_BUILD_FOLDER%\WiseUnpacker_net6.0_win-x64.zip *
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\Test\bin\Debug\net6.0\linux-x64\publish\
+  - cmd: 7z a -tzip %APPVEYOR_BUILD_FOLDER%\WiseUnpacker_net6.0_linux-x64.zip *
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%\Test\bin\Debug\net6.0\osx-x64\publish\
+  - cmd: 7z a -tzip %APPVEYOR_BUILD_FOLDER%\WiseUnpacker_net6.0_osx-x64.zip *
 
 # success/failure tracking
 on_success:
@@ -49,11 +45,15 @@ on_failure:
 
 # artifact linking
 artifacts:
-- path: Test\bin\Debug\WiseUnpacker_net48.zip
+- path: WiseUnpacker_net48.zip
   name: WiseUnpacker (.NET Framework 4.8)
-- path: Test\bin\Debug\WiseUnpacker_netcoreapp3.1.zip
-  name: WiseUnpacker (.NET Core 3.1)
-- path: Test\bin\Debug\WiseUnpacker_net5.0.zip
-  name: WiseUnpacker (.NET 5.0)
-- path: Test\bin\Debug\WiseUnpacker_net6.0.zip
-  name: WiseUnpacker (.NET 6.0)
+- path: WiseUnpacker_net6.0_win-x86.zip
+  name: WiseUnpacker (.NET 6.0, Windows x86)
+- path: WiseUnpacker_net6.0_win-x64.zip
+  name: WiseUnpacker (.NET 6.0, Windows x64)
+- path: WiseUnpacker_net6.0_linux-x64.zip
+  name: WiseUnpacker (.NET 6.0, Linux x64)
+- path: WiseUnpacker_net6.0_osx-x64.zip
+  name: WiseUnpacker (.NET 6.0, OSX x64)
+- path: '*.nupkg'
+  name: Nuget Packages

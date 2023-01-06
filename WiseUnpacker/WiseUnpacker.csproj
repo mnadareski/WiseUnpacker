@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net48;net6.0</TargetFrameworks>
     <Title>WiseUnpacker</Title>
     <AssemblyName>WiseUnpacker</AssemblyName>
     <Description>Wise installer unpacker based on E_WISE and HWUN</Description>
     <Authors>Matt Nadareski;kannegieser.net;Jägermeister Markus</Authors>
     <Product>WiseUnpacker</Product>
-    <Copyright>Copyright (c)2021-2022 Matt Nadareski</Copyright>
+    <Copyright>Copyright (c)2021-2023 Matt Nadareski</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/mnadareski/WiseUnpacker</RepositoryUrl>
     <Version>1.0.3</Version>
@@ -15,6 +15,10 @@
     <FileVersion>1.0.3</FileVersion>
     <IncludeSource>true</IncludeSource>
     <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>
