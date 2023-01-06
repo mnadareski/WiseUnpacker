@@ -8,7 +8,7 @@
     <Authors>Matt Nadareski;kannegieser.net;Jägermeister Markus</Authors>
     <Product>WiseUnpacker</Product>
     <Copyright>Copyright (c)2021-2022 Matt Nadareski</Copyright>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/mnadareski/WiseUnpacker</RepositoryUrl>
     <Version>1.0.3</Version>
     <AssemblyVersion>1.0.3</AssemblyVersion>
@@ -16,9 +16,5 @@
     <IncludeSource>true</IncludeSource>
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="LICENSE.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
-  </ItemGroup>
 
 </Project>
