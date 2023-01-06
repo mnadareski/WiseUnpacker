@@ -1,5 +1,5 @@
 # version format
-version: 1.0.3-{build}
+version: 1.0.4-{build}
 
 # pull request template
 pull_requests:

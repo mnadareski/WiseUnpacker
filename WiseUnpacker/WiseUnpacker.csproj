@@ -10,9 +10,9 @@
     <Copyright>Copyright (c)2021-2023 Matt Nadareski</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/mnadareski/WiseUnpacker</RepositoryUrl>
-    <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.3</AssemblyVersion>
-    <FileVersion>1.0.3</FileVersion>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4</AssemblyVersion>
+    <FileVersion>1.0.4</FileVersion>
     <IncludeSource>true</IncludeSource>
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
