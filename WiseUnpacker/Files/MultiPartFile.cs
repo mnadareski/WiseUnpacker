@@ -6,10 +6,10 @@ namespace WiseUnpacker.Files
 {
     internal class MultiPartFile
     {
-        private readonly Stream stream;
+        private readonly Stream? stream;
         private long partStart;
         private long partEnd;
-        private MultiPartFile next;
+        private MultiPartFile? next;
 
         public long Position { get; private set; }
         public long Length { get; private set; }
@@ -19,17 +19,17 @@ namespace WiseUnpacker.Files
         /// <summary>
         /// Constructor
         /// </summary>
-        private MultiPartFile(string name) : this(File.OpenRead(name)) { }
+        private MultiPartFile(string? name) : this(string.IsNullOrWhiteSpace(name) ? null : File.OpenRead(name)) { }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        private MultiPartFile(Stream stream)
+        private MultiPartFile(Stream? stream)
         {
             this.stream = stream;
             this.partStart = 0;
             this.Position = 0;
-            this.partEnd = stream.Length - 1;
+            this.partEnd = stream?.Length ?? 0 - 1;
             this.Length = partEnd + 1;
             this.next = null;
         }
@@ -37,7 +37,7 @@ namespace WiseUnpacker.Files
         /// <summary>
         /// Safely create a new MultiPartFile from a file path
         /// </summary>
-        public static MultiPartFile Create(string name)
+        public static MultiPartFile? Create(string? name)
         {
             if (!File.Exists(name))
                 return null;
@@ -48,7 +48,7 @@ namespace WiseUnpacker.Files
         /// <summary>
         /// Safely create a new MultiPartFile from a stream
         /// </summary>
-        public static MultiPartFile Create(Stream stream)
+        public static MultiPartFile? Create(Stream? stream)
         {
             if (stream == null || !stream.CanRead)
                 return null;
@@ -64,19 +64,19 @@ namespace WiseUnpacker.Files
         /// Append a new MultiPartFile to the current one
         /// </summary>
         /// <param name="file">New file path to append</param>
-        public bool Append(string file) => Append(Create(file));
+        public bool Append(string? file) => Append(Create(file));
 
         /// <summary>
         /// Append a new MultiPartFile to the current one
         /// </summary>
         /// <param name="stream">Stream to append</param>
-        public bool Append(Stream stream) => Append(Create(stream));
+        public bool Append(Stream? stream) => Append(Create(stream));
 
         /// <summary>
         /// Append a new MultiPartFile to the current one
         /// </summary>
         /// <param name="mpf">New MultiPartFile to append</param>
-        private bool Append(MultiPartFile mpf)
+        private bool Append(MultiPartFile? mpf)
         {
             // If the part is invalid, we can't append
             if (mpf == null)
@@ -86,11 +86,11 @@ namespace WiseUnpacker.Files
             var mf = this;
             while (next != null)
             {
-                mf = mf.next;
+                mf = mf!.next;
             }
 
             // Assign the new part as the new end
-            mf.next = mpf;
+            mf!.next = mpf;
             mf.next.partStart = this.Length;
             mf.next.partEnd += this.Length;
             this.Length = mf.next.partEnd + 1;
@@ -118,7 +118,7 @@ namespace WiseUnpacker.Files
             if (next != null)
                 next.Close();
 
-            stream.Close();
+            stream?.Close();
         }
 
         /// <summary>
@@ -129,12 +129,15 @@ namespace WiseUnpacker.Files
             int bufpos;
 
             MultiPartFile mf = this;
+            if (mf.stream == null)
+                return false;
+
             while (Position > mf.partEnd && mf.next != null)
                 mf = mf.next;
 
             if (Position <= mf.partEnd)
             {
-                mf.stream.Seek(Position - mf.partStart, SeekOrigin.Begin);
+                mf.stream!.Seek(Position - mf.partStart, SeekOrigin.Begin);
                 if (mf.partEnd + 1 - Position >= amount)
                 {
                     mf.stream.Read(x, offset, amount);
@@ -146,16 +149,16 @@ namespace WiseUnpacker.Files
                     bufpos = 0;
                     do
                     {
-                        if (mf.partEnd + 1 < Position + amount - bufpos)
+                        if (mf!.partEnd + 1 < Position + amount - bufpos)
                         {
-                            mf.stream.Read(buf, bufpos, (int)(mf.partEnd + 1 - Position));
+                            mf.stream!.Read(buf, bufpos, (int)(mf.partEnd + 1 - Position));
                             bufpos += (int)(mf.partEnd + 1 - Position);
                             Position = mf.partEnd + 1;
-                            mf = mf.next;
+                            mf = mf.next!;
                         }
                         else
                         {
-                            mf.stream.Read(buf, bufpos, amount - bufpos);
+                            mf.stream!.Read(buf, bufpos, amount - bufpos);
                             Position += amount - bufpos;
                             bufpos = amount;
                         }

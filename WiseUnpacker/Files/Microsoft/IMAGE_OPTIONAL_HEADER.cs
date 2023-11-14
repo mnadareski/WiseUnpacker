@@ -49,7 +49,7 @@ namespace WiseUnpacker.Files.Microsoft
         public uint SizeOfHeapCommit { get; private set; }
         public uint LoaderFlags { get; private set; }
         public uint NumberOfRvaAndSizes { get; private set; }
-        public IMAGE_DATA_DIRECTORY[] DataDirectory { get; private set; }
+        public IMAGE_DATA_DIRECTORY[]? DataDirectory { get; private set; }
 
         public static IMAGE_OPTIONAL_HEADER Deserialize(MultiPartFile file)
         {

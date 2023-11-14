@@ -21,7 +21,7 @@ namespace WiseUnpacker.Files.Microsoft
         /// Alignment shift count for resources
         /// </summary>
         public ushort AlignmentShiftCount { get; private set; }
-        public RsrcTypeInfo TypeInfo { get; private set; }
+        public RsrcTypeInfo? TypeInfo { get; private set; }
 
         public static NewRsrc Deserialize(MultiPartFile file)
         {

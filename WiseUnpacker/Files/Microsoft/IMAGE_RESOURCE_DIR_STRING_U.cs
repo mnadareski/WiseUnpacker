@@ -15,7 +15,7 @@ namespace WiseUnpacker.Files.Microsoft
     internal class IMAGE_RESOURCE_DIR_STRING_U
     {
         public ushort Length { get; private set; }
-        public char[] NameString { get; private set; }
+        public char[]? NameString { get; private set; }
 
         public static IMAGE_RESOURCE_DIR_STRING_U Deserialize(MultiPartFile file)
         {

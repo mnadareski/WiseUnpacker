@@ -5,6 +5,7 @@
 
 using System;
 
+// TODO: Replace with System.Hashing implementation
 namespace WiseUnpacker.Inflation
 {
     internal class CRC32
@@ -20,7 +21,7 @@ namespace WiseUnpacker.Inflation
             Value = UInt32.MaxValue;
         }
 
-        public void Finalize()
+        public void FinalizeValue()
         {
             Value = ~Value;
         }

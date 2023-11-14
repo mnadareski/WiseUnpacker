@@ -14,7 +14,7 @@ namespace WiseUnpacker.Files.Microsoft
 {
     internal class IMAGE_SECTION_HEADER
     {
-        public byte[] Name { get; private set; }
+        public byte[]? Name { get; private set; }
         
         // Misc
         public uint PhysicalAddress { get; private set; }

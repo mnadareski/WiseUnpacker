@@ -44,7 +44,6 @@ namespace WiseUnpacker.Files
 
         public void Close()
         {
-            buffer = null;
             stream.Close();
         }
 

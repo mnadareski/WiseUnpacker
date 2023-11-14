@@ -15,9 +15,9 @@ namespace WiseUnpacker.Files.Microsoft
     internal class ResourceTable
     {
         public ushort rscAlignShift { get; private set; }
-        public TYPEINFO TypeInfo { get; private set; }
+        public TYPEINFO? TypeInfo { get; private set; }
         public ushort rscEndTypes { get; private set; }
-        public sbyte[][] rscResourceNames { get; private set; }
+        public sbyte[][]? rscResourceNames { get; private set; }
         public byte rscEndNames { get; private set; }
 
         public static ResourceTable Deserialize(MultiPartFile file)

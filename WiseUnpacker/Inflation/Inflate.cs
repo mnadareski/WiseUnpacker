@@ -7,7 +7,7 @@ namespace WiseUnpacker.Inflation
         // window size--must be a power of two, and at least 32K for zip's deflate 
         public const int WSIZE = 0x8000;
 
-        public byte[] SI_WINDOW = new byte[WSIZE];
+        public byte[]? SI_WINDOW = new byte[WSIZE];
         public int SI_POSITION;
 
         #region Abstract methods
@@ -53,10 +53,10 @@ namespace WiseUnpacker.Inflation
         /* лл DEFLATE STATIC TABLES block ллллллллллллллллллллллллллллллллллллл */
         /* лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл */
 
-        private int[] LengthcodeValueOffset = new int[0x11e];  // [0x101, 0x11d]
-        private byte[] LengthcodeValueExtrabits = new byte[0x11e]; // [0x101, 0x11d]
-        private int[] DistancecodeValueOffset = new int[0x1e];  // [0x000, 0x01d] 
-        private byte[] DistancecodeValueExtrabits = new byte[0x1e]; // [0x000, 0x01d] 
+        private int[]? LengthcodeValueOffset = new int[0x11e];  // [0x101, 0x11d]
+        private byte[]? LengthcodeValueExtrabits = new byte[0x11e]; // [0x101, 0x11d]
+        private int[]? DistancecodeValueOffset = new int[0x1e];  // [0x000, 0x01d] 
+        private byte[]? DistancecodeValueExtrabits = new byte[0x1e]; // [0x000, 0x01d] 
 
         /// <summary>
         /// Allocates and generates the tables
@@ -126,7 +126,7 @@ namespace WiseUnpacker.Inflation
             /// The pointers to the children for both directions,
             /// if null then there's no child for the actual direction
             /// </summary>
-            public HuffmanNode[] next = new HuffmanNode[2];
+            public HuffmanNode?[] next = new HuffmanNode?[2];
 
             /// <summary>
             /// Tells us if the nodes in both directions either are
@@ -143,8 +143,8 @@ namespace WiseUnpacker.Inflation
             return new HuffmanNode()
             {
                 value = 0xffff,
-                next = new HuffmanNode[] { null, null },
-                endnode = new bool[] { false, false },
+                next = [null, null],
+                endnode = [false, false],
             };
         }
 
@@ -159,8 +159,8 @@ namespace WiseUnpacker.Inflation
             HuffmanNode newnode = new HuffmanNode()
             {
                 value = newvalue,
-                next = new HuffmanNode[] { null, null },
-                endnode = new bool[] { false, false },
+                next = [null, null],
+                endnode = [false, false],
             };
 
             if (newvalue < 0xffff)
@@ -199,12 +199,12 @@ namespace WiseUnpacker.Inflation
                 if (Codelength == 1)
                 {
                     HuffmanNode.endnode[0] = true;
-                    HuffmanNode.next[0].value = Codevalue;
+                    HuffmanNode.next[0]!.value = Codevalue;
                     result = true;
                 }
                 else
                 {
-                    result = AddNewCodeToHuffmanTree(HuffmanNode.next[0], (byte)(Codelength - 1), Codevalue);
+                    result = AddNewCodeToHuffmanTree(HuffmanNode.next[0]!, (byte)(Codelength - 1), Codevalue);
                 }
             }
             else
@@ -223,12 +223,12 @@ namespace WiseUnpacker.Inflation
                     if (Codelength == 1)
                     {
                         HuffmanNode.endnode[1] = true;
-                        HuffmanNode.next[1].value = Codevalue;
+                        HuffmanNode.next[1]!.value = Codevalue;
                         result = true;
                     }
                     else
                     {
-                        result = AddNewCodeToHuffmanTree(HuffmanNode.next[1], (byte)(Codelength - 1), Codevalue);
+                        result = AddNewCodeToHuffmanTree(HuffmanNode.next[1]!, (byte)(Codelength - 1), Codevalue);
                     }
                 }
                 else
@@ -241,10 +241,10 @@ namespace WiseUnpacker.Inflation
             return result;
         }
 
-        protected void FreeHuffmanTree(ref HuffmanNode HuffmanNode)
+        protected void FreeHuffmanTree(ref HuffmanNode? HuffmanNode)
         {
-            if (HuffmanNode.next[0] != null) FreeHuffmanTree(ref HuffmanNode.next[0]);
-            if (HuffmanNode.next[1] != null) FreeHuffmanTree(ref HuffmanNode.next[1]);
+            if (HuffmanNode?.next[0] != null) FreeHuffmanTree(ref HuffmanNode.next[0]!);
+            if (HuffmanNode?.next[1] != null) FreeHuffmanTree(ref HuffmanNode.next[1]!);
             HuffmanNode = null;
         }
 
@@ -305,12 +305,12 @@ namespace WiseUnpacker.Inflation
         /* лл HUFFMAN-TREE-USING block лллллллллллллллллллллллллллллллллллллллл */
         /* лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл */
 
-        private byte[] CodelengthOrder = new byte[] { 0x10, 0x11, 0x12, 0, 0x8, 0x7, 0x9, 0x6, 0xa, 0x5, 0xb, 0x4, 0xc, 0x3, 0xd, 0x2, 0xe, 0x1, 0xf };
-        private byte[] AlphabetCodelength = new byte[0x13e];
-        private HuffmanNode LiteralHuffmanTree;
-        private HuffmanNode DistanceHuffmanTree;
-        private byte[] CodelengthCodelength = new byte[0x13];
-        private HuffmanNode CodelengthHuffmanTree;
+        private byte[] CodelengthOrder = [0x10, 0x11, 0x12, 0, 0x8, 0x7, 0x9, 0x6, 0xa, 0x5, 0xb, 0x4, 0xc, 0x3, 0xd, 0x2, 0xe, 0x1, 0xf];
+        private byte[]? AlphabetCodelength = new byte[0x13e];
+        private HuffmanNode? LiteralHuffmanTree;
+        private HuffmanNode? DistanceHuffmanTree;
+        private byte[]? CodelengthCodelength = new byte[0x13];
+        private HuffmanNode? CodelengthHuffmanTree;
 
         protected void CreateStaticCodeTrees()
         {
@@ -331,13 +331,13 @@ namespace WiseUnpacker.Inflation
             FreeHuffmanTree(ref DistanceHuffmanTree);
         }
 
-        protected int DecodeValue(HuffmanNode ActualNode)
+        protected int DecodeValue(HuffmanNode? ActualNode)
         {
             do
             {
-                ActualNode = ActualNode.next[ReadBit()];
+                ActualNode = ActualNode!.next[ReadBit()];
             }
-            while (ActualNode.value == 0xffff && !SI_BREAK);
+            while (ActualNode!.value == 0xffff && !SI_BREAK);
 
             if (SI_BREAK)
                 SI_ERROR = 0x4000;
@@ -351,7 +351,7 @@ namespace WiseUnpacker.Inflation
             byte Lengthcode, CodeLength;
             int RepeatAmount;
             byte RepeatValue = 0;
-            byte ActualCodeLength, HighestCodeLength, Actual2, Highest2;
+            byte ActualCodeLength, HighestCodeLength, Highest2;
             bool BuildSuccess = false;
 
             /* Read codelength codelengths (first tree) */
@@ -550,7 +550,7 @@ namespace WiseUnpacker.Inflation
 
         protected void OutputByte(byte b)
         {
-            SI_WINDOW[SI_POSITION] = b;
+            SI_WINDOW![SI_POSITION] = b;
             SI_POSITION++;
             if (SI_POSITION == WSIZE)
             {
@@ -563,7 +563,7 @@ namespace WiseUnpacker.Inflation
         {
             while (length > 0)
             {
-                OutputByte(SI_WINDOW[(SI_POSITION + 0x8000 - distance) & 0x7fff]);
+                OutputByte(SI_WINDOW![(SI_POSITION + 0x8000 - distance) & 0x7fff]);
                 length--;
             }
         }
@@ -634,7 +634,7 @@ namespace WiseUnpacker.Inflation
                                 }
                                 else if (Literal <= 0x11d)
                                 {
-                                    Length = LengthcodeValueOffset[Literal] + ReadBits(LengthcodeValueExtrabits[Literal]);
+                                    Length = LengthcodeValueOffset![Literal] + ReadBits(LengthcodeValueExtrabits![Literal]);
                                     Distance = DecodeValue(DistanceHuffmanTree);
                                     if (Distance > 0x1d)
                                     {
@@ -643,7 +643,7 @@ namespace WiseUnpacker.Inflation
                                     }
                                     else
                                     {
-                                        Distance = DistancecodeValueOffset[Distance] + ReadBits(DistancecodeValueExtrabits[Distance]);
+                                        Distance = DistancecodeValueOffset![Distance] + ReadBits(DistancecodeValueExtrabits![Distance]);
                                         CopyBytes(Distance, Length);
                                     }
                                 }
@@ -683,9 +683,9 @@ namespace WiseUnpacker.Inflation
                                 }
                                 else if (Literal <= 0x11d)
                                 {
-                                    Length = LengthcodeValueOffset[Literal] + ReadBits(LengthcodeValueExtrabits[Literal]);
+                                    Length = LengthcodeValueOffset![Literal] + ReadBits(LengthcodeValueExtrabits![Literal]);
                                     Distance = DecodeValue(DistanceHuffmanTree);
-                                    Distance = DistancecodeValueOffset[Distance] + ReadBits(DistancecodeValueExtrabits[Distance]);
+                                    Distance = DistancecodeValueOffset![Distance] + ReadBits(DistancecodeValueExtrabits![Distance]);
                                     CopyBytes(Distance, Length);
                                 }
                                 else

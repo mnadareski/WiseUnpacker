@@ -25,8 +25,11 @@ namespace WiseUnpacker
         public long DataSectionLength { get; set; }
         public bool NoCrc { get; set; }
 
-        public bool Equals(FormatProperty other)
+        public bool Equals(FormatProperty? other)
         {
+            if (other == null)
+                return false;
+
             return this.ExecutableOffset == other.ExecutableOffset
                 && this.ExecutableType == other.ExecutableType
                 && (this.CodeSectionLength == other.CodeSectionLength || other.CodeSectionLength == -1)

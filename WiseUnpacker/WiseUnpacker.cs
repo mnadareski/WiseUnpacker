@@ -10,15 +10,15 @@ namespace WiseUnpacker
     public class WiseUnpacker
     {
         // Inflation helper
-        private InflateImpl inflate;
+        private InflateImpl? inflate;
 
         // IO values
-        private MultiPartFile inputFile;
+        private MultiPartFile? inputFile;
         private bool pkzip;
 
         // Deterministic values
         private static readonly FormatProperty[] knownFormats = FormatProperty.GenerateKnownFormats();
-        private FormatProperty currentFormat;
+        private FormatProperty? currentFormat;
         private long dataBase;
 
         // Heuristic values
@@ -52,7 +52,7 @@ namespace WiseUnpacker
                         
             // Move to data and determine if this is a known format
             JumpToTheData();
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
+            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset);
             for (int i = 0; i < knownFormats.Length; i++)
             {
                 if (currentFormat.Equals(knownFormats[i]))
@@ -153,7 +153,7 @@ namespace WiseUnpacker
             if (inputFile == null)
                 return false;
 
-            file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
+            file = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(file!))!, Path.GetFileNameWithoutExtension(file));
 
             int fileno = 2;
             while (inputFile.Append($"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}"))
@@ -170,7 +170,7 @@ namespace WiseUnpacker
         private void Approximate()
         {
             byte[] buf = new byte[0xc200];
-            inputFile.Seek(0);
+            inputFile!.Seek(0);
             inputFile.Read(buf, 0, 0xc000);
             offsetApproximate = 0xbffc;
 
@@ -264,7 +264,7 @@ namespace WiseUnpacker
                 currentFormat.ExecutableOffset = 0;
 
                 currentFormat.ExecutableType = ExecutableType.Unknown;
-                inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
+                inputFile!.Seek(dataBase + currentFormat.ExecutableOffset);
                 IMAGE_DOS_HEADER exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
 
                 if ((exeHdr.Magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.Magic == Constants.IMAGE_DOS_SIGNATURE)
@@ -299,7 +299,7 @@ namespace WiseUnpacker
         {
             ExecutableType foundExe = ExecutableType.Unknown;
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
+            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset);
             IMAGE_OS2_HEADER ne = IMAGE_OS2_HEADER.Deserialize(inputFile);
             long o = currentFormat.ExecutableOffset;
 
@@ -337,17 +337,17 @@ namespace WiseUnpacker
         /// </summary>
         private ExecutableType ProcessPe(ref bool searchAgainAtEnd)
         {
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + 4);
+            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset + 4);
             IMAGE_FILE_HEADER ifh = IMAGE_FILE_HEADER.Deserialize(inputFile);
             IMAGE_OPTIONAL_HEADER ioh = IMAGE_OPTIONAL_HEADER.Deserialize(inputFile);
 
             // Read sections until we have the ones we need
-            IMAGE_SECTION_HEADER temp = null;
-            IMAGE_SECTION_HEADER resource = null;
+            IMAGE_SECTION_HEADER? temp = null;
+            IMAGE_SECTION_HEADER? resource = null;
             for (int i = 0; i < ifh.NumberOfSections; i++)
             {
                 IMAGE_SECTION_HEADER sectionHeader = IMAGE_SECTION_HEADER.Deserialize(inputFile);
-                string headerName = Encoding.ASCII.GetString(sectionHeader.Name, 0, 8);
+                string headerName = Encoding.ASCII.GetString(sectionHeader!.Name!, 0, 8);
 
                 // .text
                 if (headerName.StartsWith(".text"))
@@ -379,7 +379,7 @@ namespace WiseUnpacker
             }
 
             // the unpacker of the self-extractor does not use any resource functions either.
-            if (temp.SizeOfRawData > 20000)
+            if (temp!.SizeOfRawData > 20000)
             {
                 for (int f = 0; f <= 20000 - 0x80; f++)
                 {
@@ -392,14 +392,14 @@ namespace WiseUnpacker
                         && (exeHdr.Relocations == 0 || exeHdr.Relocations == 3))
                     {
                         currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
-                        fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.DataDirectory[2].Size);
+                        fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.DataDirectory![2].Size);
                         searchAgainAtEnd = true;
                         break;
                     }
                 }
             }
 
-            currentFormat.ExecutableOffset = (int)(resource.PointerToRawData + resource.SizeOfRawData);
+            currentFormat.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
             return ExecutableType.PE;
         }
 
@@ -423,13 +423,13 @@ namespace WiseUnpacker
                 pos = 0;
                 do
                 {
-                    inputFile.Seek(offsetApproximate + pos);
+                    inputFile!.Seek(offsetApproximate + pos);
                     Inflate(inputFile, Path.Combine(outputPath, "WISE0001"));
                     newcrc = inputFile.ReadUInt32();
                     offsetReal = (uint)(offsetApproximate + pos);
                     pos++;
                 }
-                while ((inflate.CRC != newcrc || inflate.Result != 0 || newcrc == 0) && pos != 0x100);
+                while ((inflate!.CRC != newcrc || inflate.Result != 0 || newcrc == 0) && pos != 0x100);
 
                 if ((inflate.CRC != newcrc || newcrc == 0 || inflate.Result != 0) && pos == 0x100)
                 {
@@ -447,7 +447,7 @@ namespace WiseUnpacker
             }
             else
             {
-                inflate.CRC = ~newcrc;
+                inflate!.CRC = ~newcrc;
                 pos = -0x100;
             }
 
@@ -471,7 +471,7 @@ namespace WiseUnpacker
             uint newcrc = 0;
 
             Stream dumpFile = File.OpenWrite(Path.Combine(outputPath, "WISE0000"));
-            inputFile.Seek((int)offsetReal);
+            inputFile!.Seek((int)offsetReal);
             do
             {
                 extracted++;
@@ -496,9 +496,9 @@ namespace WiseUnpacker
                 Inflate(inputFile, Path.Combine(outputPath, $"WISE{extracted.ToString("X").PadLeft(4, '0')}"));
                 fileStart = fs;
                 if (pkzip)
-                    inflate.CRC = 0x4034b50;
+                    inflate!.CRC = 0x4034b50;
 
-                fileEnd = fileStart + inflate.InputSize - 1;
+                fileEnd = fileStart + inflate!.InputSize - 1;
                 if (inflate.Result == 0)
                 {
                     newcrc = inputFile.ReadUInt32();
@@ -550,7 +550,7 @@ namespace WiseUnpacker
         /// <param name="outputPath">Output directory for extracted files</param>
         private void RenameFiles(string outputPath)
         {
-            ReadOnlyFile extractedFile = null;
+            ReadOnlyFile? extractedFile = null;
             string newName = string.Empty;
             long l;
             int sh0, sh1, l1, l2, l3 = 0, l4, l5;
@@ -599,7 +599,7 @@ namespace WiseUnpacker
                     {
                         l1 = df.ReadInt32(l5 * 0x4 - 0x4);
                         l2 = df.ReadInt32(l5 * 0x4 - 0);
-                        l = extractedFile.Length - 0x7;
+                        l = extractedFile!.Length - 0x7;
                         res = 1;
 
                         while (l >= 0 && res != 0)
@@ -711,8 +711,8 @@ namespace WiseUnpacker
                             string fname = Path.Combine(outputPath, $"WISE{l1.ToString("X").PadLeft(4, '0')}");
 
                             /* Make directories */
-                            string nnDir = Path.GetDirectoryName(newName);
-                            Directory.CreateDirectory(nnDir);
+                            string? nnDir = Path.GetDirectoryName(Path.GetFullPath(newName));
+                            Directory.CreateDirectory(nnDir!);
 
                             /* Rename file */
                             File.Delete(newName);
@@ -743,7 +743,7 @@ namespace WiseUnpacker
         /// </summary>
         private void Close()
         {
-            inputFile.Close();
+            inputFile?.Close();
         }
     }
 }

@@ -25,7 +25,7 @@ namespace WiseUnpacker.Files.Microsoft
         /// <summary>
         /// Next of string
         /// </summary>
-        public char[] Text { get; private set; }
+        public char[]? Text { get; private set; }
 
         public static RsrcString Deserialize(MultiPartFile file)
         {

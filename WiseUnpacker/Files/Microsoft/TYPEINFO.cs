@@ -18,7 +18,7 @@ namespace WiseUnpacker.Files.Microsoft
         public ushort TypeID { get; private set; }
         public ushort ResourceCount { get; private set; }
         public uint Reserved { get; private set; }
-        public NAMEINFO NameInfo { get; private set; }
+        public NAMEINFO? NameInfo { get; private set; }
 
         public static TYPEINFO Deserialize(MultiPartFile file)
         {

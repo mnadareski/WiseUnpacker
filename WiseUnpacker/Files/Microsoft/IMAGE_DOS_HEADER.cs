@@ -31,10 +31,10 @@ namespace WiseUnpacker.Files.Microsoft
         public ushort InitialCSValue { get; private set; }          // 16 Initial (relative) CS value
         public ushort RelocationTableAddr { get; private set; }     // 18 File address of relocation table
         public ushort OverlayNumber { get; private set; }           // 1A Overlay number
-        public ushort[] Reserved1 { get; private set; }             // 1C Reserved words
+        public ushort[]? Reserved1 { get; private set; }            // 1C Reserved words
         public ushort OEMIdentifier { get; private set; }           // 24 OEM identifier (for e_oeminfo)
         public ushort OEMInformation { get; private set; }          // 26 OEM information; e_oemid specific
-        public ushort[] Reserved2 { get; private set; }             // 28 Reserved words
+        public ushort[]? Reserved2 { get; private set; }            // 28 Reserved words
         public int NewExeHeaderAddr { get; private set; }           // 3C File address of new exe header
 
         public static IMAGE_DOS_HEADER Deserialize(MultiPartFile file)

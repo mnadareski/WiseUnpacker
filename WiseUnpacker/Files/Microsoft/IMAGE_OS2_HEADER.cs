@@ -43,7 +43,7 @@ namespace WiseUnpacker.Files.Microsoft
         public ushort ResourceEntriesCount { get; private set; }        // 34 Count of resource entries
         public byte TargetOperatingSystem { get; private set; }         // 36 Target operating system
         public byte AdditionalFlags { get; private set; }       // 37 Additional flags
-        public ushort[] Reserved { get; private set; }          // 38 3 reserved words
+        public ushort[]? Reserved { get; private set; }          // 38 3 reserved words
         public byte WindowsSDKRevision { get; private set; }    // 3E Windows SDK revison number
         public byte WindowsSDKVersion { get; private set; }     // 3F Windows SDK version number
 

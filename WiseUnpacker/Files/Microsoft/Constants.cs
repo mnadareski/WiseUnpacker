@@ -1,3 +1,5 @@
+// TODO: Migrate all models here to use SabreTools.Models
+
 namespace WiseUnpacker.Files.Microsoft
 {
     /// <summary>

@@ -8,7 +8,7 @@ namespace WiseUnpacker.Inflation
     {
         private MultiPartFile inputFile;
         private Stream outputFile;
-        private byte[] inputBuffer;
+        private byte[]? inputBuffer;
         private int inputBufferPosition;
         private int inputBufferSize;
         private CRC32 crc;
@@ -43,8 +43,8 @@ namespace WiseUnpacker.Inflation
         public override void SI_WRITE(int w)
         {
             OutputSize += w;
-            outputFile.Write(SI_WINDOW, 0, w);
-            crc.Update(SI_WINDOW, 0, w);
+            outputFile.Write(SI_WINDOW!, 0, w);
+            crc.Update(SI_WINDOW!, 0, w);
         }
 
         public override byte SI_READ()
@@ -61,12 +61,12 @@ namespace WiseUnpacker.Inflation
                     if (inputBufferSize > inputFile.Length - inputFile.Position)
                         inputBufferSize = (int)(inputFile.Length - inputFile.Position);
 
-                    inputFile.Read(inputBuffer, 0, inputBufferSize);
+                    inputFile.Read(inputBuffer!, 0, inputBufferSize);
                     inputBufferPosition = 0;
                 }
             }
 
-            byte result = inputBuffer[inputBufferPosition];
+            byte result = inputBuffer![inputBufferPosition];
             InputSize++;
             inputBufferPosition++;
             return result;
@@ -76,7 +76,7 @@ namespace WiseUnpacker.Inflation
         {
             inputFile.Seek(inputFile.Position - inputBufferSize + inputBufferPosition);
 
-            crc.Finalize();
+            crc.FinalizeValue();
             Result = SI_ERROR;
 
             outputFile.Close();
