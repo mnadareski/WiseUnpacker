@@ -1,4 +1,6 @@
-﻿using WiseUnpacker.Files;
+﻿using System.Text;
+using SabreTools.IO;
+using WiseUnpacker.Files;
 
 namespace WiseUnpacker
 {
@@ -58,7 +60,8 @@ namespace WiseUnpacker
         {
             var idh = new SabreTools.Models.MSDOS.ExecutableHeader();
 
-            idh.Magic = new string(file.ReadChars(2));
+            var magicBytes = file.ReadBytes(2);
+            idh.Magic = Encoding.ASCII.GetString(magicBytes!);
             idh.LastPageBytes = file.ReadUInt16();
             idh.Pages = file.ReadUInt16();
             idh.RelocationItems = file.ReadUInt16();
@@ -96,7 +99,8 @@ namespace WiseUnpacker
         {
             var ioh = new SabreTools.Models.NewExecutable.ExecutableHeader();
 
-            ioh.Magic = new string(file.ReadChars(2));
+            var magicBytes = file.ReadBytes(2);
+            ioh.Magic = Encoding.ASCII.GetString(magicBytes!);
             ioh.LinkerVersion = file.ReadByteValue();
             ioh.LinkerRevision = file.ReadByteValue();
             ioh.EntryTableOffset = file.ReadUInt16();

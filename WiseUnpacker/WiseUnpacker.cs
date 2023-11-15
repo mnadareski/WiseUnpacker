@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using SabreTools.IO;
 using SabreTools.Models.PortableExecutable;
 using WiseUnpacker.Files;
 using WiseUnpacker.Inflation;
@@ -103,7 +104,7 @@ namespace WiseUnpacker
                     inputFile.Read(dll, 1, dll[0]);
                     dataStart += dll[0];
 
-                    int dllLength = inputFile.ReadInt32();
+                    _ = inputFile.ReadInt32();
                     dataStart += 4;
                 }
             }
@@ -305,10 +306,10 @@ namespace WiseUnpacker
             long o = currentFormat.ExecutableOffset;
 
             inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */, SeekOrigin.Begin);
-            var codeSegInfo = Serializer.CreateSegmentTableEntry(inputFile);
+            _ = Serializer.CreateSegmentTableEntry(inputFile);
 
             inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */, SeekOrigin.Begin);
-            var dataSegInfo = Serializer.CreateSegmentTableEntry(inputFile);
+            _ = Serializer.CreateSegmentTableEntry(inputFile);
 
             // Assumption: there are resources and they are at the end ..
             inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.ResourceTableOffset, SeekOrigin.Begin);
@@ -592,7 +593,7 @@ namespace WiseUnpacker
 
             if (fileno < 6 && fileno < extracted)
             {
-                ReadOnlyFile df = new ReadOnlyFile(outputPath, "WISE0000");
+                var df = new ReadOnlyFile(outputPath, "WISE0000");
                 l5 = (int)((df.Length - 0x4) / 0x4);
 
                 do
@@ -679,7 +680,7 @@ namespace WiseUnpacker
                             {
                                 while (extractedFile.ReadByte(l0) != 0)
                                 {
-                                    newName = newName + (char)extractedFile.ReadByte(l0);
+                                    newName += (char)extractedFile.ReadByte(l0);
                                     if (extractedFile.ReadByte(l0) < 0x20)
                                         res = 1;
 

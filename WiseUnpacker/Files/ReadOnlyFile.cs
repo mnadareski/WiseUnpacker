@@ -3,15 +3,22 @@ using System.IO;
 
 namespace WiseUnpacker.Files
 {
-    internal class ReadOnlyFile
+    internal class ReadOnlyFile : Stream
     {
-        private readonly Stream stream;
-        private byte[] buffer;
-        private long bufferOffset;
-        private long position;
+        /// <inheritdoc/>
+        public override long Length => _length;
+        private readonly long _length;
+
+        /// <inheritdoc/>
+        public override long Position { get; set; }
+
+        private readonly Stream _stream;
+
+        private readonly byte[] _buffer;
+
+        private long _bufferOffset;
 
         public string Name { get; private set; }
-        public long Length { get; private set; }
 
         #region Constructors
 
@@ -30,33 +37,60 @@ namespace WiseUnpacker.Files
         /// </summary>
         private ReadOnlyFile(string name, Stream stream)
         {
-            this.stream = stream;
-            this.Name = name;
-            this.buffer = new byte[0x8000];
-            this.Length = stream.Length;
-            this.bufferOffset = 0xffff0000;
-            this.position = 0;
+            _stream = stream;
+            Name = name;
+            _buffer = new byte[0x8000];
+            _length = stream.Length;
+            _bufferOffset = 0xffff0000;
+            Position = 0;
         }
 
         #endregion
 
         #region Stream Wrappers
 
-        public void Close()
+        /// <inheritdoc/>
+        public override long Seek(long offset, SeekOrigin origin)
         {
-            stream.Close();
+            return origin switch
+            {
+                SeekOrigin.Begin => Position = offset,
+                _ => throw new NotImplementedException(),
+            };
         }
 
-        public bool EOF()
+        /// <inheritdoc/>
+        public override void Close()
         {
-            return position == Length;
+            _stream.Close();
         }
 
-        public byte ReadByte()
+        /// <inheritdoc/>
+        public override int Read(byte[] buffer, int offset, int count)
         {
-            return ReadByte(position);
+            long position = Position;
+
+            int i = 0;
+            for (; i < count; i++)
+            {
+                if (offset >= buffer.Length || EOF())
+                    break;
+
+                buffer[offset++] = ReadByte(position++);
+            }
+
+            return i;
         }
 
+        /// <inheritdoc/>
+        public override int ReadByte()
+        {
+            return ReadByte(Position);
+        }
+
+        /// <summary>
+        /// Read a byte from the ReadOnlyFile at a location
+        /// </summary>
         public byte ReadByte(long p)
         {
             byte[] res = new byte[1];
@@ -65,16 +99,19 @@ namespace WiseUnpacker.Files
                 if (!InMemory(p, 1))
                     FillBuffer(p);
 
-                Array.ConstrainedCopy(buffer, (int)(p - bufferOffset), res, 0, 1);
-                position++;
+                Array.ConstrainedCopy(_buffer, (int)(p - _bufferOffset), res, 0, 1);
+                Position++;
             }
 
             return res[0];
         }
 
-        public short ReadInt16()
+        /// <summary>
+        /// Determine if the stream is at the end of the file
+        /// </summary>
+        public bool EOF()
         {
-            return ReadInt16(position);
+            return Position >= Length;
         }
 
         public short ReadInt16(long p)
@@ -85,16 +122,11 @@ namespace WiseUnpacker.Files
                 if (!InMemory(p, 2))
                     FillBuffer(p);
 
-                Array.ConstrainedCopy(buffer, (int)(p - bufferOffset), res, 0, 2);
-                position++;
+                Array.ConstrainedCopy(_buffer, (int)(p - _bufferOffset), res, 0, 2);
+                Position++;
             }
 
             return BitConverter.ToInt16(res, 0);
-        }
-
-        public ushort ReadUInt16()
-        {
-            return ReadUInt16(position);
         }
 
         public ushort ReadUInt16(long p)
@@ -105,16 +137,11 @@ namespace WiseUnpacker.Files
                 if (!InMemory(p, 2))
                     FillBuffer(p);
 
-                Array.ConstrainedCopy(buffer, (int)(p - bufferOffset), res, 0, 2);
-                position++;
+                Array.ConstrainedCopy(_buffer, (int)(p - _bufferOffset), res, 0, 2);
+                Position++;
             }
 
             return BitConverter.ToUInt16(res, 0);
-        }
-        
-        public int ReadInt32()
-        {
-            return ReadInt32(position);
         }
 
         public int ReadInt32(long p)
@@ -125,16 +152,11 @@ namespace WiseUnpacker.Files
                 if (!InMemory(p, 4))
                     FillBuffer(p);
 
-                Array.ConstrainedCopy(buffer, (int)(p - bufferOffset), res, 0, 4);
-                position++;
+                Array.ConstrainedCopy(_buffer, (int)(p - _bufferOffset), res, 0, 4);
+                Position++;
             }
 
             return BitConverter.ToInt32(res, 0);
-        }
-
-        public uint ReadUInt32()
-        {
-            return ReadUInt32(position);
         }
 
         public uint ReadUInt32(long p)
@@ -145,16 +167,11 @@ namespace WiseUnpacker.Files
                 if (!InMemory(p, 4))
                     FillBuffer(p);
 
-                Array.ConstrainedCopy(buffer, (int)(p - bufferOffset), res, 0, 4);
-                position++;
+                Array.ConstrainedCopy(_buffer, (int)(p - _bufferOffset), res, 0, 4);
+                Position++;
             }
 
             return BitConverter.ToUInt32(res, 0);
-        }
-
-        public DateTime ReadDateTime()
-        {
-            return ReadDateTime(position);
         }
 
         public DateTime ReadDateTime(long p)
@@ -170,11 +187,6 @@ namespace WiseUnpacker.Files
                 time % 0x800 % 0x20 * 2);
         }
 
-        public void Seek(long p)
-        {
-            position = p;
-        }
-
         private bool ValidPosition(long p)
         {
             return p >= 0 && p < Length;
@@ -182,34 +194,50 @@ namespace WiseUnpacker.Files
 
         private bool InMemory(long p, long l)
         {
-            return p >= bufferOffset && p + l <= bufferOffset + 0x8000;
+            return p >= _bufferOffset && p + l <= _bufferOffset + 0x8000;
         }
 
         private void FillBuffer(long p)
         {
-            bufferOffset = p - 0x4000;
-            if (bufferOffset < 0)
-                bufferOffset = 0;
+            _bufferOffset = p - 0x4000;
+            if (_bufferOffset < 0)
+                _bufferOffset = 0;
 
-            if (bufferOffset + 0x8000 > Length)
-                bufferOffset = Length - 0x8000;
+            if (_bufferOffset + 0x8000 > Length)
+                _bufferOffset = Length - 0x8000;
 
             // filesize < 0x8000
-            if (bufferOffset < 0)
+            if (_bufferOffset < 0)
             {
-                bufferOffset = 0;
-                stream.Seek(bufferOffset, SeekOrigin.Begin);
-                stream.Read(buffer, 0, (int)Length);
+                _bufferOffset = 0;
+                _stream.Seek(_bufferOffset, SeekOrigin.Begin);
+                _stream.Read(_buffer, 0, (int)Length);
             }
             else
             {
-                stream.Seek(bufferOffset, SeekOrigin.Begin);
-                stream.Read(buffer, 0, 0x8000);
+                _stream.Seek(_bufferOffset, SeekOrigin.Begin);
+                _stream.Read(_buffer, 0, 0x8000);
             }
 
-            position = p;
+            Position = p;
         }
-    
+
+        #endregion
+
+        #region Stream Implementations
+
+        public override bool CanRead => _stream.CanRead;
+
+        public override bool CanSeek => _stream.CanSeek;
+
+        public override bool CanWrite => _stream.CanWrite;
+
+        public override void Flush() => _stream.Flush();
+
+        public override void SetLength(long value) => throw new NotImplementedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+
         #endregion
     }
 }

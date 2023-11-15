@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 
 namespace WiseUnpacker.Files
 {
@@ -119,21 +118,15 @@ namespace WiseUnpacker.Files
             };
         }
 
-        /// <summary>
-        /// Close all parts of this MultiPartFile
-        /// </summary>
+        /// <inheritdoc/>
         public override void Close()
         {
-            if (_next != null)
-                _next.Close();
-
+            _next?.Close();
             _stream.Close();
         }
 
-        /// <summary>
-        /// Read from the MultiPartFile to a buffer
-        /// </summary>
-        public override int Read(byte[] x, int offset, int amount)
+        /// <inheritdoc/>
+        public override int Read(byte[] buffer, int offset, int count)
         {
             int bufpos;
 
@@ -147,10 +140,10 @@ namespace WiseUnpacker.Files
                 return 0;
 
             mf._stream.Seek(Position - mf._partStart, SeekOrigin.Begin);
-            if (mf._partEnd + 1 - Position >= amount)
+            if (mf._partEnd + 1 - Position >= count)
             {
-                mf._stream.Read(x, offset, amount);
-                Position += amount;
+                mf._stream.Read(buffer, offset, count);
+                Position += count;
             }
             else
             {
@@ -158,7 +151,7 @@ namespace WiseUnpacker.Files
                 bufpos = 0;
                 do
                 {
-                    if (mf!._partEnd + 1 < Position + amount - bufpos)
+                    if (mf!._partEnd + 1 < Position + count - bufpos)
                     {
                         mf._stream.Read(buf, bufpos, (int)(mf._partEnd + 1 - Position));
                         bufpos += (int)(mf._partEnd + 1 - Position);
@@ -167,22 +160,20 @@ namespace WiseUnpacker.Files
                     }
                     else
                     {
-                        mf._stream.Read(buf, bufpos, amount - bufpos);
-                        Position += amount - bufpos;
-                        bufpos = amount;
+                        mf._stream.Read(buf, bufpos, count - bufpos);
+                        Position += count - bufpos;
+                        bufpos = count;
                     }
                 }
-                while (bufpos != amount);
+                while (bufpos != count);
 
-                Array.ConstrainedCopy(buf, 0, x, offset, amount);
+                Array.ConstrainedCopy(buf, 0, buffer, offset, count);
             }
 
-            return amount;
+            return count;
         }
 
-        /// <summary>
-        /// Read a byte from the MultiPartFile
-        /// </summary>
+        /// <inheritdoc/>
         public override int ReadByte()
         {
             byte[] x = new byte[1];
@@ -190,105 +181,7 @@ namespace WiseUnpacker.Files
             return x[0];
         }
 
-        /// <summary>
-        /// Read a byte from the MultiPartFile
-        /// </summary>
-        public byte ReadByteValue()
-        {
-            byte[] x = new byte[1];
-            Read(x, 0, 1);
-            return x[0];
-        }
-
-        /// <summary>
-        /// Read a byte array from the MultiPartFile
-        /// </summary>
-        public byte[] ReadBytes(int count)
-        {
-            byte[] x = new byte[count];
-            Read(x, 0, count);
-            return x;
-        }
-
-        /// <summary>
-        /// Read a character from the MultiPartFile
-        /// </summary>
-        public char ReadChar()
-        {
-            byte[] x = new byte[1];
-            Read(x, 0, 1);
-            return (char)x[0];
-        }
-
-        /// <summary>
-        /// Read a character array from the MultiPartFile
-        /// </summary>
-        public char[] ReadChars(int count)
-        {
-            byte[] x = new byte[count];
-            Read(x, 0, count);
-            return Encoding.Default.GetString(x).ToCharArray();
-        }
-
-        /// <summary>
-        /// Read a short from the MultiPartFile
-        /// </summary>
-        public short ReadInt16()
-        {
-            byte[] x = new byte[2];
-            Read(x, 0, 2);
-            return BitConverter.ToInt16(x, 0);
-        }
-
-        /// <summary>
-        /// Read a ushort from the MultiPartFile
-        /// </summary>
-        public ushort ReadUInt16()
-        {
-            byte[] x = new byte[2];
-            Read(x, 0, 2);
-            return BitConverter.ToUInt16(x, 0);
-        }
-
-        /// <summary>
-        /// Read an int from the MultiPartFile
-        /// </summary>
-        public int ReadInt32()
-        {
-            byte[] x = new byte[4];
-            Read(x, 0, 4);
-            return BitConverter.ToInt32(x, 0);
-        }
-
-        /// <summary>
-        /// Read a uint from the MultiPartFile
-        /// </summary>
-        public uint ReadUInt32()
-        {
-            byte[] x = new byte[4];
-            Read(x, 0, 4);
-            return BitConverter.ToUInt32(x, 0);
-        }
-
-        /// <summary>
-        /// Read a long from the MultiPartFile
-        /// </summary>
-        public long ReadInt64()
-        {
-            byte[] x = new byte[8];
-            Read(x, 0, 8);
-            return BitConverter.ToInt64(x, 0);
-        }
-
-        /// <summary>
-        /// Read a ulong from the MultiPartFile
-        /// </summary>
-        public ulong ReadUInt64()
-        {
-            byte[] x = new byte[8];
-            Read(x, 0, 8);
-            return BitConverter.ToUInt64(x, 0);
-        }
+        #endregion
 
         #region Stream Implementations
 
@@ -300,17 +193,9 @@ namespace WiseUnpacker.Files
 
         public override void Flush() => _stream.Flush();
 
-        public override void SetLength(long value)
-        {
-            throw new NotImplementedException();
-        }
+        public override void SetLength(long value) => throw new NotImplementedException();
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
 
         #endregion
     }

@@ -6,81 +6,83 @@ namespace WiseUnpacker.Inflation
 {
     internal class InflateImpl : Inflate
     {
-        private MultiPartFile inputFile;
-        private Stream outputFile;
-        private byte[]? inputBuffer;
-        private int inputBufferPosition;
-        private int inputBufferSize;
-        private CRC32 crc;
-
         public long InputSize { get; private set; }
+
         public long OutputSize { get; private set; }
+
         public int Result { get; private set; }
+
         public uint CRC
         {
-            get
-            {
-                return crc.Value;
-            }
-            set
-            {
-                crc.Value = value;
-            }
+            get => _crc.Value;
+            set => _crc.Value = value;
         }
+
+        private readonly MultiPartFile _inputFile;
+
+        private readonly Stream _outputFile;
+
+        private byte[]? _inputBuffer;
+
+        private int _inputBufferPosition;
+
+        private int _inputBufferSize;
+
+        private readonly CRC32 _crc;
 
         public InflateImpl(MultiPartFile inf, string outf)
         {
-            inputBuffer = new byte[0x4000];
-            inputFile = inf;
-            outputFile = File.OpenWrite(outf);
+            _inputBuffer = new byte[0x4000];
+            _inputFile = inf;
+            _outputFile = File.OpenWrite(outf);
             InputSize = 0;
             OutputSize = 0;
-            inputBufferSize = inputBuffer.Length;
-            inputBufferPosition = inputBufferSize;
-            crc = new CRC32();
+            _inputBufferSize = _inputBuffer.Length;
+            _inputBufferPosition = _inputBufferSize;
+            _crc = new CRC32();
         }
 
         public override void SI_WRITE(int w)
         {
             OutputSize += w;
-            outputFile.Write(SI_WINDOW!, 0, w);
-            crc.Update(SI_WINDOW!, 0, w);
+            _outputFile.Write(SI_WINDOW!, 0, w);
+            _crc.Update(SI_WINDOW!, 0, w);
         }
 
         public override byte SI_READ()
         {
-            if (inputBufferPosition >= inputBufferSize)
+            if (_inputBufferPosition >= _inputBufferSize)
             {
-                if (inputFile.Position == inputFile.Length)
+                if (_inputFile.Position == _inputFile.Length)
                 {
                     SI_BREAK = true;
                     return Byte.MaxValue;
                 }
                 else
                 {
-                    if (inputBufferSize > inputFile.Length - inputFile.Position)
-                        inputBufferSize = (int)(inputFile.Length - inputFile.Position);
+                    if (_inputBufferSize > _inputFile.Length - _inputFile.Position)
+                        _inputBufferSize = (int)(_inputFile.Length - _inputFile.Position);
 
-                    inputFile.Read(inputBuffer!, 0, inputBufferSize);
-                    inputBufferPosition = 0;
+                    _inputFile.Read(_inputBuffer!, 0, _inputBufferSize);
+                    _inputBufferPosition = 0;
                 }
             }
 
-            byte result = inputBuffer![inputBufferPosition];
+            byte result = _inputBuffer![_inputBufferPosition];
             InputSize++;
-            inputBufferPosition++;
+            _inputBufferPosition++;
             return result;
         }
 
         public void Close()
         {
-            inputFile.Seek(inputFile.Position - inputBufferSize + inputBufferPosition, SeekOrigin.Begin);
+            _inputFile.Seek(_inputFile.Position - _inputBufferSize + _inputBufferPosition, SeekOrigin.Begin);
 
-            crc.FinalizeValue();
+            _crc.FinalizeValue();
             Result = SI_ERROR;
 
-            outputFile.Close();
-            inputBuffer = null;
+            _outputFile.Close();
+            _inputBuffer = null;
         }
     }
 }
