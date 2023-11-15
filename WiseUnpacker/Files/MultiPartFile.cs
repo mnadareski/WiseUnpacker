@@ -4,34 +4,41 @@ using System.Text;
 
 namespace WiseUnpacker.Files
 {
-    internal class MultiPartFile
+    internal class MultiPartFile : Stream
     {
-        private readonly Stream? stream;
-        private long partStart;
-        private long partEnd;
-        private MultiPartFile? next;
+        /// <inheritdoc/>
+        public override long Length => _length;
+        private long _length;
 
-        public long Position { get; private set; }
-        public long Length { get; private set; }
+        /// <inheritdoc/>
+        public override long Position { get; set; }
+
+        private readonly Stream _stream;
+
+        private long _partStart;
+
+        private long _partEnd;
+
+        private MultiPartFile? _next;
 
         #region Constructors
 
         /// <summary>
         /// Constructor
         /// </summary>
-        private MultiPartFile(string? name) : this(string.IsNullOrWhiteSpace(name) ? null : File.OpenRead(name)) { }
+        private MultiPartFile(string name) : this(File.OpenRead(name)) { }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        private MultiPartFile(Stream? stream)
+        private MultiPartFile(Stream stream)
         {
-            this.stream = stream;
-            this.partStart = 0;
-            this.Position = 0;
-            this.partEnd = stream?.Length ?? 0 - 1;
-            this.Length = partEnd + 1;
-            this.next = null;
+            _stream = stream;
+            _partStart = 0;
+            Position = 0;
+            _partEnd = stream?.Length ?? 0 - 1;
+            _length = _partEnd + 1;
+            _next = null;
         }
 
         /// <summary>
@@ -39,10 +46,10 @@ namespace WiseUnpacker.Files
         /// </summary>
         public static MultiPartFile? Create(string? name)
         {
-            if (!File.Exists(name))
+            if (string.IsNullOrWhiteSpace(name) || !File.Exists(name))
                 return null;
             
-            return new MultiPartFile(name);
+            return new MultiPartFile(name!);
         }
 
         /// <summary>
@@ -84,16 +91,16 @@ namespace WiseUnpacker.Files
 
             // Find the current last part
             var mf = this;
-            while (next != null)
+            while (_next != null)
             {
-                mf = mf!.next;
+                mf = mf!._next;
             }
 
             // Assign the new part as the new end
-            mf!.next = mpf;
-            mf.next.partStart = this.Length;
-            mf.next.partEnd += this.Length;
-            this.Length = mf.next.partEnd + 1;
+            mf!._next = mpf;
+            mf._next._partStart = Length;
+            mf._next._partEnd += Length;
+            _length = mf._next._partEnd + 1;
             
             return true;
         }
@@ -102,82 +109,91 @@ namespace WiseUnpacker.Files
 
         #region Stream Wrappers
 
-        /// <summary>
-        /// Seek to a position in the MultiPartFile
-        /// </summary>
-        public void Seek(long pos)
+        /// <inheritdoc/>
+        public override long Seek(long offset, SeekOrigin origin)
         {
-            Position = pos;
+            return origin switch
+            {
+                SeekOrigin.Begin => Position = offset,
+                _ => throw new NotImplementedException(),
+            };
         }
 
         /// <summary>
         /// Close all parts of this MultiPartFile
         /// </summary>
-        public void Close()
+        public override void Close()
         {
-            if (next != null)
-                next.Close();
+            if (_next != null)
+                _next.Close();
 
-            stream?.Close();
+            _stream.Close();
         }
 
         /// <summary>
         /// Read from the MultiPartFile to a buffer
         /// </summary>
-        public bool Read(byte[] x, int offset, int amount)
+        public override int Read(byte[] x, int offset, int amount)
         {
             int bufpos;
 
             MultiPartFile mf = this;
-            if (mf.stream == null)
-                return false;
-
-            while (Position > mf.partEnd && mf.next != null)
-                mf = mf.next;
-
-            if (Position <= mf.partEnd)
+            while (Position > mf._partEnd && mf._next != null)
             {
-                mf.stream!.Seek(Position - mf.partStart, SeekOrigin.Begin);
-                if (mf.partEnd + 1 - Position >= amount)
-                {
-                    mf.stream.Read(x, offset, amount);
-                    Position += amount;
-                }
-                else
-                {
-                    byte[] buf = new byte[0xffff];
-                    bufpos = 0;
-                    do
-                    {
-                        if (mf!.partEnd + 1 < Position + amount - bufpos)
-                        {
-                            mf.stream!.Read(buf, bufpos, (int)(mf.partEnd + 1 - Position));
-                            bufpos += (int)(mf.partEnd + 1 - Position);
-                            Position = mf.partEnd + 1;
-                            mf = mf.next!;
-                        }
-                        else
-                        {
-                            mf.stream!.Read(buf, bufpos, amount - bufpos);
-                            Position += amount - bufpos;
-                            bufpos = amount;
-                        }
-                    }
-                    while (bufpos != amount);
-
-                    Array.ConstrainedCopy(buf, 0, x, offset, amount);
-                }
-
-                return true;
+                mf = mf._next;
             }
 
-            return false;
+            if (Position > mf._partEnd)
+                return 0;
+
+            mf._stream.Seek(Position - mf._partStart, SeekOrigin.Begin);
+            if (mf._partEnd + 1 - Position >= amount)
+            {
+                mf._stream.Read(x, offset, amount);
+                Position += amount;
+            }
+            else
+            {
+                byte[] buf = new byte[0xffff];
+                bufpos = 0;
+                do
+                {
+                    if (mf!._partEnd + 1 < Position + amount - bufpos)
+                    {
+                        mf._stream.Read(buf, bufpos, (int)(mf._partEnd + 1 - Position));
+                        bufpos += (int)(mf._partEnd + 1 - Position);
+                        Position = mf._partEnd + 1;
+                        mf = mf._next!;
+                    }
+                    else
+                    {
+                        mf._stream.Read(buf, bufpos, amount - bufpos);
+                        Position += amount - bufpos;
+                        bufpos = amount;
+                    }
+                }
+                while (bufpos != amount);
+
+                Array.ConstrainedCopy(buf, 0, x, offset, amount);
+            }
+
+            return amount;
         }
 
         /// <summary>
         /// Read a byte from the MultiPartFile
         /// </summary>
-        public byte ReadByte()
+        public override int ReadByte()
+        {
+            byte[] x = new byte[1];
+            Read(x, 0, 1);
+            return x[0];
+        }
+
+        /// <summary>
+        /// Read a byte from the MultiPartFile
+        /// </summary>
+        public byte ReadByteValue()
         {
             byte[] x = new byte[1];
             Read(x, 0, 1);
@@ -273,7 +289,29 @@ namespace WiseUnpacker.Files
             Read(x, 0, 8);
             return BitConverter.ToUInt64(x, 0);
         }
-    
+
+        #region Stream Implementations
+
+        public override bool CanRead => _stream.CanRead;
+
+        public override bool CanSeek => _stream.CanSeek;
+
+        public override bool CanWrite => _stream.CanWrite;
+
+        public override void Flush() => _stream.Flush();
+
+        public override void SetLength(long value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
         #endregion
     }
 }

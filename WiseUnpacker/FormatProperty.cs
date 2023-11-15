@@ -8,7 +8,7 @@
 /// The original copyright notice may not be modified or omitted.
 
 using System;
-using WiseUnpacker.Files.Microsoft;
+using WiseUnpacker.Files;
 
 namespace WiseUnpacker
 {

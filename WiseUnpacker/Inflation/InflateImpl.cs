@@ -74,7 +74,7 @@ namespace WiseUnpacker.Inflation
 
         public void Close()
         {
-            inputFile.Seek(inputFile.Position - inputBufferSize + inputBufferPosition);
+            inputFile.Seek(inputFile.Position - inputBufferSize + inputBufferPosition, SeekOrigin.Begin);
 
             crc.FinalizeValue();
             Result = SI_ERROR;

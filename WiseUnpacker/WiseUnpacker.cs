@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using SabreTools.Models.PortableExecutable;
 using WiseUnpacker.Files;
-using WiseUnpacker.Files.Microsoft;
 using WiseUnpacker.Inflation;
 
 namespace WiseUnpacker
@@ -52,7 +52,7 @@ namespace WiseUnpacker
                         
             // Move to data and determine if this is a known format
             JumpToTheData();
-            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset);
+            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
             for (int i = 0; i < knownFormats.Length; i++)
             {
                 if (currentFormat.Equals(knownFormats[i]))
@@ -65,7 +65,7 @@ namespace WiseUnpacker
             // Fall back on heuristics if we couldn't match
             if (currentFormat.ArchiveEnd == 0)
             {
-                inputFile.Seek(0);
+                inputFile.Seek(0, SeekOrigin.Begin);
                 Approximate();
                 if (!pkzip)
                 {
@@ -118,13 +118,13 @@ namespace WiseUnpacker
 
             if (currentFormat.ArchiveEnd > 0)
             {
-                inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveEnd);
+                inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveEnd, SeekOrigin.Begin);
                 int archiveEndLoaded = inputFile.ReadInt32();
                 if (archiveEndLoaded != 0)
                     currentFormat.ArchiveEnd = archiveEndLoaded + dataBase;
             }
 
-            inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveStart);
+            inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveStart, SeekOrigin.Begin);
 
             // Skip over the initialization text, if we expect it
             if (currentFormat.InitText)
@@ -170,7 +170,7 @@ namespace WiseUnpacker
         private void Approximate()
         {
             byte[] buf = new byte[0xc200];
-            inputFile!.Seek(0);
+            inputFile!.Seek(0, SeekOrigin.Begin);
             inputFile.Read(buf, 0, 0xc000);
             offsetApproximate = 0xbffc;
 
@@ -264,25 +264,26 @@ namespace WiseUnpacker
                 currentFormat.ExecutableOffset = 0;
 
                 currentFormat.ExecutableType = ExecutableType.Unknown;
-                inputFile!.Seek(dataBase + currentFormat.ExecutableOffset);
-                IMAGE_DOS_HEADER exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
+                inputFile!.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
+                var exeHdr = Serializer.CreateMSDOSExecutableHeader(inputFile);
 
-                if ((exeHdr.Magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.Magic == Constants.IMAGE_DOS_SIGNATURE)
+                if ((exeHdr.Magic == SabreTools.Models.PortableExecutable.Constants.SignatureString || exeHdr.Magic == SabreTools.Models.MSDOS.Constants.SignatureString)
                     && exeHdr.HeaderParagraphSize >= 4
                     && exeHdr.NewExeHeaderAddr >= 0x40)
                 {
                     currentFormat.ExecutableOffset = exeHdr.NewExeHeaderAddr;
-                    inputFile.Seek(dataBase + currentFormat.ExecutableOffset);
-                    exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
+                    inputFile.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
+                    exeHdr = Serializer.CreateMSDOSExecutableHeader(inputFile);
                 }
 
                 switch (exeHdr.Magic)
                 {
-                    case Constants.IMAGE_OS2_SIGNATURE:
+                    case SabreTools.Models.NewExecutable.Constants.SignatureString:
                         currentFormat.ExecutableType = ProcessNe();
                         break;
-                    case Constants.IMAGE_OS2_SIGNATURE_LE:
-                    case (ushort)Constants.IMAGE_NT_SIGNATURE:
+                    case SabreTools.Models.LinearExecutable.Constants.LESignatureString:
+                    case SabreTools.Models.LinearExecutable.Constants.LXSignatureString:
+                    case SabreTools.Models.PortableExecutable.Constants.SignatureString:
                         currentFormat.ExecutableType = ProcessPe(ref searchAgainAtEnd);
                         break;
                     default:
@@ -299,27 +300,27 @@ namespace WiseUnpacker
         {
             ExecutableType foundExe = ExecutableType.Unknown;
 
-            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset);
-            IMAGE_OS2_HEADER ne = IMAGE_OS2_HEADER.Deserialize(inputFile);
+            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
+            var ne = Serializer.CreateNEExecutableHeader(inputFile);
             long o = currentFormat.ExecutableOffset;
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */);
-            NewSeg codeSegInfo = NewSeg.Deserialize(inputFile);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */, SeekOrigin.Begin);
+            var codeSegInfo = Serializer.CreateSegmentTableEntry(inputFile);
 
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */);
-            NewSeg dataSegInfo = NewSeg.Deserialize(inputFile);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */, SeekOrigin.Begin);
+            var dataSegInfo = Serializer.CreateSegmentTableEntry(inputFile);
 
             // Assumption: there are resources and they are at the end ..
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.ResourceTableOffset);
+            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.ResourceTableOffset, SeekOrigin.Begin);
             short rsAlign = inputFile.ReadInt16();
 
             // ne.ne_cres is 0 so you have to cheat
             while (inputFile.Position + 8 /* sizeof(rsType) */ <= dataBase + currentFormat.ExecutableOffset + ne.ResidentNameTableOffset)
             {
-                RsrcTypeInfo rsType = RsrcTypeInfo.Deserialize(inputFile);
-                for (int z2 = 1; z2 < rsType.rt_nres; z2++)
+                var rsType = Serializer.CreateInformationEntry(inputFile);
+                for (int z2 = 1; z2 < rsType.ResourceCount; z2++)
                 {
-                    RsrcNameInfo rsName = RsrcNameInfo.Deserialize(inputFile);
+                    var rsName = Serializer.CreateResourceEntry(inputFile);
                     int a = rsName.Offset << rsAlign + rsName.Length << rsAlign;
                     if (o < a)
                         o = a;
@@ -337,16 +338,17 @@ namespace WiseUnpacker
         /// </summary>
         private ExecutableType ProcessPe(ref bool searchAgainAtEnd)
         {
-            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset + 4);
-            IMAGE_FILE_HEADER ifh = IMAGE_FILE_HEADER.Deserialize(inputFile);
-            IMAGE_OPTIONAL_HEADER ioh = IMAGE_OPTIONAL_HEADER.Deserialize(inputFile);
+            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset + 4, SeekOrigin.Begin);
+
+            var ifh = Serializer.CreateCOFFFileHeader(inputFile);
+            var ioh = Serializer.CreateOptionalHeader(inputFile);
 
             // Read sections until we have the ones we need
-            IMAGE_SECTION_HEADER? temp = null;
-            IMAGE_SECTION_HEADER? resource = null;
+            SectionHeader? temp = null;
+            SectionHeader? resource = null;
             for (int i = 0; i < ifh.NumberOfSections; i++)
             {
-                IMAGE_SECTION_HEADER sectionHeader = IMAGE_SECTION_HEADER.Deserialize(inputFile);
+                var sectionHeader = Serializer.CreateSectionHeader(inputFile);
                 string headerName = Encoding.ASCII.GetString(sectionHeader!.Name!, 0, 8);
 
                 // .text
@@ -365,7 +367,7 @@ namespace WiseUnpacker
                 else if (headerName.StartsWith(".data"))
                 {
                     currentFormat.DataSectionLength = sectionHeader.VirtualSize;
-                    if ((ifh.Characteristics & (1 << 0)) == 0)
+                    if (!ifh.Characteristics.HasFlag(Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
                         temp = sectionHeader;
                 }
 
@@ -373,7 +375,7 @@ namespace WiseUnpacker
                 else if (headerName.StartsWith(".rsrc"))
                 {
                     resource = sectionHeader;
-                    if ((ifh.Characteristics & (1 << 0)) != 0)
+                    if (!ifh.Characteristics.HasFlag(Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
                         temp = sectionHeader;
                 }
             }
@@ -383,16 +385,16 @@ namespace WiseUnpacker
             {
                 for (int f = 0; f <= 20000 - 0x80; f++)
                 {
-                    inputFile.Seek(dataBase + temp.PointerToRawData + f);
-                    IMAGE_DOS_HEADER exeHdr = IMAGE_DOS_HEADER.Deserialize(inputFile);
+                    inputFile.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
+                    var exeHdr = Serializer.CreateMSDOSExecutableHeader(inputFile);
 
-                    if ((exeHdr.Magic == Constants.IMAGE_NT_SIGNATURE || exeHdr.Magic == Constants.IMAGE_DOS_SIGNATURE)
+                    if ((exeHdr.Magic == SabreTools.Models.PortableExecutable.Constants.SignatureString || exeHdr.Magic == SabreTools.Models.MSDOS.Constants.SignatureString)
                         && exeHdr.HeaderParagraphSize >= 4
                         && exeHdr.NewExeHeaderAddr >= 0x40
-                        && (exeHdr.Relocations == 0 || exeHdr.Relocations == 3))
+                        && (exeHdr.RelocationItems == 0 || exeHdr.RelocationItems == 3))
                     {
                         currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
-                        fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.DataDirectory![2].Size);
+                        fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.ResourceTable!.Size);
                         searchAgainAtEnd = true;
                         break;
                     }
@@ -423,7 +425,7 @@ namespace WiseUnpacker
                 pos = 0;
                 do
                 {
-                    inputFile!.Seek(offsetApproximate + pos);
+                    inputFile!.Seek(offsetApproximate + pos, SeekOrigin.Begin);
                     Inflate(inputFile, Path.Combine(outputPath, "WISE0001"));
                     newcrc = inputFile.ReadUInt32();
                     offsetReal = (uint)(offsetApproximate + pos);
@@ -436,7 +438,7 @@ namespace WiseUnpacker
                     pos = -1;
                     do
                     {
-                        inputFile.Seek(offsetApproximate + pos);
+                        inputFile.Seek(offsetApproximate + pos, SeekOrigin.Begin);
                         Inflate(inputFile, Path.Combine(outputPath, "WISE0001"));
                         newcrc = inputFile.ReadUInt32();
                         offsetReal = (uint)(offsetApproximate + pos);
@@ -471,7 +473,7 @@ namespace WiseUnpacker
             uint newcrc = 0;
 
             Stream dumpFile = File.OpenWrite(Path.Combine(outputPath, "WISE0000"));
-            inputFile!.Seek((int)offsetReal);
+            inputFile!.Seek((int)offsetReal, SeekOrigin.Begin);
             do
             {
                 extracted++;
@@ -505,7 +507,7 @@ namespace WiseUnpacker
                     int attempt = 0;
                     while (inflate.CRC != newcrc && attempt < 8 && inputFile.Position + 1 < inputFile.Length)
                     {
-                        inputFile.Seek(inputFile.Position - 3);
+                        inputFile.Seek(inputFile.Position - 3, SeekOrigin.Begin);
                         newcrc = inputFile.ReadUInt32();
                         attempt++;
                     }
@@ -514,7 +516,7 @@ namespace WiseUnpacker
                     if (pkzip)
                     {
                         fileEnd -= 4;
-                        inputFile.Seek(inputFile.Position - 4);
+                        inputFile.Seek(inputFile.Position - 4, SeekOrigin.Begin);
                     }
                 }
 

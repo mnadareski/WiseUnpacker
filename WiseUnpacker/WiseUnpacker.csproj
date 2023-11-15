@@ -22,7 +22,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../README.md" Pack="true" PackagePath=""/>
+    <None Include="../README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SabreTools.Models" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
