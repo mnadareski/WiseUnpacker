@@ -11,7 +11,7 @@ namespace WiseUnpacker.Inflation
     internal class CRC32
     {
         private const long seed = 0xedb88320;
-        private uint[] crcTable = new uint[0x100];
+        private readonly uint[] crcTable = new uint[0x100];
 
         public uint Value { get; set; }
 
@@ -52,7 +52,7 @@ namespace WiseUnpacker.Inflation
                     if ((tempCrc & 1) == 1)
                         tempCrc = (uint)((tempCrc >> 1) ^ seed);
                     else
-                        tempCrc = tempCrc >> 1;
+                        tempCrc >>= 1;
                 }
 
                 crcTable[W0] = tempCrc;

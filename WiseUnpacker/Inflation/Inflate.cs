@@ -156,7 +156,7 @@ namespace WiseUnpacker.Inflation
         /// </summary>
         protected void AddNewChildToHuffmanNode(ref HuffmanNode HuffmanNode, byte newdirection, int newvalue)
         {
-            HuffmanNode newnode = new HuffmanNode()
+            var newnode = new HuffmanNode()
             {
                 value = newvalue,
                 next = [null, null],
@@ -305,7 +305,7 @@ namespace WiseUnpacker.Inflation
         /* лл HUFFMAN-TREE-USING block лллллллллллллллллллллллллллллллллллллллл */
         /* лллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллллл */
 
-        private byte[] CodelengthOrder = [0x10, 0x11, 0x12, 0, 0x8, 0x7, 0x9, 0x6, 0xa, 0x5, 0xb, 0x4, 0xc, 0x3, 0xd, 0x2, 0xe, 0x1, 0xf];
+        private readonly byte[] CodelengthOrder = [0x10, 0x11, 0x12, 0, 0x8, 0x7, 0x9, 0x6, 0xa, 0x5, 0xb, 0x4, 0xc, 0x3, 0xd, 0x2, 0xe, 0x1, 0xf];
         private byte[]? AlphabetCodelength = new byte[0x13e];
         private HuffmanNode? LiteralHuffmanTree;
         private HuffmanNode? DistanceHuffmanTree;

@@ -251,11 +251,13 @@ namespace WiseUnpacker
         /// </summary>
         private void JumpToTheData()
         {
-            currentFormat = new FormatProperty();
-            currentFormat.ExecutableType = ExecutableType.Unknown;
+            currentFormat = new FormatProperty
+            {
+                ExecutableType = ExecutableType.Unknown,
+                ExecutableOffset = 0, // dataStart
+                CodeSectionLength = 0,
+            };
             dataBase = 0;
-            currentFormat.CodeSectionLength = 0;
-            currentFormat.ExecutableOffset = 0; // dataStart
 
             bool searchAgainAtEnd = true;
             do
