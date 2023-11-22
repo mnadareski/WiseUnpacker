@@ -370,7 +370,11 @@ namespace WiseUnpacker
                 else if (headerName.StartsWith(".data"))
                 {
                     currentFormat.DataSectionLength = sectionHeader.VirtualSize;
+#if NET20 || NET35
+                    if ((ifh.Characteristics & Characteristics.IMAGE_FILE_RELOCS_STRIPPED) == 0)
+#else
                     if (!ifh.Characteristics.HasFlag(Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
+#endif
                         temp = sectionHeader;
                 }
 
@@ -378,7 +382,11 @@ namespace WiseUnpacker
                 else if (headerName.StartsWith(".rsrc"))
                 {
                     resource = sectionHeader;
+#if NET20 || NET35
+                    if ((ifh.Characteristics & Characteristics.IMAGE_FILE_RELOCS_STRIPPED) == 0)
+#else
                     if (!ifh.Characteristics.HasFlag(Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
+#endif
                         temp = sectionHeader;
                 }
             }

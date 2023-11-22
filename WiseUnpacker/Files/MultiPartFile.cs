@@ -45,7 +45,7 @@ namespace WiseUnpacker.Files
         /// </summary>
         public static MultiPartFile? Create(string? name)
         {
-            if (string.IsNullOrWhiteSpace(name) || !File.Exists(name))
+            if (string.IsNullOrEmpty(name) || !File.Exists(name))
                 return null;
             
             return new MultiPartFile(name!);
