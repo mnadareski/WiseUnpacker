@@ -25,7 +25,7 @@ namespace WiseUnpacker.Files
         /// <summary>
         /// Constructor
         /// </summary>
-        private ReadOnlyFile(string name) : this(name, File.OpenRead(name)) { }
+        private ReadOnlyFile(string name) : this(name, File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) { }
 
         /// <summary>
         /// Constructor

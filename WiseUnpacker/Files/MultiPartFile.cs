@@ -25,7 +25,7 @@ namespace WiseUnpacker.Files
         /// <summary>
         /// Constructor
         /// </summary>
-        private MultiPartFile(string name) : this(File.OpenRead(name)) { }
+        private MultiPartFile(string name) : this(File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) { }
 
         /// <summary>
         /// Constructor
