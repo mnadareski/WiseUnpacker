@@ -335,7 +335,9 @@ namespace WiseUnpacker.Inflation
         {
             do
             {
-                ActualNode = ActualNode!.next[ReadBit()];
+                ActualNode = ActualNode?.next[ReadBit()]!;
+                if (ActualNode == null)
+                    SI_BREAK = true;
             }
             while (ActualNode!.value == 0xffff && !SI_BREAK);
 
