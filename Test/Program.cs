@@ -34,7 +34,9 @@ namespace Test
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
 
-            Console.ReadKey();
+            // Handle redirected inputs
+            if (!Console.IsInputRedirected)
+                Console.ReadKey();
         }
 
         /// <summary>
