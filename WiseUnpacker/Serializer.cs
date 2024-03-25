@@ -1,6 +1,8 @@
 ﻿using System.Text;
 using SabreTools.IO;
 using WiseUnpacker.Files;
+using NE = SabreTools.Models.NewExecutable;
+using PE = SabreTools.Models.PortableExecutable;
 
 namespace WiseUnpacker
 {
@@ -10,17 +12,17 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a COFF file header from a multipart file
         /// </summary>
-        public static SabreTools.Models.PortableExecutable.COFFFileHeader CreateCOFFFileHeader(MultiPartFile file)
+        public static PE.COFFFileHeader CreateCOFFFileHeader(MultiPartFile file)
         {
-            var ifh = new SabreTools.Models.PortableExecutable.COFFFileHeader();
+            var ifh = new PE.COFFFileHeader();
 
-            ifh.Machine = (SabreTools.Models.PortableExecutable.MachineType)file.ReadUInt16();
+            ifh.Machine = (PE.MachineType)file.ReadUInt16();
             ifh.NumberOfSections = file.ReadUInt16();
             ifh.TimeDateStamp = file.ReadUInt32();
             ifh.PointerToSymbolTable = file.ReadUInt32();
             ifh.NumberOfSymbols = file.ReadUInt32();
             ifh.SizeOfOptionalHeader = file.ReadUInt16();
-            ifh.Characteristics = (SabreTools.Models.PortableExecutable.Characteristics)file.ReadUInt16();
+            ifh.Characteristics = (PE.Characteristics)file.ReadUInt16();
 
             return ifh;
         }
@@ -28,9 +30,9 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a data directory from a multipart file
         /// </summary>
-        public static SabreTools.Models.PortableExecutable.DataDirectory CreateDataDirectory(MultiPartFile file)
+        public static PE.DataDirectory CreateDataDirectory(MultiPartFile file)
         {
-            var idd = new SabreTools.Models.PortableExecutable.DataDirectory();
+            var idd = new PE.DataDirectory();
 
             idd.VirtualAddress = file.ReadUInt32();
             idd.Size = file.ReadUInt32();
@@ -41,14 +43,14 @@ namespace WiseUnpacker
         /// <summary>
         /// Create an information entry from a multipart file
         /// </summary>
-        public static SabreTools.Models.NewExecutable.ResourceTypeInformationEntry CreateInformationEntry(MultiPartFile file)
+        public static NE.ResourceTypeInformationEntry CreateInformationEntry(MultiPartFile file)
         {
-            var rti = new SabreTools.Models.NewExecutable.ResourceTypeInformationEntry();
+            var rti = new NE.ResourceTypeInformationEntry();
 
             rti.TypeID = file.ReadUInt16();
             rti.ResourceCount = file.ReadUInt16();
             rti.Reserved = file.ReadUInt32();
-            rti.Resources = new SabreTools.Models.NewExecutable.ResourceTypeResourceEntry[rti.ResourceCount];
+            rti.Resources = new NE.ResourceTypeResourceEntry[rti.ResourceCount];
 
             return rti;
         }
@@ -95,9 +97,9 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a New Executable header from a multipart file
         /// </summary>
-        public static SabreTools.Models.NewExecutable.ExecutableHeader CreateNEExecutableHeader(MultiPartFile file)
+        public static NE.ExecutableHeader CreateNEExecutableHeader(MultiPartFile file)
         {
-            var ioh = new SabreTools.Models.NewExecutable.ExecutableHeader();
+            var ioh = new NE.ExecutableHeader();
 
             var magicBytes = file.ReadBytes(2);
             ioh.Magic = Encoding.ASCII.GetString(magicBytes!);
@@ -106,7 +108,7 @@ namespace WiseUnpacker
             ioh.EntryTableOffset = file.ReadUInt16();
             ioh.EntryTableSize = file.ReadUInt16();
             ioh.CrcChecksum = file.ReadUInt32();
-            ioh.FlagWord = (SabreTools.Models.NewExecutable.HeaderFlag)file.ReadUInt16();
+            ioh.FlagWord = (NE.HeaderFlag)file.ReadUInt16();
             ioh.AutomaticDataSegmentNumber = file.ReadUInt16();
             ioh.InitialHeapAlloc = file.ReadUInt16();
             ioh.InitialStackAlloc = file.ReadUInt16();
@@ -124,8 +126,8 @@ namespace WiseUnpacker
             ioh.MovableEntriesCount = file.ReadUInt16();
             ioh.SegmentAlignmentShiftCount = file.ReadUInt16();
             ioh.ResourceEntriesCount = file.ReadUInt16();
-            ioh.TargetOperatingSystem = (SabreTools.Models.NewExecutable.OperatingSystem)file.ReadByteValue();
-            ioh.AdditionalFlags = (SabreTools.Models.NewExecutable.OS2Flag)file.ReadByteValue();
+            ioh.TargetOperatingSystem = (NE.OperatingSystem)file.ReadByteValue();
+            ioh.AdditionalFlags = (NE.OS2Flag)file.ReadByteValue();
             ioh.ReturnThunkOffset = file.ReadUInt16();
             ioh.SegmentReferenceThunkOffset = file.ReadUInt16();
             ioh.MinCodeSwapAreaSize = file.ReadUInt16();
@@ -138,11 +140,11 @@ namespace WiseUnpacker
         /// <summary>
         /// Create an optional header from a multipart file
         /// </summary>
-        public static SabreTools.Models.PortableExecutable.OptionalHeader CreateOptionalHeader(MultiPartFile file)
+        public static PE.OptionalHeader CreateOptionalHeader(MultiPartFile file)
         {
-            var ioh = new SabreTools.Models.PortableExecutable.OptionalHeader();
+            var ioh = new PE.OptionalHeader();
 
-            ioh.Magic = (SabreTools.Models.PortableExecutable.OptionalHeaderMagicNumber)file.ReadUInt16();
+            ioh.Magic = (PE.OptionalHeaderMagicNumber)file.ReadUInt16();
             ioh.MajorLinkerVersion = file.ReadByteValue();
             ioh.MinorLinkerVersion = file.ReadByteValue();
             ioh.SizeOfCode = file.ReadUInt32();
@@ -165,8 +167,8 @@ namespace WiseUnpacker
             ioh.SizeOfImage = file.ReadUInt32();
             ioh.SizeOfHeaders = file.ReadUInt32();
             ioh.CheckSum = file.ReadUInt32();
-            ioh.Subsystem = (SabreTools.Models.PortableExecutable.WindowsSubsystem)file.ReadUInt16();
-            ioh.DllCharacteristics = (SabreTools.Models.PortableExecutable.DllCharacteristics)file.ReadUInt16();
+            ioh.Subsystem = (PE.WindowsSubsystem)file.ReadUInt16();
+            ioh.DllCharacteristics = (PE.DllCharacteristics)file.ReadUInt16();
             ioh.SizeOfStackReserve_PE32 = file.ReadUInt32();
             ioh.SizeOfStackCommit_PE32 = file.ReadUInt32();
             ioh.SizeOfHeapReserve_PE32 = file.ReadUInt32();
@@ -197,13 +199,13 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a resource entry from a multipart file
         /// </summary>
-        public static SabreTools.Models.NewExecutable.ResourceTypeResourceEntry CreateResourceEntry(MultiPartFile file)
+        public static NE.ResourceTypeResourceEntry CreateResourceEntry(MultiPartFile file)
         {
-            var rni = new SabreTools.Models.NewExecutable.ResourceTypeResourceEntry();
+            var rni = new NE.ResourceTypeResourceEntry();
 
             rni.Offset = file.ReadUInt16();
             rni.Length = file.ReadUInt16();
-            rni.FlagWord = (SabreTools.Models.NewExecutable.ResourceTypeResourceFlag)file.ReadUInt16();
+            rni.FlagWord = (NE.ResourceTypeResourceFlag)file.ReadUInt16();
             rni.ResourceID = file.ReadUInt16();
             rni.Reserved = file.ReadUInt32();
 
@@ -213,9 +215,9 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a section header from a multipart file
         /// </summary>
-        public static SabreTools.Models.PortableExecutable.SectionHeader CreateSectionHeader(MultiPartFile file)
+        public static PE.SectionHeader CreateSectionHeader(MultiPartFile file)
         {
-            var ish = new SabreTools.Models.PortableExecutable.SectionHeader();
+            var ish = new PE.SectionHeader();
 
             ish.Name = file.ReadBytes(8);
 
@@ -227,7 +229,7 @@ namespace WiseUnpacker
             ish.PointerToLinenumbers = file.ReadUInt32();
             ish.NumberOfRelocations = file.ReadUInt16();
             ish.NumberOfLinenumbers = file.ReadUInt16();
-            ish.Characteristics = (SabreTools.Models.PortableExecutable.SectionFlags)file.ReadUInt32();
+            ish.Characteristics = (PE.SectionFlags)file.ReadUInt32();
 
             return ish;
         }
@@ -235,13 +237,13 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a segment table entry from a multipart file
         /// </summary>
-        public static SabreTools.Models.NewExecutable.SegmentTableEntry CreateSegmentTableEntry(MultiPartFile file)
+        public static NE.SegmentTableEntry CreateSegmentTableEntry(MultiPartFile file)
         {
-            var ns = new SabreTools.Models.NewExecutable.SegmentTableEntry();
+            var ns = new NE.SegmentTableEntry();
 
             ns.Offset = file.ReadUInt16();
             ns.Length = file.ReadUInt16();
-            ns.FlagWord = (SabreTools.Models.NewExecutable.SegmentTableEntryFlag)file.ReadUInt16();
+            ns.FlagWord = (NE.SegmentTableEntryFlag)file.ReadUInt16();
             ns.MinimumAllocationSize = file.ReadUInt16();
 
             return ns;
