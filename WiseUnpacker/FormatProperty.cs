@@ -12,7 +12,7 @@ using WiseUnpacker.Files;
 
 namespace WiseUnpacker
 {
-    internal class FormatProperty : IEquatable<FormatProperty>
+    public class FormatProperty : IEquatable<FormatProperty>
     {
         public ExecutableType ExecutableType { get; set; }
         public long ExecutableOffset { get; set; }

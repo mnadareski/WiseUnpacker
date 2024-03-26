@@ -1,6 +1,6 @@
 ﻿namespace WiseUnpacker.Files
 {
-    internal enum ExecutableType
+    public enum ExecutableType
     {
         Unknown,
 
