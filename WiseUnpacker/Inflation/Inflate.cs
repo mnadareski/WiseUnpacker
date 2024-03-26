@@ -339,12 +339,12 @@ namespace WiseUnpacker.Inflation
                 if (ActualNode == null)
                     SI_BREAK = true;
             }
-            while (ActualNode!.value == 0xffff && !SI_BREAK);
+            while (ActualNode != null && ActualNode!.value == 0xffff && !SI_BREAK);
 
             if (SI_BREAK)
                 SI_ERROR = 0x4000;
 
-            return ActualNode.value;
+            return ActualNode?.value ?? -1;
         }
 
         protected void ReadDynamicCodeTrees(int CodelengthNumber, int LiteralNumber, int DistanceNumber)
