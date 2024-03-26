@@ -17,13 +17,13 @@ namespace WiseUnpacker
         public ExecutableType ExecutableType { get; set; }
         public long ExecutableOffset { get; set; }
         public bool Dll { get; private set; }
-        public long ArchiveStart { get; private set; }
+        public long ArchiveStart { get; set; }
         public long ArchiveEnd { get; set; } // Position in the archive head of the archive end
-        public bool InitText { get; private set; }
-        public long FilenamePosition { get; private set; }
+        public bool InitText { get; set; }
+        public long FilenamePosition { get; set; }
         public long CodeSectionLength { get; set; }
         public long DataSectionLength { get; set; }
-        public bool NoCrc { get; private set; }
+        public bool NoCrc { get; set; }
 
         public bool Equals(FormatProperty? other)
         {
