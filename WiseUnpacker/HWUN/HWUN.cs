@@ -1,11 +1,10 @@
 using System;
 using System.IO;
-using SabreTools.Models.Logiqx;
 using static WiseUnpacker.HWUN.HexaDeci;
 
 namespace WiseUnpacker.HWUN
 {
-    internal partial class HWUN
+    internal class Unpacker
     {
         #region Instance Variables
 
@@ -486,7 +485,7 @@ namespace WiseUnpacker.HWUN
             }
         }
 
-        public void Run(string name, string dir, string? options = null)
+        public bool Run(string name, string dir, string? options = null)
         {
             Directory.CreateDirectory(dir);
             _rollback = 0;
@@ -515,33 +514,39 @@ namespace WiseUnpacker.HWUN
                 }
             }
 
-            if (OpenFile(name))
-            {
-                Approximate();
-                if (!_pkzip)
-                {
-                    if (_userOffset >= 0)
-                        _approxOffset = _userOffset;
-                    else
-                        _approxOffset -= _rollback;
+            if (!OpenFile(name))
+                return false;
 
-                    FindReal(dir);
-                    if (_realfound)
-                    {
-                        ExtractFiles(dir);
-                        if (_renaming)
-                            RenameFiles(dir);
-                    }
-                }
+            Approximate();
+            if (!_pkzip)
+            {
+                if (_userOffset >= 0)
+                    _approxOffset = _userOffset;
                 else
+                    _approxOffset -= _rollback;
+
+                FindReal(dir);
+                if (_realfound)
                 {
-                    _realOffset = _approxOffset;
                     ExtractFiles(dir);
                     if (_renaming)
                         RenameFiles(dir);
                 }
-                CloseFile();
+                else
+                {
+                    return false;
+                }
             }
+            else
+            {
+                _realOffset = _approxOffset;
+                ExtractFiles(dir);
+                if (_renaming)
+                    RenameFiles(dir);
+            }
+
+            CloseFile();
+            return true;
         }
 
         #endregion

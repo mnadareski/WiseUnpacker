@@ -4,14 +4,14 @@ using System.Text;
 using SabreTools.IO;
 using SabreTools.Models.PortableExecutable;
 using WiseUnpacker.Files;
-using WiseUnpacker.Inflation;
+using WiseUnpacker.HWUN;
 
 namespace WiseUnpacker
 {
     public class WiseUnpacker
     {
         // Inflation helper
-        private InflateImpl? inflate;
+        private Inflation.InflateImpl? inflate;
 
         // IO values
         private MultiPartFile? inputFile;
@@ -35,6 +35,15 @@ namespace WiseUnpacker
         public WiseUnpacker()
         {
             inflate = null;
+        }
+
+        /// <summary>
+        /// Extract a file to an output using HWUN
+        /// </summary>
+        public bool ExtractToHWUN(string file, string outputPath, string? options = null)
+        {
+            var hwun = new Unpacker();
+            return hwun.Run(file, outputPath, options);
         }
 
         /// <summary>
@@ -552,7 +561,7 @@ namespace WiseUnpacker
         /// <param name="outputPath">Output directory for extracted files</param>
         private void Inflate(MultiPartFile inf, string outputPath)
         {
-            inflate = new InflateImpl(inf, outputPath);
+            inflate = new Inflation.InflateImpl(inf, outputPath);
             inflate.SI_INFLATE();
             inflate.Close();
         }
