@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using SabreTools.Models.Logiqx;
 using static WiseUnpacker.HWUN.HexaDeci;
 
 namespace WiseUnpacker.HWUN
@@ -16,11 +17,11 @@ namespace WiseUnpacker.HWUN
 
         // Extraction State
         private readonly InflateImpl inflater = new();
-        public uint offsa;
-        public uint offsr;
-        public uint FileStart;
-        public uint FileEnd;
-        public uint Extracted;
+        private uint _approxOffset;
+        private uint _realOffset;
+        private uint _fileStart;
+        private uint _fileEnd;
+        private uint _extracted;
 
         // Options
         private uint _rollback;
@@ -31,11 +32,9 @@ namespace WiseUnpacker.HWUN
 
         #region HWUN main section
 
-        private string? olddir;
-
         private bool OpenFile(string name)
         {
-            bool opened = MultipartFile.Open(Path.Combine(olddir!, name), out _inputFile);
+            bool opened = MultipartFile.Open(name, out _inputFile);
             if (opened)
             {
                 if (name[name.Length - 3] == '.')
@@ -43,13 +42,13 @@ namespace WiseUnpacker.HWUN
             }
             else
             {
-                opened = MultipartFile.Open(Path.Combine(olddir!, $"{name}.exe"), out _inputFile);
+                opened = MultipartFile.Open($"{name}.exe", out _inputFile);
             }
 
             if (opened)
             {
                 byte fileno = 2;
-                while (_inputFile!.Append(olddir + Path.DirectorySeparatorChar + name + ".w" + (char)(fileno / 10 + 48) + (char)(fileno % 10 + 48)))
+                while (_inputFile!.Append($"{name}.w{fileno:x}"))
                 {
                     fileno++;
                 }
@@ -71,50 +70,50 @@ namespace WiseUnpacker.HWUN
 
             _inputFile!.Seek(0x0000);
             _inputFile!.BlockRead(buf, 0xc000);
-            offsr = 0xbffc;
+            _realOffset = 0xbffc;
 
             uint l2 = 0;
-            while (((buf[offsa] != 0x00) || (buf[offsa + 1] != 0x00)) && offsa > 0x20 && l2 != 1)
+            while (((buf[_approxOffset] != 0x00) || (buf[_approxOffset + 1] != 0x00)) && _approxOffset > 0x20 && l2 != 1)
             {
-                offsa--;
-                if (buf[offsa] == 0x00 && buf[offsa + 1] == 0x00)
+                _approxOffset--;
+                if (buf[_approxOffset] == 0x00 && buf[_approxOffset + 1] == 0x00)
                 {
                     l1 = 0;
                     for (l0 = 0x01; l0 <= 0x20; l0++)
                     {
-                        if (buf[offsa - l0] == 0x00)
+                        if (buf[_approxOffset - l0] == 0x00)
                             l1++;
                     }
                     if (l1 < 0x04)
-                        offsa -= 2;
+                        _approxOffset -= 2;
                 }
             }
 
-            offsa += 2;
+            _approxOffset += 2;
 
-            while (buf[offsa + 3] == 0x00 && offsa + 4 < 0xc000)
+            while (buf[_approxOffset + 3] == 0x00 && _approxOffset + 4 < 0xc000)
             {
-                offsa += 4;
+                _approxOffset += 4;
             }
 
-            if (buf[offsa] <= 0x20 && buf[offsa + 1] > 0x00 && buf[offsa + 1] + offsa + 3 < 0xc000)
+            if (buf[_approxOffset] <= 0x20 && buf[_approxOffset + 1] > 0x00 && buf[_approxOffset + 1] + _approxOffset + 3 < 0xc000)
             {
-                l1 = (uint)(buf[offsa + 1] + 0x02);
+                l1 = (uint)(buf[_approxOffset + 1] + 0x02);
                 l2 = 0x00;
                 for (l0 = 0x02; l0 <= l1 - 0x01; l0++)
                 {
-                    if (buf[offsa + l0] >= 0x80)
+                    if (buf[_approxOffset + l0] >= 0x80)
                         l2++;
                 }
 
                 if (l2 * 0x100 / l1 < 0x10)
-                    offsa += l1;
+                    _approxOffset += l1;
             }
 
             l0 = 0x02;
-            while (l2 != 0x04034b50 && l0 < 0x80 && offsa - l0 >= 0 && offsa - l0 <= 0xbffc)
+            while (l2 != 0x04034b50 && l0 < 0x80 && _approxOffset - l0 >= 0 && _approxOffset - l0 <= 0xbffc)
             {
-                l2 = BitConverter.ToUInt32(buf, (int)(offsa - l0));
+                l2 = BitConverter.ToUInt32(buf, (int)(_approxOffset - l0));
                 l0++;
             }
 
@@ -123,14 +122,14 @@ namespace WiseUnpacker.HWUN
                 _pkzip = true;
                 l0 = 0x0000;
                 l1 = 0x0000;
-                while (l1 != 0x04034b50 && l0 < offsa)
+                while (l1 != 0x04034b50 && l0 < _approxOffset)
                 {
                     l1 = BitConverter.ToUInt32(buf, (int)l0);
                     l0++;
                 }
 
                 l0--;
-                offsa = l0;
+                _approxOffset = l0;
                 if (l1 != 0x04034b50)
                     _pkzip = false;
             }
@@ -140,30 +139,30 @@ namespace WiseUnpacker.HWUN
             }
         }
 
-        private void FindReal()
+        private void FindReal(string dir)
         {
             byte[] newcrcbytes = new byte[4];
             uint newcrc = 0, pos;
 
             if (!_pkzip)
             {
-                if (offsa < 0x100)
-                    offsa = 0x100;
-                else if (offsa >= 0xbf00)
-                    offsa = 0xbf00;
+                if (_approxOffset < 0x100)
+                    _approxOffset = 0x100;
+                else if (_approxOffset >= 0xbf00)
+                    _approxOffset = 0xbf00;
             }
 
-            if (offsa >= 0x0000 && offsa <= 0xffff)
+            if (_approxOffset >= 0x0000 && _approxOffset <= 0xffff)
             {
                 // "Detecting real archive offset"
                 pos = 0x0000;
                 do
                 {
-                    _inputFile!.Seek(offsa + pos);
-                    inflater.Inflate(_inputFile!, "WISE0001");
+                    _inputFile!.Seek(_approxOffset + pos);
+                    inflater.Inflate(_inputFile!, Path.Combine(dir, "WISE0001"));
                     _inputFile!.BlockRead(newcrcbytes, 4);
                     newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                    offsr = offsa + pos;
+                    _realOffset = _approxOffset + pos;
                     pos++;
                 } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
 
@@ -174,11 +173,11 @@ namespace WiseUnpacker.HWUN
                         pos = (uint)-1;
                         do
                         {
-                            _inputFile!.Seek(offsa + pos);
-                            inflater.Inflate(_inputFile!, "WISE0001");
+                            _inputFile!.Seek(_approxOffset + pos);
+                            inflater.Inflate(_inputFile!, Path.Combine(dir, "WISE0001"));
                             _inputFile!.BlockRead(newcrcbytes, 4);
                             newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                            offsr = offsa + pos;
+                            _realOffset = _approxOffset + pos;
                             pos--;
                         } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != (uint)-0x100);
                     }
@@ -196,7 +195,7 @@ namespace WiseUnpacker.HWUN
                 {
                     // "ERROR: The file doesn''t seem to be a WISE installation"
                     _realfound = false;
-                    offsr = 0xffffffff;
+                    _realOffset = 0xffffffff;
                 }
                 else
                 {
@@ -205,7 +204,7 @@ namespace WiseUnpacker.HWUN
             }
         }
 
-        private void ExtractFiles()
+        private void ExtractFiles(string dir)
         {
             uint newcrc = 0;
             byte[] newcrcbytes = new byte[4];
@@ -215,11 +214,11 @@ namespace WiseUnpacker.HWUN
             byte[] len1bytes = new byte[2], len2bytes = new byte[2];
 
             // "Extracting files"
-            _dumpFile = File.OpenWrite("WISE0000");
-            _inputFile!.Seek(offsr);
+            _dumpFile = File.OpenWrite(Path.Combine(dir, "WISE0000"));
+            _inputFile!.Seek(_realOffset);
             do
             {
-                Extracted++;
+                _extracted++;
                 fs = _inputFile!.FilePosition;
                 if (_pkzip)
                 {
@@ -235,13 +234,13 @@ namespace WiseUnpacker.HWUN
                         _inputFile!.BlockRead(buf, (ushort)(len1 + len2));
                 }
 
-                inflater.Inflate(_inputFile!, "WISE" + Hexa(Extracted));
-                FileStart = fs;
+                inflater.Inflate(_inputFile!, Path.Combine(dir, $"WISE{Hexa(_extracted)}"));
+                _fileStart = fs;
 
                 if (_pkzip)
                     inflater.CRC = 0x04034b50;
 
-                FileEnd = FileStart + inflater.InputSize - 1;
+                _fileEnd = _fileStart + inflater.InputSize - 1;
                 if (inflater.Result == 0x0000)
                 {
                     _inputFile!.BlockRead(newcrcbytes, 4);
@@ -255,10 +254,10 @@ namespace WiseUnpacker.HWUN
                         attempt++;
                     }
 
-                    FileEnd = _inputFile!.FilePosition - 1;
+                    _fileEnd = _inputFile!.FilePosition - 1;
                     if (_pkzip)
                     {
-                        FileEnd -= 4;
+                        _fileEnd -= 4;
                         _inputFile!.Seek(_inputFile!.FilePosition - 4);
                     }
                 }
@@ -269,14 +268,14 @@ namespace WiseUnpacker.HWUN
                     newcrc = 0xfffffffe;
                 }
 
-                _dumpFile.Write(BitConverter.GetBytes(FileStart), 0, 4);
+                _dumpFile.Write(BitConverter.GetBytes(_fileStart), 0, 4);
             } while (newcrc != inflater.CRC);
 
-            _dumpFile.Write(BitConverter.GetBytes(FileEnd), 0, 4);
+            _dumpFile.Write(BitConverter.GetBytes(_fileEnd), 0, 4);
             _dumpFile.Close();
         }
 
-        private void RenameFiles()
+        private void RenameFiles(string dir)
         {
             var bf = new BufferedFile();
             var df = new BufferedFile();
@@ -290,10 +289,10 @@ namespace WiseUnpacker.HWUN
             fileno = 0;
             res = 1;
             instcnt = 0;
-            while (fileno < Extracted && fileno < 6 && res != 0)
+            while (fileno < _extracted && fileno < 6 && res != 0)
             {
                 fileno++;
-                bf.Open("WISE" + Hexa(fileno));
+                bf.Open(Path.Combine(dir, $"WISE{Hexa(fileno)}"));
                 l = 0x0000;
                 while (res != 0 && l < bf.FileSize)
                 {
@@ -315,10 +314,10 @@ namespace WiseUnpacker.HWUN
                     bf.Close();
             }
 
-            if (fileno < 6 && fileno < Extracted)
+            if (fileno < 6 && fileno < _extracted)
             {
                 // "Calculating offset shift value"
-                df.Open("WISE0000");
+                df.Open(Path.Combine(dir, "WISE0000"));
                 l5 = (df.FileSize - 0x04) / 0x04;
 
                 do
@@ -429,7 +428,7 @@ namespace WiseUnpacker.HWUN
                                 else
                                     l0++;
                             }
-                            f = File.OpenWrite("WISE" + Hexa(l1));
+                            f = File.OpenWrite(Path.Combine(dir, $"WISE{Hexa(l1)}"));
 
                             // Make directories
                             l0 = 0;
@@ -445,7 +444,7 @@ namespace WiseUnpacker.HWUN
                             // Rename file
                             do
                             {
-                                var tempout = File.OpenWrite(nn);
+                                var tempout = File.OpenWrite(Path.Combine(dir, nn));
 #if NET20 || NET35
                                 byte[] tempbytes = new byte[f.Length];
                                 f.Read(tempbytes, 0, tempbytes.Length);
@@ -472,7 +471,7 @@ namespace WiseUnpacker.HWUN
                             instcnt++;
 
                             // Rename file
-                            f = File.OpenWrite("WISE" + Hexa(l1));
+                            f = File.OpenWrite(Path.Combine(dir, $"WISE{Hexa(l1)}"));
                         }
                     }
                 }
@@ -490,8 +489,6 @@ namespace WiseUnpacker.HWUN
         public void Run(string name, string dir, string? options = null)
         {
             Directory.CreateDirectory(dir);
-            olddir = Environment.CurrentDirectory.TrimEnd('\\');
-            Environment.CurrentDirectory = dir;
             _rollback = 0;
             unchecked { _userOffset = (uint)-1; }
             _renaming = true;
@@ -524,29 +521,27 @@ namespace WiseUnpacker.HWUN
                 if (!_pkzip)
                 {
                     if (_userOffset >= 0)
-                        offsa = _userOffset;
+                        _approxOffset = _userOffset;
                     else
-                        offsa -= _rollback;
+                        _approxOffset -= _rollback;
 
-                    FindReal();
+                    FindReal(dir);
                     if (_realfound)
                     {
-                        ExtractFiles();
+                        ExtractFiles(dir);
                         if (_renaming)
-                            RenameFiles();
+                            RenameFiles(dir);
                     }
                 }
                 else
                 {
-                    offsr = offsa;
-                    ExtractFiles();
+                    _realOffset = _approxOffset;
+                    ExtractFiles(dir);
                     if (_renaming)
-                        RenameFiles();
+                        RenameFiles(dir);
                 }
                 CloseFile();
             }
-
-            Environment.CurrentDirectory = olddir;
         }
 
         #endregion
