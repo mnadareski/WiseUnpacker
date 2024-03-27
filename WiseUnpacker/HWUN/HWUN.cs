@@ -575,7 +575,7 @@ namespace WiseUnpacker.HWUN
                         _inputFile!.BlockRead(buf, (ushort)(len1 + len2));
                 }
 
-                invflatev.Inflate(_inputFile!, "WISE" + Hexa(BitConverter.GetBytes(scrnv.extract), 4));
+                invflatev.Inflate(_inputFile!, "WISE" + Hexa(scrnv.extract));
                 scrnv.filestart = fs;
 
                 if (_pkzip)
@@ -633,7 +633,7 @@ namespace WiseUnpacker.HWUN
             while (fileno < scrnv.extract && fileno < 6 && res != 0)
             {
                 fileno++;
-                bf.Open("WISE" + Hexa(BitConverter.GetBytes(fileno), 4));
+                bf.Open("WISE" + Hexa(fileno));
                 l = 0x0000;
                 while (res != 0 && l < bf.fs)
                 {
@@ -769,7 +769,7 @@ namespace WiseUnpacker.HWUN
                                 else
                                     l0++;
                             }
-                            f = File.OpenWrite("WISE" + Hexa(BitConverter.GetBytes(l1), 4));
+                            f = File.OpenWrite("WISE" + Hexa(l1));
 
                             // Make directories
                             l0 = 0;
@@ -812,7 +812,7 @@ namespace WiseUnpacker.HWUN
                             instcnt++;
 
                             // Rename file
-                            f = File.OpenWrite("WISE" + Hexa(BitConverter.GetBytes(l1), 4));
+                            f = File.OpenWrite("WISE" + Hexa(l1));
                         }
                     }
                 }

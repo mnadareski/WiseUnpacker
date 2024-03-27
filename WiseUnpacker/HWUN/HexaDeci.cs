@@ -1,38 +1,41 @@
+using System;
+
 namespace WiseUnpacker.HWUN
 {
     internal static class HexaDeci
     {
-        public static string Hexa(byte[] L, byte B1)
-        {
-            string S; byte B0, B2;
-            S = "";
-            for (B0 = 1; B0 <= B1; B0++)
-            {
-                if (B0 % 2 == 1)
-                    B2 = (byte)(L[B0] % 16);
-                else
-                    B2 = (byte)(L[B0] / 16);
+        /// <summary>
+        /// Convert a word value to hex string
+        /// </summary>
+        public static string Hexa(uint value)
+            => Hexa(BitConverter.GetBytes(value), 4);
 
-                if (B2 < 0x0a)
-                    S = (char)(0x30 + B2) + S;
-                else
-                    S = (char)(0x37 + B2) + S;
-            }
-            return S;
-        }
+        /// <summary>
+        /// Convert a byte array value to hex string
+        /// </summary>
+        public static string Hexa(byte[] value, byte length)
+            => BitConverter.ToString(value, 0, length).Replace("-", string.Empty);
 
-        public static uint Deci(string S)
+        /// <summary>
+        /// Convert a hex string to a word value
+        /// </summary>
+        public static uint Deci(string value)
         {
-            byte B; uint L;
-            L = 0;
-            for (B = 1; B < S.Length; B++)
+            uint output = 0;
+
+            value = value.ToUpperInvariant();
+            for (byte i = 1; i < value.Length; i++)
             {
-                if (((byte)S[B] >= 0x30) && ((byte)S[B] <= 0x39))
-                    L = L * 16 + (byte)S[B] - 0x30;
-                else if (((byte)char.ToUpperInvariant(S[B]) >= 0x41) && ((byte)char.ToUpperInvariant(S[B]) <= 0x46))
-                    L = L * 16 + (byte)char.ToUpperInvariant(S[B]) - 0x37;
+                // 0-9
+                if ((value[i] >= 0x30) && (value[i] <= 0x39))
+                    output = output * 16 + value[i] - 0x30;
+
+                // A-Z
+                else if (value[i] >= 0x41 && value[i] <= 0x46)
+                    output = output * 16 + value[i] - 0x37;
             }
-            return L;
+
+            return output;
         }
     }
 }
