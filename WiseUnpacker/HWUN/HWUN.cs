@@ -279,7 +279,7 @@ namespace WiseUnpacker.HWUN
         #region Inflate Read/Write section
 
         public InflateImpl invflatev = new();
-        public class InflateImpl : SINFLATE
+        public class InflateImpl : SecureInflate
         {
             public MultipartFile? Input { get; private set; }
             public Stream? Output { get; private set; }

@@ -128,33 +128,15 @@ EXAMPLE MAIN PROGRAM USING THIS UNIT
   end.
 */
 
-using System;
-
 namespace WiseUnpacker.HWUN
 {
-    internal interface ISINFLATE
-    {
-        byte SI_READ();
-        void SI_WRITE(ushort amount);
-
-        /// <summary>
-        /// returns a text describing the occured error
-        /// </summary>
-        string SI_GETERROR();
-
-        /// <summary>
-        /// starts the inflate process
-        /// </summary>
-        unsafe void SI_INFLATE();
-    }
-
-    internal abstract class SINFLATE : ISINFLATE
+    internal abstract class SecureInflate
     {
         /// <summary>
         /// The break variable, set it to TRUE if you want to break the
         /// inflate process at any time (use it in SI_READ or SI_WRITE)
         /// </summary>
-        public bool SI_BREAK { get; protected set; } = false;
+        protected bool SI_BREAK = false;
 
         /// <summary>
         /// The type for the uncompressed data array ("sliding" window), must
@@ -163,7 +145,7 @@ namespace WiseUnpacker.HWUN
         /// This is the type'd pointer variable for the sliding window, it must be
         /// allocated and deallocated by the main program
         /// </summary>
-        public byte[] SI_WINDOW { get; private set; } = new byte[0x8000];
+        protected byte[] SI_WINDOW = new byte[0x8000];
 
         /// <summary>
         /// The actual window position when increased from $7fff to $8000 then
@@ -171,7 +153,7 @@ namespace WiseUnpacker.HWUN
         /// Don't change it during the inflate process, just read it for
         /// further information on the process of inflate!!!
         /// </summary>
-        public ushort SI_POSITION { get; private set; }
+        private ushort SI_POSITION;
 
         /// <summary>
         /// This is the error indicator which is set when breaking an inflate
@@ -197,32 +179,36 @@ namespace WiseUnpacker.HWUN
         ///  b = actual block type      0-2 = block type b
         ///                             3   = illegal block type (error)
         /// </summary>
-        public ushort SI_ERROR { get; private set; }
+        protected ushort SI_ERROR;
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Returns a text describing the occured error
+        /// </summary>
         public string SI_GETERROR()
         {
             string s = string.Empty;
             if ((SI_ERROR & 0xc000) == 0x0000)
-                s = "okay";
-            else if ((SI_ERROR & 0x4000) == 0x4000)
-                s = "user break";
-            else
             {
-                if ((SI_ERROR & 0x0020) == 0x0020)
+                s = "okay";
+            }
+            else if ((SI_ERROR & 0x4000) == 0x4000)
+            {
+                s = "user break";
+            }
+            else if ((SI_ERROR & 0x0020) == 0x0020)
+            {
+                s = "block header corrupt";
+                if ((SI_ERROR & 0x000c) != 0x0000)
                 {
-                    s = "block header corrupt";
-                    if ((SI_ERROR & 0x000c) != 0x0000)
-                    {
-                        s = s + ", ";
-                        if ((SI_ERROR & 0x000c) == 0x0004) s = s + "lengthcode tree";
-                        else if ((SI_ERROR & 0x000c) == 0x0008) s = s + "literal tree";
-                        else if ((SI_ERROR & 0x000c) == 0x000c) s = s + "distance tree";
-                        s = s + " is ";
-                        if ((SI_ERROR & 0x0010) == 0x0000) s = s + "incomplete"; else s = s + "full";
-                    }
+                    s += ", ";
+                    if ((SI_ERROR & 0x000c) == 0x0004) s += "lengthcode tree";
+                    else if ((SI_ERROR & 0x000c) == 0x0008) s += "literal tree";
+                    else if ((SI_ERROR & 0x000c) == 0x000c) s += "distance tree";
+                    s += " is ";
+                    if ((SI_ERROR & 0x0010) == 0x0000) s += "incomplete"; else s += "full";
                 }
             }
+
             return s;
         }
 
@@ -751,6 +737,9 @@ namespace WiseUnpacker.HWUN
 
         public abstract void SI_WRITE(ushort amount);
 
+        /// <summary>
+        /// Starts the inflate process
+        /// </summary>
         public unsafe void SI_INFLATE()
         {
             byte LastBlock = 0, BlockType;
