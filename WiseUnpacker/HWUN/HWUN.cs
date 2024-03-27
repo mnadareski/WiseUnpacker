@@ -4,359 +4,28 @@ using static WiseUnpacker.HWUN.HexaDeci;
 
 namespace WiseUnpacker.HWUN
 {
-    internal class HWUN
+    internal partial class HWUN
     {
+        #region Instance Variables
+
         // State
         private MultipartFile? _inputFile;
         private Stream? _dumpFile;
         private bool _pkzip;
         private bool _realfound;
 
+        // Extraction State
+        private readonly InflateImpl inflater = new();
+        public uint offsa;
+        public uint offsr;
+        public uint FileStart;
+        public uint FileEnd;
+        public uint Extracted;
+
         // Options
         private uint _rollback;
         private uint _userOffset;
         private bool _renaming;
-
-        #region Read-Only Multifile Section
-
-        public unsafe class BufferedFile
-        {
-            public Stream? FileHandle { get; private set; }
-            public string? FileName { get; private set; }
-            public byte[] Buffer { get; private set; } = new byte[0x8000]; // [$0000..$7fff]
-            public uint Error { get; private set; }
-            public uint bo { get; private set; }
-            public uint fs { get; private set; }
-            public uint FilePosition { get; private set; }
-
-            public void Open(string s)
-            {
-                FileHandle = File.OpenRead(s);
-                Buffer = new byte[0x8000];
-                // b = &bf.bfilebuf[0]
-                fs = (uint)FileHandle.Length;
-                bo = 0xffff0000;
-                FilePosition = 0x00000000;
-            }
-
-            public void Close()
-            {
-                Buffer = [];
-                FileHandle?.Close();
-            }
-
-            public bool Valid(uint p)
-            {
-                return p >= 0 && p < fs;
-            }
-
-            public bool InMem(uint p, uint l)
-            {
-                return (p >= bo) && (p + 1 <= bo + 0x8000);
-            }
-
-            public bool EOF()
-            {
-                return FilePosition == fs;
-            }
-
-            public void FillBuffer(uint p)
-            {
-                bo = p - 0x4000;
-                if (bo < 0x0000)
-                    bo = 0x0000;
-                if (bo + 0x8000 > fs)
-                    bo = fs - 0x8000;
-
-                // filesize <$8000
-                if (bo < 0)
-                {
-                    bo = 0;
-                    FileHandle!.Seek(bo, SeekOrigin.Begin);
-                    FileHandle.Read(Buffer!, 0, (int)fs);
-                }
-                else
-                {
-                    FileHandle!.Seek(bo, SeekOrigin.Begin);
-                    FileHandle.Read(Buffer!, 0, 0x8000);
-                }
-                FilePosition = p;
-            }
-
-            public byte ReadByte()
-                => ReadByte(FilePosition);
-
-            public byte ReadByte(uint p)
-            {
-                byte res = 0;
-                if (Valid(p))
-                {
-                    if (!InMem(p, 1))
-                        FillBuffer(p);
-
-                    res = Buffer![FilePosition - bo];
-                    FilePosition++;
-                }
-                else
-                {
-                    Error = 1;
-                }
-
-                return res;
-            }
-
-            public ushort ReadWord()
-                => ReadWord(FilePosition);
-
-            public ushort ReadWord(uint p)
-            {
-                ushort res = 0;
-                if (Valid(p))
-                {
-                    if (!InMem(p, 2))
-                        FillBuffer(p);
-
-                    res = BitConverter.ToUInt16(Buffer!, (int)(p - bo));
-                    FilePosition++;
-                }
-                else
-                {
-                    Error = 1;
-                }
-
-                return res;
-            }
-
-            public uint ReadLongInt()
-                => ReadLongInt(FilePosition);
-
-            public uint ReadLongInt(uint p)
-            {
-                uint res = 0;
-                if (Valid(p))
-                {
-                    if (!InMem(p, 4))
-                        FillBuffer(p);
-
-                    res = BitConverter.ToUInt32(Buffer!, (int)(p - bo));
-                    FilePosition++;
-                }
-                else
-                {
-                    Error = 1;
-                }
-
-                return res;
-            }
-
-            public void Seek(uint p)
-            {
-                FilePosition = p;
-            }
-        }
-
-        public class MultipartFile
-        {
-            public Stream? FileHandle { get; private set; }
-            public uint fs { get; private set; }
-            public uint FilePosition { get; private set; }
-            public uint FileEnd { get; private set; }
-            public uint FileLength { get; private set; }
-            public MultipartFile? Next { get; private set; }
-            // public MultipartFileBuffer? FileBuffer { get; private set; }
-
-            public static bool Open(string name, out MultipartFile? mf)
-            {
-                try
-                {
-                    mf = new MultipartFile();
-
-                    mf.FileHandle = File.OpenRead(name);
-                    mf.fs = 0;
-                    mf.FilePosition = 0;
-                    mf.FileEnd = (uint)(mf.FileHandle.Length - 1);
-                    mf.FileLength = mf.FileEnd + 1;
-                    mf.Next = null;
-
-                    return true;
-                }
-                catch
-                {
-                    mf = null;
-                    return false;
-                }
-            }
-
-            public bool Append(string name)
-            {
-                MultipartFile mf = this;
-                while (mf.Next != null)
-                {
-                    mf = mf.Next;
-                }
-
-                if (Open(name, out MultipartFile? next))
-                {
-                    mf.Next = next;
-                    mf.Next!.fs = FileLength;
-                    mf.Next.FileEnd += FileLength;
-                    FileLength = mf.Next.FileEnd + 1;
-                    return true;
-                }
-                else
-                {
-                    mf.Next = null;
-                    return false;
-                }
-            }
-
-            public void Seek(uint pos)
-            {
-                FilePosition = pos;
-            }
-
-            public void Close()
-            {
-                Next?.Close();
-                FileHandle?.Close();
-            }
-
-            public bool BlockRead(byte[] buffer, ushort amount)
-            {
-                MultipartFile mf = this;
-                while (FilePosition > mf.FileEnd && mf.Next != null)
-                {
-                    mf = mf.Next;
-                }
-
-                if (FilePosition > mf.FileEnd)
-                    return false;
-
-                mf.FileHandle!.Seek(FilePosition - mf.fs, SeekOrigin.Begin);
-                if (mf.FileEnd + 1 - FilePosition > amount)
-                {
-                    mf.FileHandle.Read(buffer, 0, amount);
-                    FilePosition += amount;
-                }
-                else
-                {
-                    byte[] buf = new byte[0xffff];
-                    uint bufpos = 0;
-                    do
-                    {
-                        if (mf!.FileEnd + 1 < FilePosition + amount - bufpos)
-                        {
-                            mf.FileHandle!.Read(buf, (int)bufpos, (int)(mf.FileEnd + 1 - FilePosition));
-                            bufpos += mf.FileEnd + 1 - FilePosition;
-                            FilePosition = mf.FileEnd + 1;
-                            mf = mf.Next!;
-                        }
-                        else
-                        {
-                            mf.FileHandle!.Read(buf, (int)bufpos, (int)(amount - bufpos));
-                            FilePosition += amount - bufpos;
-                            bufpos = amount;
-                        }
-                    } while (bufpos != amount);
-
-                    Array.Copy(buf, buffer, amount);
-                }
-
-                return true;
-            }
-        }
-
-        // public class MultipartFileBuffer
-        // {
-        //     public byte[] Buffer = new byte[0x8000];
-        //     public ushort bp;
-        //     public uint bs;
-        //     public uint be;
-        // }
-
-        #endregion
-
-        #region Inflate Read/Write section
-
-        public InflateImpl invflatev = new();
-        public class InflateImpl : SecureInflate
-        {
-            public MultipartFile? Input { get; private set; }
-            public Stream? Output { get; private set; }
-            public byte[] InputBuffer { get; private set; } = new byte[0x4000];
-            public ushort InputBufferPosition { get; private set; }
-            public ushort InputBufferSize { get; private set; }
-            public uint InputSize { get; private set; }
-            public uint OutputSize { get; private set; }
-            public ushort Result { get; private set; }
-            public uint CRC { get; set; }
-
-            public void Inflate(MultipartFile inf, string outf)
-            {
-                InputBuffer = new byte[0x4000];
-                Input = inf;
-                Output = File.OpenWrite(outf);
-                InputSize = 0;
-                OutputSize = 0;
-                InputBufferSize = (ushort)InputBuffer.Length;
-                InputBufferPosition = InputBufferSize;
-
-                CRC = CRC32.Start();
-                SI_INFLATE();
-                inf.Seek(inf.FilePosition - InputBufferSize + InputBufferPosition);
-                CRC = CRC32.End(CRC);
-
-                Result = SI_ERROR;
-                Output.Close();
-                InputBuffer = [];
-            }
-
-            public override byte SI_READ()
-            {
-                if (InputBufferPosition >= InputBufferSize)
-                {
-                    if (Input!.FilePosition == Input!.FileLength)
-                    {
-                        SI_BREAK = true;
-                    }
-                    else
-                    {
-                        if (InputBufferSize > Input!.FileLength - Input!.FilePosition)
-                            InputBufferSize = (ushort)(Input!.FileLength - Input!.FilePosition);
-
-                        Input!.BlockRead(InputBuffer, InputBufferSize);
-                        InputBufferPosition = 0x0000;
-                    }
-                }
-
-                byte inflateread = InputBuffer[InputBufferPosition];
-                InputSize++;
-                InputBufferPosition++;
-                return inflateread;
-            }
-
-            public override void SI_WRITE(ushort amount)
-            {
-                OutputSize += amount;
-                Output!.Write(SI_WINDOW, 0, amount);
-                CRC = CRC32.Add(CRC, SI_WINDOW, amount);
-            }
-        }
-
-        public Screen scrnv = new();
-        public class Screen
-        {
-            public uint offsa;
-            public uint offsr;
-            public uint filestart;
-            public uint fileend;
-            public uint extract;
-        }
-
-        private void writestatus(string s)
-        {
-            Console.Write(s);
-        }
 
         #endregion
 
@@ -366,34 +35,27 @@ namespace WiseUnpacker.HWUN
 
         private bool OpenFile(string name)
         {
-            string fn = name;
-            bool bo = MultipartFile.Open(Path.Combine(olddir!, fn), out _inputFile);
-            if (bo)
+            bool opened = MultipartFile.Open(Path.Combine(olddir!, name), out _inputFile);
+            if (opened)
             {
-                if (fn[fn.Length - 3] == '.')
-                    fn = fn.Substring(0, fn.Length - 4);
+                if (name[name.Length - 3] == '.')
+                    name = name.Substring(0, name.Length - 4);
             }
             else
             {
-                bo = MultipartFile.Open(Path.Combine(olddir!, $"{name}.exe"), out _inputFile);
+                opened = MultipartFile.Open(Path.Combine(olddir!, $"{name}.exe"), out _inputFile);
             }
 
-            if (bo)
+            if (opened)
             {
-                writestatus("Installation is made of 01 file");
                 byte fileno = 2;
-                while (_inputFile!.Append(olddir + Path.DirectorySeparatorChar + fn + ".w" + (char)(fileno / 10 + 48) + (char)(fileno % 10 + 48)))
+                while (_inputFile!.Append(olddir + Path.DirectorySeparatorChar + name + ".w" + (char)(fileno / 10 + 48) + (char)(fileno % 10 + 48)))
                 {
-                    writestatus("Installation is made of " + (char)(fileno / 10 + 48) + (char)(fileno % 10 + 48) + " files");
                     fileno++;
                 }
             }
-            else
-            {
-                writestatus("ERROR: File could not be opened");
-            }
 
-            return bo;
+            return opened;
         }
 
         private void CloseFile()
@@ -407,54 +69,52 @@ namespace WiseUnpacker.HWUN
 
             byte[] buf = new byte[0xc200];
 
-            writestatus("Approximating to archive offset");
-
             _inputFile!.Seek(0x0000);
             _inputFile!.BlockRead(buf, 0xc000);
-            scrnv.offsr = 0xbffc;
+            offsr = 0xbffc;
 
             uint l2 = 0;
-            while (((buf[scrnv.offsa] != 0x00) || (buf[scrnv.offsa + 1] != 0x00)) && scrnv.offsa > 0x20 && l2 != 1)
+            while (((buf[offsa] != 0x00) || (buf[offsa + 1] != 0x00)) && offsa > 0x20 && l2 != 1)
             {
-                scrnv.offsa--;
-                if (buf[scrnv.offsa] == 0x00 && buf[scrnv.offsa + 1] == 0x00)
+                offsa--;
+                if (buf[offsa] == 0x00 && buf[offsa + 1] == 0x00)
                 {
                     l1 = 0;
                     for (l0 = 0x01; l0 <= 0x20; l0++)
                     {
-                        if (buf[scrnv.offsa - l0] == 0x00)
+                        if (buf[offsa - l0] == 0x00)
                             l1++;
                     }
                     if (l1 < 0x04)
-                        scrnv.offsa -= 2;
+                        offsa -= 2;
                 }
             }
 
-            scrnv.offsa += 2;
+            offsa += 2;
 
-            while (buf[scrnv.offsa + 3] == 0x00 && scrnv.offsa + 4 < 0xc000)
+            while (buf[offsa + 3] == 0x00 && offsa + 4 < 0xc000)
             {
-                scrnv.offsa += 4;
+                offsa += 4;
             }
 
-            if (buf[scrnv.offsa] <= 0x20 && buf[scrnv.offsa + 1] > 0x00 && buf[scrnv.offsa + 1] + scrnv.offsa + 3 < 0xc000)
+            if (buf[offsa] <= 0x20 && buf[offsa + 1] > 0x00 && buf[offsa + 1] + offsa + 3 < 0xc000)
             {
-                l1 = (uint)(buf[scrnv.offsa + 1] + 0x02);
+                l1 = (uint)(buf[offsa + 1] + 0x02);
                 l2 = 0x00;
                 for (l0 = 0x02; l0 <= l1 - 0x01; l0++)
                 {
-                    if (buf[scrnv.offsa + l0] >= 0x80)
+                    if (buf[offsa + l0] >= 0x80)
                         l2++;
                 }
 
                 if (l2 * 0x100 / l1 < 0x10)
-                    scrnv.offsa += l1;
+                    offsa += l1;
             }
 
             l0 = 0x02;
-            while (l2 != 0x04034b50 && l0 < 0x80 && scrnv.offsa - l0 >= 0 && scrnv.offsa - l0 <= 0xbffc)
+            while (l2 != 0x04034b50 && l0 < 0x80 && offsa - l0 >= 0 && offsa - l0 <= 0xbffc)
             {
-                l2 = BitConverter.ToUInt32(buf, (int)(scrnv.offsa - l0));
+                l2 = BitConverter.ToUInt32(buf, (int)(offsa - l0));
                 l0++;
             }
 
@@ -463,14 +123,14 @@ namespace WiseUnpacker.HWUN
                 _pkzip = true;
                 l0 = 0x0000;
                 l1 = 0x0000;
-                while (l1 != 0x04034b50 && l0 < scrnv.offsa)
+                while (l1 != 0x04034b50 && l0 < offsa)
                 {
                     l1 = BitConverter.ToUInt32(buf, (int)l0);
                     l0++;
                 }
 
                 l0--;
-                scrnv.offsa = l0;
+                offsa = l0;
                 if (l1 != 0x04034b50)
                     _pkzip = false;
             }
@@ -487,56 +147,56 @@ namespace WiseUnpacker.HWUN
 
             if (!_pkzip)
             {
-                if (scrnv.offsa < 0x100)
-                    scrnv.offsa = 0x100;
-                else if (scrnv.offsa >= 0xbf00)
-                    scrnv.offsa = 0xbf00;
+                if (offsa < 0x100)
+                    offsa = 0x100;
+                else if (offsa >= 0xbf00)
+                    offsa = 0xbf00;
             }
 
-            if (scrnv.offsa >= 0x0000 && scrnv.offsa <= 0xffff)
+            if (offsa >= 0x0000 && offsa <= 0xffff)
             {
-                writestatus("Detecting real archive offset");
+                // "Detecting real archive offset"
                 pos = 0x0000;
                 do
                 {
-                    _inputFile!.Seek(scrnv.offsa + pos);
-                    invflatev.Inflate(_inputFile!, "WISE0001");
+                    _inputFile!.Seek(offsa + pos);
+                    inflater.Inflate(_inputFile!, "WISE0001");
                     _inputFile!.BlockRead(newcrcbytes, 4);
                     newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                    scrnv.offsr = scrnv.offsa + pos;
+                    offsr = offsa + pos;
                     pos++;
-                } while ((invflatev.CRC != newcrc || invflatev.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
+                } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
 
-                if ((invflatev.CRC != newcrc || newcrc == 0x00000000 || invflatev.Result != 0x0000) && pos == 0x100)
+                if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == 0x100)
                 {
                     unchecked
                     {
                         pos = (uint)-1;
                         do
                         {
-                            _inputFile!.Seek(scrnv.offsa + pos);
-                            invflatev.Inflate(_inputFile!, "WISE0001");
+                            _inputFile!.Seek(offsa + pos);
+                            inflater.Inflate(_inputFile!, "WISE0001");
                             _inputFile!.BlockRead(newcrcbytes, 4);
                             newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                            scrnv.offsr = scrnv.offsa + pos;
+                            offsr = offsa + pos;
                             pos--;
-                        } while ((invflatev.CRC != newcrc || invflatev.Result != 0x0000 || newcrc == 0x00000000) && pos != (uint)-0x100);
+                        } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != (uint)-0x100);
                     }
                 }
             }
             else
             {
-                invflatev.CRC = ~newcrc;
+                inflater.CRC = ~newcrc;
                 unchecked { pos = (uint)-0x100; }
             }
 
             unchecked
             {
-                if ((invflatev.CRC != newcrc || newcrc == 0x00000000 || invflatev.Result != 0x0000) && pos == (uint)-0x100)
+                if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == (uint)-0x100)
                 {
-                    writestatus("ERROR: The file doesn''t seem to be a WISE installation");
+                    // "ERROR: The file doesn''t seem to be a WISE installation"
                     _realfound = false;
-                    scrnv.offsr = 0xffffffff;
+                    offsr = 0xffffffff;
                 }
                 else
                 {
@@ -554,12 +214,12 @@ namespace WiseUnpacker.HWUN
             ushort len1, len2;
             byte[] len1bytes = new byte[2], len2bytes = new byte[2];
 
-            writestatus("Extracting files");
+            // "Extracting files"
             _dumpFile = File.OpenWrite("WISE0000");
-            _inputFile!.Seek(scrnv.offsr);
+            _inputFile!.Seek(offsr);
             do
             {
-                scrnv.extract++;
+                Extracted++;
                 fs = _inputFile!.FilePosition;
                 if (_pkzip)
                 {
@@ -575,19 +235,19 @@ namespace WiseUnpacker.HWUN
                         _inputFile!.BlockRead(buf, (ushort)(len1 + len2));
                 }
 
-                invflatev.Inflate(_inputFile!, "WISE" + Hexa(scrnv.extract));
-                scrnv.filestart = fs;
+                inflater.Inflate(_inputFile!, "WISE" + Hexa(Extracted));
+                FileStart = fs;
 
                 if (_pkzip)
-                    invflatev.CRC = 0x04034b50;
+                    inflater.CRC = 0x04034b50;
 
-                scrnv.fileend = scrnv.filestart + invflatev.InputSize - 1;
-                if (invflatev.Result == 0x0000)
+                FileEnd = FileStart + inflater.InputSize - 1;
+                if (inflater.Result == 0x0000)
                 {
                     _inputFile!.BlockRead(newcrcbytes, 4);
                     newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
                     attempt = 0;
-                    while (invflatev.CRC != newcrc && attempt < 8 && _inputFile!.FilePosition + 1 < _inputFile!.FileLength)
+                    while (inflater.CRC != newcrc && attempt < 8 && _inputFile!.FilePosition + 1 < _inputFile!.FileLength)
                     {
                         _inputFile!.Seek(_inputFile!.FilePosition - 3);
                         _inputFile!.BlockRead(newcrcbytes, 4);
@@ -595,52 +255,52 @@ namespace WiseUnpacker.HWUN
                         attempt++;
                     }
 
-                    scrnv.fileend = _inputFile!.FilePosition - 1;
+                    FileEnd = _inputFile!.FilePosition - 1;
                     if (_pkzip)
                     {
-                        scrnv.fileend -= 4;
+                        FileEnd -= 4;
                         _inputFile!.Seek(_inputFile!.FilePosition - 4);
                     }
                 }
 
-                if (invflatev.Result != 0x0000 || newcrc != invflatev.CRC)
+                if (inflater.Result != 0x0000 || newcrc != inflater.CRC)
                 {
-                    invflatev.CRC = 0xffffffff;
+                    inflater.CRC = 0xffffffff;
                     newcrc = 0xfffffffe;
                 }
 
-                _dumpFile.Write(BitConverter.GetBytes(scrnv.filestart), 0, 4);
-            } while (newcrc != invflatev.CRC);
+                _dumpFile.Write(BitConverter.GetBytes(FileStart), 0, 4);
+            } while (newcrc != inflater.CRC);
 
-            _dumpFile.Write(BitConverter.GetBytes(scrnv.fileend), 0, 4);
+            _dumpFile.Write(BitConverter.GetBytes(FileEnd), 0, 4);
             _dumpFile.Close();
         }
 
         private void RenameFiles()
         {
-            BufferedFile bf = new BufferedFile();
-            BufferedFile df = new BufferedFile();
+            var bf = new BufferedFile();
+            var df = new BufferedFile();
             string nn = string.Empty;
             uint fileno;
             uint sh0 = 0, sh1 = 0, offs, l, l0, l1 = 0, l2, l3 = 0, l4, l5, res;
             uint instcnt;
             Stream f;
 
-            writestatus("Searching for script file");
+            // "Searching for script file"
             fileno = 0;
             res = 1;
             instcnt = 0;
-            while (fileno < scrnv.extract && fileno < 6 && res != 0)
+            while (fileno < Extracted && fileno < 6 && res != 0)
             {
                 fileno++;
                 bf.Open("WISE" + Hexa(fileno));
                 l = 0x0000;
-                while (res != 0 && l < bf.fs)
+                while (res != 0 && l < bf.FileSize)
                 {
-                    while (l < bf.fs && (bf.ReadByte(l + 0) != 0x25) || bf.ReadByte(l + 1) != 0x5c)
+                    while (l < bf.FileSize && (bf.ReadByte(l + 0) != 0x25) || bf.ReadByte(l + 1) != 0x5c)
                         l++;
                 }
-                if (l < bf.fs)
+                if (l < bf.FileSize)
                 {
                     l1 = 0x01;
                     while (l1 < 0x40 && (bf.ReadByte(l - l1 + 0) != 0x25 || bf.ReadByte(l - l1 + 1) == 0x5c))
@@ -655,11 +315,11 @@ namespace WiseUnpacker.HWUN
                     bf.Close();
             }
 
-            if (fileno < 6 && fileno < scrnv.extract)
+            if (fileno < 6 && fileno < Extracted)
             {
-                writestatus("Calculating offset shift value");
+                // "Calculating offset shift value"
                 df.Open("WISE0000");
-                l5 = (df.fs - 0x04) / 0x04;
+                l5 = (df.FileSize - 0x04) / 0x04;
 
                 do
                 {
@@ -667,7 +327,7 @@ namespace WiseUnpacker.HWUN
                     {
                         l1 = df.ReadLongInt(l5 * 0x04 - 0x04);
                         l2 = df.ReadLongInt(l5 * 0x04 - 0x00);
-                        l = bf.fs - 0x07;
+                        l = bf.FileSize - 0x07;
                         res = 1;
                         while (l >= 0 && res != 0)
                         {
@@ -689,7 +349,7 @@ namespace WiseUnpacker.HWUN
                         {
                             l1 = df.ReadLongInt(l5 * 0x04 - 0x04);
                             l2 = df.ReadLongInt(l5 * 0x04 - 0x00);
-                            l = bf.fs - 0x07;
+                            l = bf.FileSize - 0x07;
                             l = 1;
                             while (l >= 0 && res != 0)
                             {
@@ -711,16 +371,16 @@ namespace WiseUnpacker.HWUN
                 if (res == 0)
                 {
                     // shiftvalue = sh0
-                    writestatus("Renaming files");
+                    // "Renaming files"
                     l5 = 0x04;
-                    while (l5 + 8 < df.fs)
+                    while (l5 + 8 < df.FileSize)
                     {
                         l5 += 0x04;
                         l1 = df.ReadLongInt(l5 + 0x00);
                         l2 = df.ReadLongInt(l5 + 0x04);
                         l0 = 0xffffffff;
                         res = 1;
-                        while (l0 + 0x29 < bf.fs && res != 0)
+                        while (l0 + 0x29 < bf.FileSize && res != 0)
                         {
                             l0++;
                             l3 = bf.ReadLongInt(l0 + 0x00);
@@ -819,11 +479,11 @@ namespace WiseUnpacker.HWUN
 
                 df.Close();
                 bf.Close();
-                writestatus("Job done");
+                // "Job done"
             }
             else
             {
-                writestatus("Scriptfile not found");
+                // "Scriptfile not found"
             }
         }
 
@@ -864,9 +524,9 @@ namespace WiseUnpacker.HWUN
                 if (!_pkzip)
                 {
                     if (_userOffset >= 0)
-                        scrnv.offsa = _userOffset;
+                        offsa = _userOffset;
                     else
-                        scrnv.offsa -= _rollback;
+                        offsa -= _rollback;
 
                     FindReal();
                     if (_realfound)
@@ -878,7 +538,7 @@ namespace WiseUnpacker.HWUN
                 }
                 else
                 {
-                    scrnv.offsr = scrnv.offsa;
+                    offsr = offsa;
                     ExtractFiles();
                     if (_renaming)
                         RenameFiles();
