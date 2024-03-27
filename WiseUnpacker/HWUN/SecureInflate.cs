@@ -218,8 +218,8 @@ namespace WiseUnpacker.HWUN
 
         private ushort[] LengthcodeValueOffset = new ushort[0x11e]; // [$101..$11d]
         private byte[] LengthcodeValueExtrabits = new byte[0x11e]; // [$101..$11d]
-        private ushort[] DistancecodeValueOffset = new ushort[0x01E]; // [$000..$01d]
-        private byte[] DistancecodeValueExtrabits = new byte[0x01E]; // [$000..$01d]
+        private ushort[] DistancecodeValueOffset = new ushort[0x01e]; // [$000..$01d]
+        private byte[] DistancecodeValueExtrabits = new byte[0x01e]; // [$000..$01d]
 
         /// <summary>
         /// Allocates and generates the tables:
@@ -230,32 +230,32 @@ namespace WiseUnpacker.HWUN
         /// </summary>
         private void AllocateStaticTables()
         {
-            byte Pos;
-            ushort LengthcodeOffset, DistancecodeOffset;
-            ushort LengthcodeExtrabits, DistancecodeExtrabits;
-
-            LengthcodeExtrabits = 0;
-            DistancecodeExtrabits = 0;
-            LengthcodeOffset = 0x0003;
-            DistancecodeOffset = 0x0001;
+            ushort LengthcodeExtrabits = 0;
+            ushort DistancecodeExtrabits = 0;
+            ushort LengthcodeOffset = 0x0003;
+            ushort DistancecodeOffset = 0x0001;
 
             LengthcodeValueOffset[0x11d] = 0x0102;
             LengthcodeValueExtrabits[0x11d] = 0x0000;
-            for (Pos = 0x00; Pos <= 0x1d; Pos++)
+            for (int pos = 0x00; pos <= 0x1d; pos++)
             {
                 // increase number of extra bits for length code table every 4th value
-                if (Pos > 0x08 && (Pos & 0x03) == 0x00)
+                if (pos > 0x08 && (pos & 0x03) == 0x00)
                     LengthcodeExtrabits++;
+
                 // increase number of extra bits for distance code table every 2nd value
-                if (Pos > 0x04 && (Pos & 0x01) == 0x00)
+                if (pos > 0x04 && (pos & 0x01) == 0x00)
                     DistancecodeExtrabits++;
+
                 // for pos<=$1c put value entry into length code table
-                if (Pos <= 0x1b) LengthcodeValueOffset[Pos + 0x101] = LengthcodeOffset;
-                if (Pos <= 0x1b) LengthcodeValueExtrabits[Pos + 0x101] = (byte)LengthcodeExtrabits;
+                if (pos <= 0x1b) LengthcodeValueOffset[pos + 0x101] = LengthcodeOffset;
+                if (pos <= 0x1b) LengthcodeValueExtrabits[pos + 0x101] = (byte)LengthcodeExtrabits;
+
                 // put value entry into distance code table
-                DistancecodeValueOffset[Pos] = DistancecodeOffset;
+                DistancecodeValueOffset[pos] = DistancecodeOffset;
                 // write(hexa(DistancecodeOffset,4),'/',hexa(DistancecodeExtrabits,1),'  ');
-                DistancecodeValueExtrabits[Pos] = (byte)DistancecodeExtrabits;
+                DistancecodeValueExtrabits[pos] = (byte)DistancecodeExtrabits;
+
                 // increase length and distance code values
                 LengthcodeOffset += (ushort)(0x0001 << LengthcodeExtrabits);
                 DistancecodeOffset += (ushort)(0x0001 << DistancecodeExtrabits);
@@ -264,10 +264,10 @@ namespace WiseUnpacker.HWUN
 
         private void DeAllocateStaticTables()
         {
-            LengthcodeValueOffset = [];
-            LengthcodeValueExtrabits = [];
-            DistancecodeValueOffset = [];
-            DistancecodeValueExtrabits = [];
+            LengthcodeValueOffset = new ushort[0x11e];
+            LengthcodeValueExtrabits = new byte[0x11e];
+            DistancecodeValueOffset = new ushort[0x01e];
+            DistancecodeValueExtrabits = new byte[0x01e];
         }
 
         #endregion

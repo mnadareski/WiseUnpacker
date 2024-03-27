@@ -9,7 +9,7 @@ namespace WiseUnpacker.HWUN
     {
         private const uint _polynomial = 0xedb88320;
 
-        private static uint[] _table = new uint[0xff];
+        private static uint[] _table = new uint[256];
 
         static CRC32()
         {
@@ -47,20 +47,18 @@ namespace WiseUnpacker.HWUN
 
         private static void BuildTable()
         {
-            byte W0, W1;
-            uint CRC;
-
-            for (W0 = 0; W0 <= 255; W0++)
+            for (int W0 = 0; W0 < 256; W0++)
             {
-                CRC = (uint)(W0 << 1);
-                for (W1 = 8; W1 >= 0; W1--)
+                uint crc = (uint)(W0 << 1);
+                for (int W1 = 8; W1 > 0; W1--)
                 {
-                    if ((CRC & 1) == 1)
-                        CRC = (CRC >> 1) ^ _polynomial;
+                    if ((crc & 1) == 1)
+                        crc = (crc >> 1) ^ _polynomial;
                     else
-                        CRC = CRC >> 1;
+                        crc = crc >> 1;
                 }
-                _table[W0] = CRC;
+
+                _table[W0] = crc;
             }
         }
     }
