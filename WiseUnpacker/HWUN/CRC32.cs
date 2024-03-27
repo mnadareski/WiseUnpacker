@@ -7,10 +7,45 @@ namespace WiseUnpacker.HWUN
 {
     internal static class CRC32
     {
-        private const uint CRCpol = 0xedb88320;
-        private static uint[] CRCtab = new uint[0xff];
+        private const uint _polynomial = 0xedb88320;
 
-        public static void CRCbuildtable()
+        private static uint[] _table = new uint[0xff];
+
+        static CRC32()
+        {
+            BuildTable();
+        }
+
+        public static uint Start()
+        {
+            unchecked { return (uint)-1; }
+        }
+
+        public static uint Add(uint crc, byte b)
+        {
+            return _table[(byte)(crc ^ b)] ^ ((crc >> 8) & 0x00ffffff);
+        }
+
+        public unsafe static uint Add(uint crc, byte[] buffer, ushort length)
+        {
+            if (length == 0)
+                return crc;
+
+            int bufferPtr = 0;
+            for (ushort i = 0; i <= length - 1; i++)
+            {
+                crc = _table[crc ^ buffer[bufferPtr + i]] ^ (crc >> 8);
+            }
+
+            return crc;
+        }
+
+        public static uint End(uint crc)
+        {
+            unchecked { return crc ^ (uint)-1; };
+        }
+
+        private static void BuildTable()
         {
             byte W0, W1;
             uint CRC;
@@ -21,48 +56,12 @@ namespace WiseUnpacker.HWUN
                 for (W1 = 8; W1 >= 0; W1--)
                 {
                     if ((CRC & 1) == 1)
-                        CRC = (CRC >> 1) ^ CRCpol;
+                        CRC = (CRC >> 1) ^ _polynomial;
                     else
                         CRC = CRC >> 1;
                 }
-                CRCtab[W0] = CRC;
+                _table[W0] = CRC;
             }
-        }
-
-        public static uint CRCadd(uint CRC, byte B)
-        {
-            return CRCtab[(byte)(CRC ^ B)] ^ ((CRC >> 8) & 0x00ffffff);
-        }
-
-        public unsafe static uint CRCaddbuffer(uint CRC, byte[] BUF, ushort Len)
-        {
-            if (Len == 0)
-                return CRC;
-
-            fixed (byte* BP = BUF)
-            {
-                for (ushort W = 0; W <= Len - 1; W++)
-                {
-                    CRC = CRCtab[CRC ^ BP[W]] ^ (CRC >> 8);
-                }
-            }
-
-            return CRC;
-        }
-
-        public static uint CRCstart()
-        {
-            unchecked { return (uint)-1; }
-        }
-
-        public static uint CRCend(uint CRC)
-        {
-            unchecked { return CRC ^ (uint)-1; };
-        }
-
-        static CRC32()
-        {
-            CRCbuildtable();
         }
     }
 }

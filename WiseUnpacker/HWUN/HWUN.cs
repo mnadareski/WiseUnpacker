@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using static WiseUnpacker.HWUN.CRC32;
 using static WiseUnpacker.HWUN.HexaDeci;
 
 namespace WiseUnpacker.HWUN
@@ -302,10 +301,10 @@ namespace WiseUnpacker.HWUN
                 InputBufferSize = (ushort)InputBuffer.Length;
                 InputBufferPosition = InputBufferSize;
 
-                CRC = CRCstart();
+                CRC = CRC32.Start();
                 SI_INFLATE();
                 inf.Seek(inf.FilePosition - InputBufferSize + InputBufferPosition);
-                CRC = CRCend(CRC);
+                CRC = CRC32.End(CRC);
 
                 Result = SI_ERROR;
                 Output.Close();
@@ -340,7 +339,7 @@ namespace WiseUnpacker.HWUN
             {
                 OutputSize += amount;
                 Output!.Write(SI_WINDOW, 0, amount);
-                CRC = CRCaddbuffer(CRC, SI_WINDOW, amount);
+                CRC = CRC32.Add(CRC, SI_WINDOW, amount);
             }
         }
 
