@@ -130,7 +130,8 @@ namespace WiseUnpacker.Files
         {
             int bufpos;
 
-            MultiPartFile mf = this;
+            MultiPartFile? mf = this;
+
             while (Position > mf._partEnd && mf._next != null)
             {
                 mf = mf._next;
@@ -147,16 +148,21 @@ namespace WiseUnpacker.Files
             }
             else
             {
-                byte[] buf = new byte[0xffff];
+                byte[] buf = new byte[count];
                 bufpos = 0;
                 do
                 {
+                    if (mf == null)
+                    {
+                        break;
+                    }
+
                     if (mf!._partEnd + 1 < Position + count - bufpos)
                     {
                         mf._stream.Read(buf, bufpos, (int)(mf._partEnd + 1 - Position));
                         bufpos += (int)(mf._partEnd + 1 - Position);
                         Position = mf._partEnd + 1;
-                        mf = mf._next!;
+                        mf = mf._next;
                     }
                     else
                     {
@@ -167,7 +173,7 @@ namespace WiseUnpacker.Files
                 }
                 while (bufpos != count);
 
-                Array.ConstrainedCopy(buf, 0, buffer, offset, count);
+                Array.ConstrainedCopy(buf, 0, buffer, offset, bufpos);
             }
 
             return count;
