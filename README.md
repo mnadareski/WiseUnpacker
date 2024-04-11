@@ -7,4 +7,3 @@ Of note, the majority of the code implementation stems from HWUN. The exception 
 ## Contributions
 
 Contributions to the project are welcome. Please follow the current coding styles.
-
