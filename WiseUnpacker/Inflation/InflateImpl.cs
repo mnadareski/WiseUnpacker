@@ -53,7 +53,7 @@ namespace WiseUnpacker.Inflation
         {
             if (_inputBufferPosition >= _inputBufferSize)
             {
-                if (_inputFile.Position == _inputFile.Length)
+                if (_inputFile.Position >= _inputFile.Length)
                 {
                     SI_BREAK = true;
                     return Byte.MaxValue;
