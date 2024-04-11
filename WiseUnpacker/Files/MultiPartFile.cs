@@ -137,7 +137,7 @@ namespace WiseUnpacker.Files
                 mf = mf._next;
             }
 
-            if (Position > mf._partEnd)
+            if (mf == null || Position > mf._partEnd)
                 return 0;
 
             mf._stream.Seek(Position - mf._partStart, SeekOrigin.Begin);
