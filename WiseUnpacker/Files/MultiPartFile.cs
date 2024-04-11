@@ -153,9 +153,7 @@ namespace WiseUnpacker.Files
                 do
                 {
                     if (mf == null)
-                    {
                         break;
-                    }
 
                     if (mf!._partEnd + 1 < Position + count - bufpos)
                     {
