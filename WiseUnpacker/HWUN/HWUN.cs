@@ -116,7 +116,7 @@ namespace WiseUnpacker.HWUN
         /// </summary>
         private long Approximate(out bool pkzip)
         {
-            // Read the first 0xC200 bytes into a buffer
+            // Read the first 0xC000 bytes into a buffer
             byte[] buf = new byte[0xC200];
             _inputFile.Seek(0x0000, SeekOrigin.Begin);
             _inputFile.Read(buf, 0, 0xC000);
