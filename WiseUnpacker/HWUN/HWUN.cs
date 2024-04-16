@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using SabreTools.IO;
-using static WiseUnpacker.HWUN.HexaDeci;
 
 namespace WiseUnpacker.HWUN
 {
@@ -249,7 +248,7 @@ namespace WiseUnpacker.HWUN
                         _inputFile!.Read(buf, 0, (ushort)(len1 + len2));
                 }
 
-                inflater.Inflate(_inputFile!, Path.Combine(dir, $"WISE{Hexa(_extracted)}"));
+                inflater.Inflate(_inputFile!, Path.Combine(dir, $"WISE{_extracted:X4}"));
                 _fileStart = fs;
 
                 if (_pkzip)
@@ -307,7 +306,7 @@ namespace WiseUnpacker.HWUN
             while (fileno < _extracted && fileno < 6 && res != 0)
             {
                 fileno++;
-                bf = new BufferedFile(Path.Combine(dir, $"WISE{Hexa(fileno)}"));
+                bf = new BufferedFile(Path.Combine(dir, $"WISE{fileno:X4}"));
                 l = 0x0000;
                 while (res != 0 && l < bf.FileSize)
                 {
@@ -443,7 +442,7 @@ namespace WiseUnpacker.HWUN
                                 else
                                     l0++;
                             }
-                            f = File.OpenWrite(Path.Combine(dir, $"WISE{Hexa(l1)}"));
+                            f = File.OpenWrite(Path.Combine(dir, $"WISE{l1:X4}"));
 
                             // Make directories
                             l0 = 0;
@@ -486,7 +485,7 @@ namespace WiseUnpacker.HWUN
                             instcnt++;
 
                             // Rename file
-                            f = File.OpenWrite(Path.Combine(dir, $"WISE{Hexa(l1)}"));
+                            f = File.OpenWrite(Path.Combine(dir, $"WISE{l1:X4}"));
                         }
                     }
                 }
@@ -514,12 +513,12 @@ namespace WiseUnpacker.HWUN
                 {
                     if (char.ToUpperInvariant(options[b]) == 'B')
                     {
-                        _rollback = Deci(options.Substring(b + 1, 4));
+                        _rollback = HexStringToDWORD(options.Substring(b + 1, 4));
                         b += 4;
                     }
                     else if (char.ToUpperInvariant(options[b]) == 'U')
                     {
-                        _userOffset = Deci(options.Substring(b + 1, 4));
+                        _userOffset = HexStringToDWORD(options.Substring(b + 1, 4));
                         b += 4;
                     }
                     else if (char.ToUpperInvariant(options[b]) == 'R')
@@ -563,6 +562,25 @@ namespace WiseUnpacker.HWUN
 
             CloseFile();
             return true;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Convert a hex string to a DWORD value
+        /// </summary>
+        private static uint HexStringToDWORD(string value)
+        {
+            try
+            {
+                return uint.Parse(value, System.Globalization.NumberStyles.HexNumber);
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         #endregion
