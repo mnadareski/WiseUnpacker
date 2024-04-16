@@ -1,10 +1,11 @@
 using System.IO;
+using SabreTools.IO;
 
 namespace WiseUnpacker.HWUN
 {
     internal class InflateImpl : SecureInflate
     {
-        public MultipartFile? Input { get; private set; }
+        public ReadOnlyCompositeStream? Input { get; private set; }
         public Stream? Output { get; private set; }
         public byte[] InputBuffer { get; private set; } = new byte[0x4000];
         public ushort InputBufferPosition { get; private set; }
@@ -14,7 +15,7 @@ namespace WiseUnpacker.HWUN
         public ushort Result { get; private set; }
         public uint CRC { get; set; }
 
-        public void Inflate(MultipartFile inf, string outf)
+        public void Inflate(ReadOnlyCompositeStream inf, string outf)
         {
             InputBuffer = new byte[0x4000];
             Input = inf;
@@ -26,7 +27,7 @@ namespace WiseUnpacker.HWUN
 
             CRC = CRC32.Start();
             SI_INFLATE();
-            inf.Seek(inf.FilePosition - InputBufferSize + InputBufferPosition);
+            inf.Seek(inf.Position - InputBufferSize + InputBufferPosition, SeekOrigin.Begin);
             CRC = CRC32.End(CRC);
 
             Result = SI_ERROR;
@@ -38,16 +39,16 @@ namespace WiseUnpacker.HWUN
         {
             if (InputBufferPosition >= InputBufferSize)
             {
-                if (Input!.FilePosition == Input!.FileLength)
+                if (Input!.Position >= Input!.Length)
                 {
                     SI_BREAK = true;
                 }
                 else
                 {
-                    if (InputBufferSize > Input!.FileLength - Input!.FilePosition)
-                        InputBufferSize = (ushort)(Input!.FileLength - Input!.FilePosition);
+                    if (InputBufferSize > Input!.Length - Input!.Position)
+                        InputBufferSize = (ushort)(Input!.Length - Input!.Position);
 
-                    Input!.BlockRead(InputBuffer, InputBufferSize);
+                    Input!.Read(InputBuffer, 0, InputBufferSize);
                     InputBufferPosition = 0x0000;
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using SabreTools.IO;
 using WiseUnpacker.Files;
 
 namespace WiseUnpacker.Inflation
@@ -18,7 +19,7 @@ namespace WiseUnpacker.Inflation
             set => _crc.Value = value;
         }
 
-        private readonly MultiPartFile _inputFile;
+        private readonly ReadOnlyCompositeStream _inputFile;
 
         private readonly Stream _outputFile;
 
@@ -30,7 +31,7 @@ namespace WiseUnpacker.Inflation
 
         private readonly CRC32 _crc;
 
-        public InflateImpl(MultiPartFile inf, string outf)
+        public InflateImpl(ReadOnlyCompositeStream inf, string outf)
         {
             _inputBuffer = new byte[0x4000];
             _inputFile = inf;

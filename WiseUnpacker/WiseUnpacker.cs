@@ -14,7 +14,7 @@ namespace WiseUnpacker
         private Inflation.InflateImpl? inflate;
 
         // IO values
-        private MultiPartFile? inputFile;
+        private ReadOnlyCompositeStream? inputFile;
         private bool pkzip;
 
         // Deterministic values
@@ -159,16 +159,22 @@ namespace WiseUnpacker
         /// <returns>True if the file could be opened, false otherwise</returns>
         private bool Open(string file)
         {
-            inputFile = MultiPartFile.Create(file);
+            var fileStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            inputFile = new ReadOnlyCompositeStream([fileStream]);
             if (inputFile == null)
                 return false;
 
             file = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(file!))!, Path.GetFileNameWithoutExtension(file));
 
             int fileno = 2;
-            while (inputFile.Append($"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}"))
+            string extraFileName = $"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}";
+
+            while (File.Exists(extraFileName))
             {
+                fileStream = File.Open(extraFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                inputFile.AddStream(fileStream);
                 fileno++;
+                extraFileName = $"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}";
             }
 
             return true;
@@ -559,7 +565,7 @@ namespace WiseUnpacker
         /// </summary>
         /// <param name="inf">Input multipart file</param>
         /// <param name="outputPath">Output directory for extracted files</param>
-        private void Inflate(MultiPartFile inf, string outputPath)
+        private void Inflate(ReadOnlyCompositeStream inf, string outputPath)
         {
             inflate = new Inflation.InflateImpl(inf, outputPath);
             inflate.SI_INFLATE();

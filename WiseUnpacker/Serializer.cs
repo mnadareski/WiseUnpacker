@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using SabreTools.IO;
-using WiseUnpacker.Files;
 using NE = SabreTools.Models.NewExecutable;
 using PE = SabreTools.Models.PortableExecutable;
 
@@ -12,7 +11,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a COFF file header from a multipart file
         /// </summary>
-        public static PE.COFFFileHeader CreateCOFFFileHeader(MultiPartFile file)
+        public static PE.COFFFileHeader CreateCOFFFileHeader(ReadOnlyCompositeStream file)
         {
             var ifh = new PE.COFFFileHeader();
 
@@ -30,7 +29,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a data directory from a multipart file
         /// </summary>
-        public static PE.DataDirectory CreateDataDirectory(MultiPartFile file)
+        public static PE.DataDirectory CreateDataDirectory(ReadOnlyCompositeStream file)
         {
             var idd = new PE.DataDirectory();
 
@@ -43,7 +42,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create an information entry from a multipart file
         /// </summary>
-        public static NE.ResourceTypeInformationEntry CreateInformationEntry(MultiPartFile file)
+        public static NE.ResourceTypeInformationEntry CreateInformationEntry(ReadOnlyCompositeStream file)
         {
             var rti = new NE.ResourceTypeInformationEntry();
 
@@ -58,7 +57,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create an MS-DOS executable header from a multipart file
         /// </summary>
-        public static SabreTools.Models.MSDOS.ExecutableHeader CreateMSDOSExecutableHeader(MultiPartFile file)
+        public static SabreTools.Models.MSDOS.ExecutableHeader CreateMSDOSExecutableHeader(ReadOnlyCompositeStream file)
         {
             var idh = new SabreTools.Models.MSDOS.ExecutableHeader();
 
@@ -97,7 +96,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a New Executable header from a multipart file
         /// </summary>
-        public static NE.ExecutableHeader CreateNEExecutableHeader(MultiPartFile file)
+        public static NE.ExecutableHeader CreateNEExecutableHeader(ReadOnlyCompositeStream file)
         {
             var ioh = new NE.ExecutableHeader();
 
@@ -140,7 +139,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create an optional header from a multipart file
         /// </summary>
-        public static PE.OptionalHeader CreateOptionalHeader(MultiPartFile file)
+        public static PE.OptionalHeader CreateOptionalHeader(ReadOnlyCompositeStream file)
         {
             var ioh = new PE.OptionalHeader();
 
@@ -199,7 +198,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a resource entry from a multipart file
         /// </summary>
-        public static NE.ResourceTypeResourceEntry CreateResourceEntry(MultiPartFile file)
+        public static NE.ResourceTypeResourceEntry CreateResourceEntry(ReadOnlyCompositeStream file)
         {
             var rni = new NE.ResourceTypeResourceEntry();
 
@@ -215,7 +214,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a section header from a multipart file
         /// </summary>
-        public static PE.SectionHeader CreateSectionHeader(MultiPartFile file)
+        public static PE.SectionHeader CreateSectionHeader(ReadOnlyCompositeStream file)
         {
             var ish = new PE.SectionHeader();
 
@@ -237,7 +236,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Create a segment table entry from a multipart file
         /// </summary>
-        public static NE.SegmentTableEntry CreateSegmentTableEntry(MultiPartFile file)
+        public static NE.SegmentTableEntry CreateSegmentTableEntry(ReadOnlyCompositeStream file)
         {
             var ns = new NE.SegmentTableEntry();
 
