@@ -470,218 +470,244 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Rename files in the output directory
         /// </summary>
-        private void RenameFiles(string dir, int extracted)
+        private bool RenameFiles(string dir, int extracted)
         {
-            Stream? bf = null;
-            Stream? df = null;
             string nn = string.Empty;
-            uint fileno;
-            uint l2, l3 = 0, l4, res;
-            long l, l0, l1 = 0, l5, offs, sh0 = 0, sh1 = 0;
-            uint instcnt;
-            Stream f;
+            uint fileOffset2, scriptOffset1 = 0, scriptOffset2;
+            long l0, fileOffset1 = 0, offs;
 
             // "Searching for script file"
-            fileno = 0;
-            res = 1;
-            instcnt = 0;
-            while (fileno < extracted && fileno < 6 && res != 0)
-            {
-                fileno++;
-                string bfPath = Path.Combine(dir, $"WISE{fileno:X4}");
-                bf = File.Open(bfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                l = 0x0000;
-                while (res != 0 && l < bf.Length)
-                {
-                    while (l < bf.Length && (ReadByte(bf, l + 0) != 0x25) || ReadByte(bf, l + 1) != 0x5c)
-                        l++;
-                }
-                if (l < bf.Length)
-                {
-                    l1 = 0x01;
-                    while (l1 < 0x40 && (ReadByte(bf, l - l1 + 0) != 0x25 || ReadByte(bf, l - l1 + 1) == 0x5c))
-                        l1++;
-                    if (l1 < 0x40)
-                        res = 0;
-                    else
-                        l++;
-                }
+            uint res = 1;
+            uint instcnt = 0;
 
-                if (res != 0)
-                    bf.Close();
+            // Search for the script file
+            uint fileno = 0;
+            Stream? scriptFile = SearchForScriptFile(dir, extracted, ref fileno);
+            if (scriptFile == null || fileno >= 6 || fileno >= extracted)
+                return false;
+
+            // Open the dumpfile
+            string dumpFilePath = Path.Combine(dir, "WISE0000");
+            Stream dumpFile = File.Open(dumpFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            long entry = (dumpFile.Length - 0x04) / 0x04;
+
+            // Calculate the offset shift value
+            long shift, shiftCheck = 0;
+            bool shiftFound = false;
+            do
+            {
+                // Get the first shift value
+                shift = SearchForOffsetShift(scriptFile, dumpFile, out shiftFound, ref entry);
+
+                // If a valid shift value was found, get the next shift to compare
+                if (shiftFound)
+                    shiftCheck = SearchForOffsetShift(scriptFile, dumpFile, out shiftFound, ref entry);
+
+            } while (entry > 0 && (!shiftFound || shift != shiftCheck));
+
+            // If the offset shift could not be calculated
+            if (!shiftFound)
+            {
+                scriptFile.Close();
+                dumpFile.Close();
+                return false;
             }
 
-            if (fileno < 6 && fileno < extracted)
+            // Rename the files
+            long dumpEntryOffset = 0x04;
+            while (dumpEntryOffset + 8 < dumpFile.Length)
             {
-                // "Calculating offset shift value"
-                string dfPath = Path.Combine(dir, "WISE0000");
-                df = File.Open(dfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                l5 = (df.Length - 0x04) / 0x04;
+                // Read the current entry and next entry offsets
+                dumpEntryOffset += 0x04;
+                fileOffset1 = ReadDWORD(dumpFile, dumpEntryOffset + 0x00);
+                fileOffset2 = ReadDWORD(dumpFile, dumpEntryOffset + 0x04);
+                l0 = 0xffffffff;
+                res = 1;
 
-                do
+                // Find the name offset for this entry, if possible
+                while (l0 + 0x29 < scriptFile.Length && res != 0)
                 {
-                    do
-                    {
-                        l1 = ReadDWORD(df, l5 * 0x04 - 0x04);
-                        l2 = ReadDWORD(df, l5 * 0x04 - 0x00);
-                        l = bf!.Length - 0x07;
-                        res = 1;
-                        while (l >= 0 && res != 0)
-                        {
-                            l--;
-                            l3 = ReadDWORD(bf, l + 0x00);
-                            l4 = ReadDWORD(bf, l + 0x04);
-                            if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
-                                res = 0;
-                        }
+                    l0++;
+                    scriptOffset1 = ReadDWORD(scriptFile, l0 + 0x00);
+                    scriptOffset2 = ReadDWORD(scriptFile, l0 + 0x04);
+                    if ((fileOffset1 == scriptOffset1 + shift) && (fileOffset2 == scriptOffset2 + shift))
+                        res = 0;
+                }
 
-                        if (res != 0)
-                            l5--;
-                    } while (res != 0 && l5 != 0);
-                    sh0 = l1 - l3;
-
-                    if (res == 0)
-                    {
-                        do
-                        {
-                            l1 = ReadDWORD(df, l5 * 0x04 - 0x04);
-                            l2 = ReadDWORD(df, l5 * 0x04 - 0x00);
-                            l = bf.Length - 0x07;
-                            l = 1;
-                            while (l >= 0 && res != 0)
-                            {
-                                l--;
-                                l3 = ReadDWORD(bf, l + 0x00);
-                                l4 = ReadDWORD(bf, l + 0x04);
-                                if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
-                                    res = 0;
-                            }
-
-                            if (res != 0)
-                                l5--;
-                        } while (res != 0 && l5 != 0);
-                        sh1 = l1 - l3;
-                    }
-
-                } while (l5 != 0 && (res != 0 || sh0 != sh1));
-
+                // If a name offset was found
                 if (res == 0)
                 {
-                    // shiftvalue = sh0
-                    // "Renaming files"
-                    l5 = 0x04;
-                    while (l5 + 8 < df.Length)
+                    fileOffset2 = ReadWORD(scriptFile, l0 - 2);
+                    nn = string.Empty;
+                    offs = l0;
+                    l0 += 0x28;
+                    res = 2;
+
+                    char nextChar = (char)ReadByte(scriptFile, l0);
+                    if (nextChar == '%')
                     {
-                        l5 += 0x04;
-                        l1 = ReadDWORD(df, l5 + 0x00);
-                        l2 = ReadDWORD(df, l5 + 0x04);
-                        l0 = 0xffffffff;
-                        res = 1;
-                        while (l0 + 0x29 < bf.Length && res != 0)
+                        while (nextChar != 0)
                         {
-                            l0++;
-                            l3 = ReadDWORD(bf, l0 + 0x00);
-                            l4 = ReadDWORD(bf, l0 + 0x04);
-                            if ((l1 == l + sh0) && (l2 == l4 + sh0))
+                            nextChar = (char)ReadByte(scriptFile, l0);
+                            nn += nextChar;
+                            if (nextChar < 0x20)
+                                res = 1;
+                            if (nextChar == '%' && res != 1)
+                                res = 3;
+                            if (nextChar == '\\' && (ReadByte(scriptFile, l0 - 1) == '%') && res == 3)
+                                res = 4;
+                            if (res == 4)
                                 res = 0;
+
+                            l0++;
                         }
+                    }
 
-                        if (res == 0)
-                        {
-                            l2 = ReadWORD(bf, l0 - 2);
-                            nn = "";
-                            offs = l0;
-                            l0 += 0x28;
-                            res = 2;
-                            if (ReadByte(bf, l0) == 0x25)
-                            {
-                                while (ReadByte(bf, l0) != 0)
-                                {
-                                    nn = nn + (char)ReadByte(bf, l0);
-                                    if (ReadByte(bf, l0) < 0x20)
-                                        res = 1;
-                                    if (ReadByte(bf, l0) == 0x25 && res != 1)
-                                        res = 3;
-                                    if (ReadByte(bf, l0) == 0x5c && (ReadByte(bf, l0 - 1) == 0x25) && res == 3)
-                                        res = 4;
-                                    if (res == 4)
-                                        res = 0;
-                                    l0++;
-                                }
-                            }
-                            if (res != 0)
-                                res = 0x80;
-                        }
+                    // If no valid name is found, mark as an Install file
+                    if (res != 0)
+                        res = 0x80;
+                }
 
-                        l1 = (l5 + 0x04) / 0x04;
-                        if (res == 0)
-                        {
-                            l0 = l;
-                            while (l0 < nn.Length)
-                            {
-                                if (nn[(int)l0] == '%')
-                                    nn = nn.Substring(1, (int)(l0 - 1)) + nn.Substring((int)(l0 + 1), (int)(nn.Length - l0));
-                                else if (nn[(int)l0] == '\\' && nn[(int)(l0 - 1)] == '\\')
-                                    nn = nn.Substring(1, (int)(l0 - 1)) + nn.Substring((int)(l0 + 1), (int)(nn.Length - l0));
-                                else
-                                    l0++;
-                            }
-                            f = File.OpenWrite(Path.Combine(dir, $"WISE{l1:X4}"));
+                // If a valid name was found at the offset
+                entry = (dumpEntryOffset + 0x04) / 0x04;
+                if (res == 0)
+                {
+                    // Sanitize the new file path
+                    nn = nn.Replace("%", string.Empty);
+                    string oldfile = Path.Combine(dir, $"WISE{entry:X4}");
+                    string newfile = Path.Combine(dir, nn);
 
-                            // Make directories
-                            l0 = 0;
-                            while (l0 < nn.Length)
-                            {
-                                l0++;
-                                if (nn[(int)l0] == '\\')
-                                {
-                                    Directory.CreateDirectory(nn.Substring(1, (int)(l0 - 1)));
-                                }
-                            }
+                    // Make directories
+                    var dirname = Path.GetDirectoryName(newfile);
+                    if (dirname != null)
+                        Directory.CreateDirectory(dirname);
 
-                            // Rename file
-                            do
-                            {
-                                var tempout = File.OpenWrite(Path.Combine(dir, nn));
-#if NET20 || NET35
-                                byte[] tempbytes = new byte[f.Length];
-                                f.Read(tempbytes, 0, tempbytes.Length);
-                                tempout.Write(tempbytes, 0, tempbytes.Length);
-#else
-                                f.CopyTo(tempout);
-#endif
-                                f.Close();
+                    // Rename file
+                    File.Move(oldfile, newfile);
+                }
+                else if (res == 0x80)
+                {
+                    instcnt++;
+                    string oldfile = Path.Combine(dir, $"WISE{entry:X4}");
+                    string newfile = Path.Combine(dir, $"INST{instcnt:X4}");
 
-                                l2 = (uint)nn.Length;
-                                while (nn[(int)l2] != '.' && l2 > 0x00)
-                                    l2--;
+                    // Rename file
+                    File.Move(oldfile, newfile);
+                }
+            }
 
-                                if (l2 == 0x00)
-                                    nn = nn + ".!";
-                                else
-                                {
-                                    nn = nn.Substring(1, (int)l2) + "!." + nn.Substring((int)(l2 + 1), (int)(nn.Length - l2));
-                                }
-                            } while (l0 != 0 && nn.Length <= 0xfb);
-                        }
-                        else if (res == 0x80)
-                        {
-                            instcnt++;
+            // Close the script and dump files
+            scriptFile.Close();
+            dumpFile.Close();
 
-                            // Rename file
-                            f = File.OpenWrite(Path.Combine(dir, $"WISE{l1:X4}"));
-                        }
+            return true;
+        }
+
+        /// <summary>
+        /// Search the first 6 entries for a script file
+        /// </summary>
+        /// <remarks>
+        /// The script file contains all of the strings and filenames that are used for
+        /// the WISE installer. This method searches for a file that contains multiple
+        /// instances of "%\", which usually come from strings that look like:
+        /// "%MAINDIR%\INSTALL.LOG"
+        /// </remarks>
+        private static Stream? SearchForScriptFile(string dir, int extracted, ref uint fileno)
+        {
+            // Check for boundary cases first
+            if (fileno >= extracted || fileno >= 6)
+                return null;
+
+            // Search up to the first 6 extacted files for a script file
+            Stream? scriptFile = null;
+            bool found = false;
+            while (fileno < extracted && fileno < 6 && !found)
+            {
+                // Increment the current file number
+                fileno++;
+
+                // Open the generic-named file associated with the number
+                string bfPath = Path.Combine(dir, $"WISE{fileno:X4}");
+                scriptFile = File.Open(bfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                long offset = 0;
+                while (!found && offset < scriptFile.Length)
+                {
+                    // Search for the first instance of "%\"
+                    while (offset < scriptFile.Length && (ReadByte(scriptFile, offset + 0) != '%') || ReadByte(scriptFile, offset + 1) != '\\')
+                    {
+                        offset++;
+                    }
+
+                    // If the value was not found
+                    if (offset >= scriptFile.Length)
+                        break;
+
+                    // Look for a previous entry in the script file
+                    long offsetCheck = 0x01;
+                    while (offsetCheck < 0x40 && (ReadByte(scriptFile, offset - offsetCheck + 0) != '%' || ReadByte(scriptFile, offset - offsetCheck + 1) == '\\'))
+                    {
+                        offsetCheck++;
+                    }
+
+                    // If a previous entry is found
+                    if (offsetCheck < 0x40)
+                        found = true;
+
+                    // Otherwise, keep searching
+                    else
+                        offset++;
+                }
+
+                // Close the file if it wasn't the script file
+                if (!found)
+                    scriptFile.Close();
+            }
+
+            return scriptFile;
+        }
+
+        /// <summary>
+        /// Compare an entry in a scriptfile and dumpfile to get an offset shift, if possible
+        /// </summary>
+        private static long SearchForOffsetShift(Stream scriptFile, Stream dumpFile, out bool found, ref long entry)
+        {
+            // Create variables for the two offsets
+            uint dumpOffset;
+            uint scriptOffset = 0;
+
+            // Search for the offset shift
+            do
+            {
+                // Get the real offset values from the dump file
+                dumpOffset = ReadDWORD(dumpFile, entry * 0x04 - 0x04);
+                uint nextDumpOffset = ReadDWORD(dumpFile, entry * 0x04 - 0x00);
+                long scriptPosition = scriptFile!.Length - 0x07;
+                found = false;
+
+                // Attempt to align the offset values
+                while (scriptPosition >= 0 && !found)
+                {
+                    scriptPosition--;
+                    scriptOffset = ReadDWORD(scriptFile, scriptPosition + 0x00);
+                    uint nextScriptOffset = ReadDWORD(scriptFile, scriptPosition + 0x04);
+
+                    // If the correct offset shift has been found
+                    if (nextScriptOffset > scriptOffset
+                        && nextScriptOffset < nextDumpOffset
+                        && scriptOffset < dumpOffset
+                        && nextScriptOffset - scriptOffset == nextDumpOffset - dumpOffset)
+                    {
+                        found = true;
                     }
                 }
 
-                df.Close();
-                bf.Close();
-                // "Job done"
-            }
-            else
-            {
-                // "Scriptfile not found"
-            }
+                // If the shift wasn't found, move back an entry
+                if (!found)
+                    entry--;
+            } while (!found && entry > 0);
+
+            return dumpOffset - scriptOffset;
         }
 
         #endregion
