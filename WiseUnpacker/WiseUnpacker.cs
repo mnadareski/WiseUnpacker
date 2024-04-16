@@ -1,10 +1,13 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using SabreTools.IO;
-using SabreTools.Models.PortableExecutable;
+using SabreTools.Serialization.Wrappers;
 using WiseUnpacker.Files;
 using WiseUnpacker.HWUN;
+using MZ = SabreTools.Models.MSDOS;
+using LE = SabreTools.Models.LinearExecutable;
+using NE = SabreTools.Models.NewExecutable;
+using PE = SabreTools.Models.PortableExecutable;
 
 namespace WiseUnpacker
 {
@@ -283,25 +286,26 @@ namespace WiseUnpacker
 
                 currentFormat.ExecutableType = ExecutableType.Unknown;
                 inputFile!.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
-                var exeHdr = Serializer.CreateMSDOSExecutableHeader(inputFile);
+                var executable = MSDOS.Create(inputFile);
 
-                if ((exeHdr.Magic == SabreTools.Models.PortableExecutable.Constants.SignatureString || exeHdr.Magic == SabreTools.Models.MSDOS.Constants.SignatureString)
-                    && exeHdr.HeaderParagraphSize >= 4
-                    && exeHdr.NewExeHeaderAddr >= 0x40)
+                if (executable?.Model?.Header != null
+                    && (executable.Model.Header.Magic == PE.Constants.SignatureString || executable.Model.Header.Magic == MZ.Constants.SignatureString)
+                    && executable.Model.Header.HeaderParagraphSize >= 4
+                    && executable.Model.Header.NewExeHeaderAddr >= 0x40)
                 {
-                    currentFormat.ExecutableOffset = exeHdr.NewExeHeaderAddr;
+                    currentFormat.ExecutableOffset = executable.Model.Header.NewExeHeaderAddr;
                     inputFile.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
-                    exeHdr = Serializer.CreateMSDOSExecutableHeader(inputFile);
+                    executable = MSDOS.Create(inputFile);
                 }
 
-                switch (exeHdr.Magic)
+                switch (executable?.Model?.Header?.Magic)
                 {
-                    case SabreTools.Models.NewExecutable.Constants.SignatureString:
+                    case NE.Constants.SignatureString:
                         currentFormat.ExecutableType = ProcessNe();
                         break;
-                    case SabreTools.Models.LinearExecutable.Constants.LESignatureString:
-                    case SabreTools.Models.LinearExecutable.Constants.LXSignatureString:
-                    case SabreTools.Models.PortableExecutable.Constants.SignatureString:
+                    case LE.Constants.LESignatureString:
+                    case LE.Constants.LXSignatureString:
+                    case PE.Constants.SignatureString:
                         currentFormat.ExecutableType = ProcessPe(ref searchAgainAtEnd);
                         break;
                     default:
@@ -316,39 +320,19 @@ namespace WiseUnpacker
         /// </summary>
         private ExecutableType ProcessNe()
         {
-            ExecutableType foundExe = ExecutableType.Unknown;
-
-            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
-            var ne = Serializer.CreateNEExecutableHeader(inputFile);
-            long o = currentFormat.ExecutableOffset;
-
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 0 * 8 /* sizeof(NewSeg) */, SeekOrigin.Begin);
-            _ = Serializer.CreateSegmentTableEntry(inputFile);
-
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.SegmentTableOffset + 2 * 8 /* sizeof(NewSeg) */, SeekOrigin.Begin);
-            _ = Serializer.CreateSegmentTableEntry(inputFile);
-
-            // Assumption: there are resources and they are at the end ..
-            inputFile.Seek(dataBase + currentFormat.ExecutableOffset + ne.ResourceTableOffset, SeekOrigin.Begin);
-            short rsAlign = inputFile.ReadInt16();
-
-            // ne.ne_cres is 0 so you have to cheat
-            while (inputFile.Position + 8 /* sizeof(rsType) */ <= dataBase + currentFormat.ExecutableOffset + ne.ResidentNameTableOffset)
+            try
             {
-                var rsType = Serializer.CreateInformationEntry(inputFile);
-                for (int z2 = 1; z2 < rsType.ResourceCount; z2++)
-                {
-                    var rsName = Serializer.CreateResourceEntry(inputFile);
-                    int a = rsName.Offset << rsAlign + rsName.Length << rsAlign;
-                    if (o < a)
-                        o = a;
-                }
+                inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
+                var ne = NewExecutable.Create(inputFile);
+                if (ne == null)
+                    return ExecutableType.Unknown;
 
-                currentFormat.ExecutableOffset = 0;
-                foundExe = ExecutableType.NE;
+                return ExecutableType.NE;
             }
-
-            return foundExe;
+            catch
+            {
+                return ExecutableType.Unknown;
+            }
         }
 
         /// <summary>
@@ -356,79 +340,87 @@ namespace WiseUnpacker
         /// </summary>
         private ExecutableType ProcessPe(ref bool searchAgainAtEnd)
         {
-            inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset + 4, SeekOrigin.Begin);
-
-            var ifh = Serializer.CreateCOFFFileHeader(inputFile);
-            var ioh = Serializer.CreateOptionalHeader(inputFile);
-
-            // Read sections until we have the ones we need
-            SectionHeader? temp = null;
-            SectionHeader? resource = null;
-            for (int i = 0; i < ifh.NumberOfSections; i++)
+            try
             {
-                var sectionHeader = Serializer.CreateSectionHeader(inputFile);
-                string headerName = Encoding.ASCII.GetString(sectionHeader!.Name!, 0, 8);
+                inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset + 4, SeekOrigin.Begin);
+                var pe = PortableExecutable.Create(inputFile);
+                if (pe == null)
+                    return ExecutableType.Unknown;
 
-                // .text
-                if (headerName.StartsWith(".text"))
-                {
-                    currentFormat.CodeSectionLength = sectionHeader.VirtualSize;
-                }
+                // Get the text section
+                var section = pe.GetFirstSection(".text");
+                if (section != null)
+                    currentFormat.CodeSectionLength = section.VirtualSize;
 
-                // .rdata
-                else if (headerName.StartsWith(".rdata"))
-                {
-                    // No-op
-                }
+                // Get the data section
+                section = pe.GetFirstSection(".data");
+                if (section != null)
+                    currentFormat.DataSectionLength = section.VirtualSize;
 
-                // .data
-                else if (headerName.StartsWith(".data"))
-                {
-                    currentFormat.DataSectionLength = sectionHeader.VirtualSize;
+                // Get the rsrc section
+                PE.SectionHeader? resource = null;
+                section = pe.GetFirstSection(".rsrc");
+                if (section != null)
+                    resource = section;
+
+                // Find the last section of .data or .rsrc if the relocations are not stripped
 #if NET20 || NET35
-                    if ((ifh.Characteristics & Characteristics.IMAGE_FILE_RELOCS_STRIPPED) == 0)
+                if ((pe.Model.COFFFileHeader!.Characteristics & PE.Characteristics.IMAGE_FILE_RELOCS_STRIPPED) == 0)
 #else
-                    if (!ifh.Characteristics.HasFlag(Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
+                if (!pe.Model.COFFFileHeader!.Characteristics.HasFlag(PE.Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
 #endif
-                        temp = sectionHeader;
-                }
-
-                // .rsrc
-                else if (headerName.StartsWith(".rsrc"))
                 {
-                    resource = sectionHeader;
-#if NET20 || NET35
-                    if ((ifh.Characteristics & Characteristics.IMAGE_FILE_RELOCS_STRIPPED) == 0)
-#else
-                    if (!ifh.Characteristics.HasFlag(Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
-#endif
-                        temp = sectionHeader;
-                }
-            }
-
-            // the unpacker of the self-extractor does not use any resource functions either.
-            if (temp!.SizeOfRawData > 20000)
-            {
-                for (int f = 0; f <= 20000 - 0x80; f++)
-                {
-                    inputFile.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
-                    var exeHdr = Serializer.CreateMSDOSExecutableHeader(inputFile);
-
-                    if ((exeHdr.Magic == SabreTools.Models.PortableExecutable.Constants.SignatureString || exeHdr.Magic == SabreTools.Models.MSDOS.Constants.SignatureString)
-                        && exeHdr.HeaderParagraphSize >= 4
-                        && exeHdr.NewExeHeaderAddr >= 0x40
-                        && (exeHdr.RelocationItems == 0 || exeHdr.RelocationItems == 3))
+                    PE.SectionHeader? temp = null;
+                    for (int sectionNumber = 0; sectionNumber < (pe.SectionNames ?? []).Length; sectionNumber++)
                     {
-                        currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
-                        fileEnd = (int)(dataBase + temp.PointerToRawData + ioh.ResourceTable!.Size);
-                        searchAgainAtEnd = true;
-                        break;
+                        // Get the section for the index
+                        section = pe.GetSection(sectionNumber);
+                        if (section?.Name == null)
+                            continue;
+
+                        // We only care about .data and .rsrc
+                        switch (System.Text.Encoding.ASCII.GetString(section.Name).TrimEnd('\0'))
+                        {
+                            case ".data":
+                            case ".rsrc":
+                                temp = section;
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+
+                    // The unpacker of the self-extractor does not use any resource functions either.
+                    if (temp != null && temp.SizeOfRawData > 20000)
+                    {
+                        for (int f = 0; f <= 20000 - 0x80; f++)
+                        {
+                            inputFile.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
+                            var mz = MSDOS.Create(inputFile);
+
+                            if (mz?.Model?.Header != null
+                                && (mz.Model.Header.Magic == PE.Constants.SignatureString || mz.Model.Header.Magic == MZ.Constants.SignatureString)
+                                && mz.Model.Header.HeaderParagraphSize >= 4
+                                && mz.Model.Header.NewExeHeaderAddr >= 0x40
+                                && (mz.Model.Header.RelocationItems == 0 || mz.Model.Header.RelocationItems == 3))
+                            {
+                                currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
+                                fileEnd = (int)(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size);
+                                searchAgainAtEnd = true;
+                                break;
+                            }
+                        }
                     }
                 }
-            }
 
-            currentFormat.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
-            return ExecutableType.PE;
+                currentFormat.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
+                return ExecutableType.PE;
+            }
+            catch
+            {
+                return ExecutableType.Unknown;
+            }
         }
 
         /// <summary>
