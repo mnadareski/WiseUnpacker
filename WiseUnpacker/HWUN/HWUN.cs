@@ -31,6 +31,70 @@ namespace WiseUnpacker.HWUN
 
         #region HWUN main section
 
+        public bool Run(string name, string dir, string? options = null)
+        {
+            Directory.CreateDirectory(dir);
+            _rollback = 0;
+            unchecked { _userOffset = (uint)-1; }
+            _renaming = true;
+            if (options != null)
+            {
+                int b = 1;
+                while (b <= options.Length)
+                {
+                    if (char.ToUpperInvariant(options[b]) == 'B')
+                    {
+                        _rollback = HexStringToDWORD(options.Substring(b + 1, 4));
+                        b += 4;
+                    }
+                    else if (char.ToUpperInvariant(options[b]) == 'U')
+                    {
+                        _userOffset = HexStringToDWORD(options.Substring(b + 1, 4));
+                        b += 4;
+                    }
+                    else if (char.ToUpperInvariant(options[b]) == 'R')
+                    {
+                        _renaming = false;
+                    }
+                    b++;
+                }
+            }
+
+            if (!OpenFile(name))
+                return false;
+
+            Approximate();
+            if (!_pkzip)
+            {
+                if (_userOffset >= 0)
+                    _approxOffset = _userOffset;
+                else
+                    _approxOffset -= _rollback;
+
+                FindReal(dir);
+                if (_realfound)
+                {
+                    ExtractFiles(dir);
+                    if (_renaming)
+                        RenameFiles(dir);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                _realOffset = _approxOffset;
+                ExtractFiles(dir);
+                if (_renaming)
+                    RenameFiles(dir);
+            }
+
+            CloseFile();
+            return true;
+        }
+
         private bool OpenFile(string name)
         {
             // If the file exists as-is
@@ -291,11 +355,12 @@ namespace WiseUnpacker.HWUN
 
         private void RenameFiles(string dir)
         {
-            BufferedFile? bf = null;
-            BufferedFile? df = null;
+            Stream? bf = null;
+            Stream? df = null;
             string nn = string.Empty;
             uint fileno;
-            uint sh0 = 0, sh1 = 0, offs, l, l0, l1 = 0, l2, l3 = 0, l4, l5, res;
+            uint l2, l3 = 0, l4, res;
+            long l, l0, l1 = 0, l5, offs, sh0 = 0, sh1 = 0;
             uint instcnt;
             Stream f;
 
@@ -306,17 +371,18 @@ namespace WiseUnpacker.HWUN
             while (fileno < _extracted && fileno < 6 && res != 0)
             {
                 fileno++;
-                bf = new BufferedFile(Path.Combine(dir, $"WISE{fileno:X4}"));
+                string bfPath = Path.Combine(dir, $"WISE{fileno:X4}");
+                bf = File.Open(bfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 l = 0x0000;
-                while (res != 0 && l < bf.FileSize)
+                while (res != 0 && l < bf.Length)
                 {
-                    while (l < bf.FileSize && (bf.ReadByte(l + 0) != 0x25) || bf.ReadByte(l + 1) != 0x5c)
+                    while (l < bf.Length && (ReadByte(bf, l + 0) != 0x25) || ReadByte(bf, l + 1) != 0x5c)
                         l++;
                 }
-                if (l < bf.FileSize)
+                if (l < bf.Length)
                 {
                     l1 = 0x01;
-                    while (l1 < 0x40 && (bf.ReadByte(l - l1 + 0) != 0x25 || bf.ReadByte(l - l1 + 1) == 0x5c))
+                    while (l1 < 0x40 && (ReadByte(bf, l - l1 + 0) != 0x25 || ReadByte(bf, l - l1 + 1) == 0x5c))
                         l1++;
                     if (l1 < 0x40)
                         res = 0;
@@ -331,22 +397,23 @@ namespace WiseUnpacker.HWUN
             if (fileno < 6 && fileno < _extracted)
             {
                 // "Calculating offset shift value"
-                df = new BufferedFile(Path.Combine(dir, "WISE0000"));
-                l5 = (df.FileSize - 0x04) / 0x04;
+                string dfPath = Path.Combine(dir, "WISE0000");
+                df = File.Open(dfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                l5 = (df.Length - 0x04) / 0x04;
 
                 do
                 {
                     do
                     {
-                        l1 = df.ReadDWORD(l5 * 0x04 - 0x04);
-                        l2 = df.ReadDWORD(l5 * 0x04 - 0x00);
-                        l = bf!.FileSize - 0x07;
+                        l1 = ReadDWORD(df, l5 * 0x04 - 0x04);
+                        l2 = ReadDWORD(df, l5 * 0x04 - 0x00);
+                        l = bf!.Length - 0x07;
                         res = 1;
                         while (l >= 0 && res != 0)
                         {
                             l--;
-                            l3 = bf.ReadDWORD(l + 0x00);
-                            l4 = bf.ReadDWORD(l + 0x04);
+                            l3 = ReadDWORD(bf, l + 0x00);
+                            l4 = ReadDWORD(bf, l + 0x04);
                             if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
                                 res = 0;
                         }
@@ -360,15 +427,15 @@ namespace WiseUnpacker.HWUN
                     {
                         do
                         {
-                            l1 = df.ReadDWORD(l5 * 0x04 - 0x04);
-                            l2 = df.ReadDWORD(l5 * 0x04 - 0x00);
-                            l = bf.FileSize - 0x07;
+                            l1 = ReadDWORD(df, l5 * 0x04 - 0x04);
+                            l2 = ReadDWORD(df, l5 * 0x04 - 0x00);
+                            l = bf.Length - 0x07;
                             l = 1;
                             while (l >= 0 && res != 0)
                             {
                                 l--;
-                                l3 = bf.ReadDWORD(l + 0x00);
-                                l4 = bf.ReadDWORD(l + 0x04);
+                                l3 = ReadDWORD(bf, l + 0x00);
+                                l4 = ReadDWORD(bf, l + 0x04);
                                 if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
                                     res = 0;
                             }
@@ -386,39 +453,39 @@ namespace WiseUnpacker.HWUN
                     // shiftvalue = sh0
                     // "Renaming files"
                     l5 = 0x04;
-                    while (l5 + 8 < df.FileSize)
+                    while (l5 + 8 < df.Length)
                     {
                         l5 += 0x04;
-                        l1 = df.ReadDWORD(l5 + 0x00);
-                        l2 = df.ReadDWORD(l5 + 0x04);
+                        l1 = ReadDWORD(df, l5 + 0x00);
+                        l2 = ReadDWORD(df, l5 + 0x04);
                         l0 = 0xffffffff;
                         res = 1;
-                        while (l0 + 0x29 < bf.FileSize && res != 0)
+                        while (l0 + 0x29 < bf.Length && res != 0)
                         {
                             l0++;
-                            l3 = bf.ReadDWORD(l0 + 0x00);
-                            l4 = bf.ReadDWORD(l0 + 0x04);
+                            l3 = ReadDWORD(bf, l0 + 0x00);
+                            l4 = ReadDWORD(bf, l0 + 0x04);
                             if ((l1 == l + sh0) && (l2 == l4 + sh0))
                                 res = 0;
                         }
 
                         if (res == 0)
                         {
-                            l2 = bf.ReadWORD(l0 - 2);
+                            l2 = ReadWORD(bf, l0 - 2);
                             nn = "";
                             offs = l0;
                             l0 += 0x28;
                             res = 2;
-                            if (bf.ReadByte(l0) == 0x25)
+                            if (ReadByte(bf, l0) == 0x25)
                             {
-                                while (bf.ReadByte(l0) != 0)
+                                while (ReadByte(bf, l0) != 0)
                                 {
-                                    nn = nn + (char)bf.ReadByte(l0);
-                                    if (bf.ReadByte(l0) < 0x20)
+                                    nn = nn + (char)ReadByte(bf, l0);
+                                    if (ReadByte(bf, l0) < 0x20)
                                         res = 1;
-                                    if (bf.ReadByte(l0) == 0x25 && res != 1)
+                                    if (ReadByte(bf, l0) == 0x25 && res != 1)
                                         res = 3;
-                                    if (bf.ReadByte(l0) == 0x5c && (bf.ReadByte(l0 - 1) == 0x25) && res == 3)
+                                    if (ReadByte(bf, l0) == 0x5c && (ReadByte(bf, l0 - 1) == 0x25) && res == 3)
                                         res = 4;
                                     if (res == 4)
                                         res = 0;
@@ -500,70 +567,6 @@ namespace WiseUnpacker.HWUN
             }
         }
 
-        public bool Run(string name, string dir, string? options = null)
-        {
-            Directory.CreateDirectory(dir);
-            _rollback = 0;
-            unchecked { _userOffset = (uint)-1; }
-            _renaming = true;
-            if (options != null)
-            {
-                int b = 1;
-                while (b <= options.Length)
-                {
-                    if (char.ToUpperInvariant(options[b]) == 'B')
-                    {
-                        _rollback = HexStringToDWORD(options.Substring(b + 1, 4));
-                        b += 4;
-                    }
-                    else if (char.ToUpperInvariant(options[b]) == 'U')
-                    {
-                        _userOffset = HexStringToDWORD(options.Substring(b + 1, 4));
-                        b += 4;
-                    }
-                    else if (char.ToUpperInvariant(options[b]) == 'R')
-                    {
-                        _renaming = false;
-                    }
-                    b++;
-                }
-            }
-
-            if (!OpenFile(name))
-                return false;
-
-            Approximate();
-            if (!_pkzip)
-            {
-                if (_userOffset >= 0)
-                    _approxOffset = _userOffset;
-                else
-                    _approxOffset -= _rollback;
-
-                FindReal(dir);
-                if (_realfound)
-                {
-                    ExtractFiles(dir);
-                    if (_renaming)
-                        RenameFiles(dir);
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                _realOffset = _approxOffset;
-                ExtractFiles(dir);
-                if (_renaming)
-                    RenameFiles(dir);
-            }
-
-            CloseFile();
-            return true;
-        }
-
         #endregion
 
         #region Helpers
@@ -581,6 +584,33 @@ namespace WiseUnpacker.HWUN
             {
                 return 0;
             }
+        }
+
+        /// <summary>
+        /// Read a byte from a position in the stream
+        /// </summary>
+        private static byte ReadByte(Stream stream, long position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+            return stream.ReadByteValue();
+        }
+
+        /// <summary>
+        /// Read a WORD from a position in the stream
+        /// </summary>
+        private static ushort ReadWORD(Stream stream, long position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+            return stream.ReadUInt16();
+        }
+
+        /// <summary>
+        /// Read a DWORD from a position in the stream
+        /// </summary>
+        private static uint ReadDWORD(Stream stream, long position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+            return stream.ReadUInt32();
         }
 
         #endregion
