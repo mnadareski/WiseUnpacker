@@ -13,13 +13,24 @@ namespace WiseUnpacker.HWUN
         /// </summary>
         private ReadOnlyCompositeStream _inputFile;
 
-        // Extraction State
+        /// <summary>
+        /// Extraction State
+        /// </summary>
         private readonly InflateImpl inflater = new();
-        private uint _extracted;
 
-        // Options
+        /// <summary>
+        /// Number of bytes to roll back if data is not PKZIP
+        /// </summary>
         private uint _rollback;
+
+        /// <summary>
+        /// User-provided offset to start looking for data if not PKZIP
+        /// </summary>
         private uint _userOffset;
+
+        /// <summary>
+        /// Determines if files will be renamed after extraction
+        /// </summary>
         private bool _renaming;
 
         #endregion
@@ -82,9 +93,9 @@ namespace WiseUnpacker.HWUN
                 bool realFound = FindReal(dir, pkzip, approxOffset, out uint realOffset);
                 if (realFound)
                 {
-                    ExtractFiles(dir, pkzip, realOffset);
+                    int extracted = ExtractFiles(dir, pkzip, realOffset);
                     if (_renaming)
-                        RenameFiles(dir);
+                        RenameFiles(dir, extracted);
                 }
                 else
                 {
@@ -94,9 +105,9 @@ namespace WiseUnpacker.HWUN
             else
             {
                 // Use the approximate offset as the real offset
-                ExtractFiles(dir, pkzip, approxOffset);
+                int extracted = ExtractFiles(dir, pkzip, approxOffset);
                 if (_renaming)
-                    RenameFiles(dir);
+                    RenameFiles(dir, extracted);
             }
 
             _inputFile.Close();
@@ -203,7 +214,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Extract all files to a directory
         /// </summary>
-        private void ExtractFiles(string dir, bool pkzip, uint offset)
+        private int ExtractFiles(string dir, bool pkzip, uint offset)
         {
             uint newcrc = 0;
             byte[] newcrcbytes = new byte[4];
@@ -214,12 +225,13 @@ namespace WiseUnpacker.HWUN
             byte[] len1bytes = new byte[2], len2bytes = new byte[2];
 
             // "Extracting files"
+            int extracted = 0;
             long fileEnd;
             var dumpFile = File.OpenWrite(Path.Combine(dir, "WISE0000"));
             _inputFile.Seek(offset, SeekOrigin.Begin);
             do
             {
-                _extracted++;
+                extracted++;
                 fs = _inputFile.Position;
                 if (pkzip)
                 {
@@ -235,7 +247,7 @@ namespace WiseUnpacker.HWUN
                         _inputFile.Read(buf, 0, (ushort)(len1 + len2));
                 }
 
-                inflater.Inflate(_inputFile, Path.Combine(dir, $"WISE{_extracted:X4}"));
+                inflater.Inflate(_inputFile, Path.Combine(dir, $"WISE{extracted:X4}"));
                 long fileStart = fs;
 
                 if (pkzip)
@@ -274,6 +286,7 @@ namespace WiseUnpacker.HWUN
 
             dumpFile.Write(BitConverter.GetBytes(fileEnd), 0, 4);
             dumpFile.Close();
+            return extracted;
         }
 
         /// <summary>
@@ -464,7 +477,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Rename files in the output directory
         /// </summary>
-        private void RenameFiles(string dir)
+        private void RenameFiles(string dir, int extracted)
         {
             Stream? bf = null;
             Stream? df = null;
@@ -479,7 +492,7 @@ namespace WiseUnpacker.HWUN
             fileno = 0;
             res = 1;
             instcnt = 0;
-            while (fileno < _extracted && fileno < 6 && res != 0)
+            while (fileno < extracted && fileno < 6 && res != 0)
             {
                 fileno++;
                 string bfPath = Path.Combine(dir, $"WISE{fileno:X4}");
@@ -505,7 +518,7 @@ namespace WiseUnpacker.HWUN
                     bf.Close();
             }
 
-            if (fileno < 6 && fileno < _extracted)
+            if (fileno < 6 && fileno < extracted)
             {
                 // "Calculating offset shift value"
                 string dfPath = Path.Combine(dir, "WISE0000");
