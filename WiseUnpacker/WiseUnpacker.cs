@@ -45,8 +45,8 @@ namespace WiseUnpacker
         /// </summary>
         public bool ExtractToHWUN(string file, string outputPath, string? options = null)
         {
-            var hwun = new Unpacker();
-            return hwun.Run(file, outputPath, options);
+            var hwun = new Unpacker(file, options);
+            return hwun.Run( outputPath);
         }
 
         /// <summary>
