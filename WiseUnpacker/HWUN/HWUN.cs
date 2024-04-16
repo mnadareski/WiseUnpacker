@@ -122,7 +122,7 @@ namespace WiseUnpacker.HWUN
             _inputFile.Read(buf, 0, 0xC000);
 
             // Use the initial offset and search for non-zero values
-            long approxOffset = 0x00;
+            long approxOffset = 0xC000;
             while (((buf[approxOffset] != 0x00) || (buf[approxOffset + 1] != 0x00)) && approxOffset > 0x20)
             {
                 // Decrement the offset
