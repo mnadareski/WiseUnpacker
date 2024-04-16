@@ -187,7 +187,7 @@ namespace WiseUnpacker.HWUN
 
                 // Double-check the signature value is correctly set
                 // TODO: Determine why this secondary check is done
-                while (signature != 0x04034b50 && offset < approxOffset)
+                while (signature != 0x04034B50 && offset < approxOffset)
                 {
                     signature = BitConverter.ToUInt32(buf, (int)offset);
                     offset++;
@@ -196,7 +196,7 @@ namespace WiseUnpacker.HWUN
                 // Decrement the offset and set the new approximate offset
                 offset--;
                 approxOffset = offset;
-                if (signature != 0x04034b50)
+                if (signature != 0x04034B50)
                     pkzip = false;
             }
             else
