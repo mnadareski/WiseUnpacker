@@ -14,11 +14,6 @@ namespace WiseUnpacker.HWUN
         private ReadOnlyCompositeStream _inputFile;
 
         /// <summary>
-        /// Extraction State
-        /// </summary>
-        private readonly InflateImpl inflater = new();
-
-        /// <summary>
         /// Number of bytes to roll back if data is not PKZIP
         /// </summary>
         private uint _rollback;
@@ -223,6 +218,7 @@ namespace WiseUnpacker.HWUN
             byte[] buf = new byte[0x400];
             ushort len1, len2;
             byte[] len1bytes = new byte[2], len2bytes = new byte[2];
+            var inflater = new InflateImpl();
 
             // "Extracting files"
             int extracted = 0;
@@ -297,6 +293,7 @@ namespace WiseUnpacker.HWUN
             realOffset = 0x00;
             byte[] newcrcbytes = new byte[4];
             uint newcrc = 0, pos;
+            var inflater = new InflateImpl();
 
             if (!pkzip)
             {
