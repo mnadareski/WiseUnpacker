@@ -292,8 +292,8 @@ namespace WiseUnpacker.HWUN
 
         private void RenameFiles(string dir)
         {
-            var bf = new BufferedFile();
-            var df = new BufferedFile();
+            BufferedFile? bf = null;
+            BufferedFile? df = null;
             string nn = string.Empty;
             uint fileno;
             uint sh0 = 0, sh1 = 0, offs, l, l0, l1 = 0, l2, l3 = 0, l4, l5, res;
@@ -307,7 +307,7 @@ namespace WiseUnpacker.HWUN
             while (fileno < _extracted && fileno < 6 && res != 0)
             {
                 fileno++;
-                bf.Open(Path.Combine(dir, $"WISE{Hexa(fileno)}"));
+                bf = new BufferedFile(Path.Combine(dir, $"WISE{Hexa(fileno)}"));
                 l = 0x0000;
                 while (res != 0 && l < bf.FileSize)
                 {
@@ -332,22 +332,22 @@ namespace WiseUnpacker.HWUN
             if (fileno < 6 && fileno < _extracted)
             {
                 // "Calculating offset shift value"
-                df.Open(Path.Combine(dir, "WISE0000"));
+                df = new BufferedFile(Path.Combine(dir, "WISE0000"));
                 l5 = (df.FileSize - 0x04) / 0x04;
 
                 do
                 {
                     do
                     {
-                        l1 = df.ReadLongInt(l5 * 0x04 - 0x04);
-                        l2 = df.ReadLongInt(l5 * 0x04 - 0x00);
-                        l = bf.FileSize - 0x07;
+                        l1 = df.ReadDWORD(l5 * 0x04 - 0x04);
+                        l2 = df.ReadDWORD(l5 * 0x04 - 0x00);
+                        l = bf!.FileSize - 0x07;
                         res = 1;
                         while (l >= 0 && res != 0)
                         {
                             l--;
-                            l3 = bf.ReadLongInt(l + 0x00);
-                            l4 = bf.ReadLongInt(l + 0x04);
+                            l3 = bf.ReadDWORD(l + 0x00);
+                            l4 = bf.ReadDWORD(l + 0x04);
                             if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
                                 res = 0;
                         }
@@ -361,15 +361,15 @@ namespace WiseUnpacker.HWUN
                     {
                         do
                         {
-                            l1 = df.ReadLongInt(l5 * 0x04 - 0x04);
-                            l2 = df.ReadLongInt(l5 * 0x04 - 0x00);
+                            l1 = df.ReadDWORD(l5 * 0x04 - 0x04);
+                            l2 = df.ReadDWORD(l5 * 0x04 - 0x00);
                             l = bf.FileSize - 0x07;
                             l = 1;
                             while (l >= 0 && res != 0)
                             {
                                 l--;
-                                l3 = bf.ReadLongInt(l + 0x00);
-                                l4 = bf.ReadLongInt(l + 0x04);
+                                l3 = bf.ReadDWORD(l + 0x00);
+                                l4 = bf.ReadDWORD(l + 0x04);
                                 if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
                                     res = 0;
                             }
@@ -390,22 +390,22 @@ namespace WiseUnpacker.HWUN
                     while (l5 + 8 < df.FileSize)
                     {
                         l5 += 0x04;
-                        l1 = df.ReadLongInt(l5 + 0x00);
-                        l2 = df.ReadLongInt(l5 + 0x04);
+                        l1 = df.ReadDWORD(l5 + 0x00);
+                        l2 = df.ReadDWORD(l5 + 0x04);
                         l0 = 0xffffffff;
                         res = 1;
                         while (l0 + 0x29 < bf.FileSize && res != 0)
                         {
                             l0++;
-                            l3 = bf.ReadLongInt(l0 + 0x00);
-                            l4 = bf.ReadLongInt(l0 + 0x04);
+                            l3 = bf.ReadDWORD(l0 + 0x00);
+                            l4 = bf.ReadDWORD(l0 + 0x04);
                             if ((l1 == l + sh0) && (l2 == l4 + sh0))
                                 res = 0;
                         }
 
                         if (res == 0)
                         {
-                            l2 = bf.ReadWord(l0 - 2);
+                            l2 = bf.ReadWORD(l0 - 2);
                             nn = "";
                             offs = l0;
                             l0 += 0x28;
