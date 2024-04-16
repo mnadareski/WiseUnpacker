@@ -74,7 +74,7 @@ namespace WiseUnpacker.HWUN
             Directory.CreateDirectory(dir);
 
             // Run the approximation
-            uint approxOffset = Approximate(out bool pkzip);
+            long approxOffset = Approximate(out bool pkzip);
 
             // If the data is not PKZIP
             if (!pkzip)
@@ -85,7 +85,7 @@ namespace WiseUnpacker.HWUN
                 else
                     approxOffset -= _rollback;
 
-                bool realFound = FindReal(dir, pkzip, approxOffset, out uint realOffset);
+                bool realFound = FindReal(dir, approxOffset, out long realOffset);
                 if (realFound)
                 {
                     int extracted = ExtractFiles(dir, pkzip, realOffset);
@@ -114,15 +114,15 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Approximate the location of the WISE information
         /// </summary>
-        private uint Approximate(out bool pkzip)
+        private long Approximate(out bool pkzip)
         {
             // Read the first 0xC200 bytes into a buffer
             byte[] buf = new byte[0xC200];
             _inputFile.Seek(0x0000, SeekOrigin.Begin);
-            _inputFile.Read(buf, 0, 0xc000);
+            _inputFile.Read(buf, 0, 0xC000);
 
             // Use the initial offset and search for non-zero values
-            uint approxOffset = 0x00;
+            long approxOffset = 0x00;
             while (((buf[approxOffset] != 0x00) || (buf[approxOffset + 1] != 0x00)) && approxOffset > 0x20)
             {
                 // Decrement the offset
@@ -170,7 +170,8 @@ namespace WiseUnpacker.HWUN
             }
 
             // Search for a zip signature
-            uint offset = 0x02, signature = 0x00;
+            long offset = 0x02;
+            uint signature = 0x00;
             while (signature != 0x04034B50 && offset < 0x80 && approxOffset - offset >= 0 && approxOffset - offset <= 0xBFFC)
             {
                 signature = BitConverter.ToUInt32(buf, (int)(approxOffset - offset));
@@ -209,15 +210,9 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Extract all files to a directory
         /// </summary>
-        private int ExtractFiles(string dir, bool pkzip, uint offset)
+        private int ExtractFiles(string dir, bool pkzip, long offset)
         {
             uint newcrc = 0;
-            byte[] newcrcbytes = new byte[4];
-            uint attempt;
-            long fs;
-            byte[] buf = new byte[0x400];
-            ushort len1, len2;
-            byte[] len1bytes = new byte[2], len2bytes = new byte[2];
             var inflater = new InflateImpl();
 
             // "Extracting files"
@@ -225,44 +220,51 @@ namespace WiseUnpacker.HWUN
             long fileEnd;
             var dumpFile = File.OpenWrite(Path.Combine(dir, "WISE0000"));
             _inputFile.Seek(offset, SeekOrigin.Begin);
+
             do
             {
+                // Increment the number of extracted files
                 extracted++;
-                fs = _inputFile.Position;
+
+                // Cache the current position as the file start
+                long fileStart = _inputFile.Position;
+
+                // Read PKZIP header values
                 if (pkzip)
                 {
-                    _inputFile.Read(buf, 0, 0xe);
-                    _inputFile.Read(newcrcbytes, 0, 0x04);
-                    newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                    _inputFile.Read(buf, 0, 0x08);
-                    _inputFile.Read(len1bytes, 0, 0x02);
-                    len1 = BitConverter.ToUInt16(len1bytes, 0);
-                    _inputFile.Read(len2bytes, 0, 0x02);
-                    len2 = BitConverter.ToUInt16(len2bytes, 0);
+                    _ = _inputFile.ReadBytes(0x0E);
+                    newcrc = _inputFile.ReadUInt32();
+                    _ = _inputFile.ReadBytes(0x08);
+                    ushort len1 = _inputFile.ReadUInt16();
+                    ushort len2 = _inputFile.ReadUInt16();
                     if (len1 + len2 > 0)
-                        _inputFile.Read(buf, 0, (ushort)(len1 + len2));
+                        _ = _inputFile.ReadBytes(len1 + len2);
                 }
 
+                // Inflate the data to a new file
                 inflater.Inflate(_inputFile, Path.Combine(dir, $"WISE{extracted:X4}"));
-                long fileStart = fs;
-
                 if (pkzip)
                     inflater.CRC = 0x04034b50;
 
+                // Set the file end
                 fileEnd = fileStart + inflater.InputSize - 1;
+
+                // If no inflation error occurred
                 if (inflater.Result == 0x0000)
                 {
-                    _inputFile.Read(newcrcbytes, 0, 4);
-                    newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                    attempt = 0;
+                    // Read the new CRC
+                    newcrc = _inputFile.ReadUInt32();
+
+                    // Attempt to find the correct CRC value
+                    uint attempt = 0;
                     while (inflater.CRC != newcrc && attempt < 8 && _inputFile.Position + 1 < _inputFile.Length)
                     {
                         _inputFile.Seek(-3, SeekOrigin.Current);
-                        _inputFile.Read(newcrcbytes, 0, 4);
-                        newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
+                        newcrc = _inputFile.ReadUInt32();
                         attempt++;
                     }
 
+                    // Set the real file end
                     fileEnd = _inputFile.Position - 1;
                     if (pkzip)
                     {
@@ -271,88 +273,82 @@ namespace WiseUnpacker.HWUN
                     }
                 }
 
+                // If an error occurred or the CRC does not match
                 if (inflater.Result != 0x0000 || newcrc != inflater.CRC)
                 {
                     inflater.CRC = 0xffffffff;
                     newcrc = 0xfffffffe;
                 }
 
+                // Write the starting offset of the file to the dumpfile
                 dumpFile.Write(BitConverter.GetBytes(fileStart), 0, 4);
             } while (newcrc != inflater.CRC);
 
+            // Write the ending offset for the last file to the dumpfile
             dumpFile.Write(BitConverter.GetBytes(fileEnd), 0, 4);
             dumpFile.Close();
+
             return extracted;
         }
 
         /// <summary>
         /// Find the real offset for non-zipped contents
         /// </summary>
-        private bool FindReal(string dir, bool pkzip, uint approxOffset, out uint realOffset)
+        private bool FindReal(string dir, long approxOffset, out long realOffset)
         {
             realOffset = 0x00;
-            byte[] newcrcbytes = new byte[4];
-            uint newcrc = 0, pos;
+            uint newcrc = 0;
+            long pos;
             var inflater = new InflateImpl();
 
-            if (!pkzip)
-            {
-                if (approxOffset < 0x100)
-                    approxOffset = 0x100;
-                else if (approxOffset >= 0xbf00)
-                    approxOffset = 0xbf00;
-            }
+            // Reset the offset if out of bounds
+            if (approxOffset < 0x100)
+                approxOffset = 0x100;
+            else if (approxOffset > 0xBF00)
+                approxOffset = 0xBF00;
 
-            if (approxOffset >= 0x0000 && approxOffset <= 0xffff)
+            // If the approximate offset is a valid WORD value
+            if (approxOffset >= 0x0000 && approxOffset <= 0xFFFF)
             {
-                // "Detecting real archive offset"
+                // Attempt to find the real first file by inflating blocks
                 pos = 0x0000;
                 do
                 {
                     _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
                     inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
-                    _inputFile.Read(newcrcbytes, 0, 4);
-                    newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
+                    newcrc = _inputFile.ReadUInt32();
                     realOffset = approxOffset + pos;
                     pos++;
                 } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
 
+                // Try to find the ending position based on a valid CRC
                 if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == 0x100)
                 {
-                    unchecked
+                    pos = -1;
+                    do
                     {
-                        pos = (uint)-1;
-                        do
-                        {
-                            _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
-                            inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
-                            _inputFile.Read(newcrcbytes, 0, 4);
-                            newcrc = BitConverter.ToUInt32(newcrcbytes, 0);
-                            realOffset = approxOffset + pos;
-                            pos--;
-                        } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != (uint)-0x100);
-                    }
+                        _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
+                        inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
+                        newcrc = _inputFile.ReadUInt32();
+                        realOffset = approxOffset + pos;
+                        pos--;
+                    } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != -0x100);
                 }
             }
             else
             {
                 inflater.CRC = ~newcrc;
-                unchecked { pos = (uint)-0x100; }
+                pos = -0x100;
             }
 
-            unchecked
+            // Check for indicators of no WISE installer
+            if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == -0x100)
             {
-                if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == (uint)-0x100)
-                {
-                    // "ERROR: The file doesn''t seem to be a WISE installation"
-                    realOffset = 0xffffffff;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                realOffset = 0xFFFFFFFF;
+                return false;
             }
+
+            return true;
         }
 
         /// <summary>
