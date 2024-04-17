@@ -5,66 +5,117 @@ namespace WiseUnpacker.HWUN
 {
     internal class InflateImpl : SecureInflate
     {
-        public ReadOnlyCompositeStream? Input { get; private set; }
-        public Stream? Output { get; private set; }
-        public byte[] InputBuffer { get; private set; } = new byte[0x4000];
-        public ushort InputBufferPosition { get; private set; }
-        public ushort InputBufferSize { get; private set; }
-        public uint InputSize { get; private set; }
-        public uint OutputSize { get; private set; }
+        #region Properties
+
+        /// <summary>
+        /// Current number of bytes read from the input
+        /// </summary>
+        public long InputSize => _inputSize;
+
+        /// <summary>
+        /// Current number of bytes written to the output
+        /// </summary>
+        public long OutputSize => _outputSize;
+
+        /// <summary>
+        /// Inflation result
+        /// </summary>
         public ushort Result { get; private set; }
+
+        /// <summary>
+        /// Calculated CRC for inflated data
+        /// </summary>
         public uint CRC { get; set; }
+
+        #endregion
+
+        #region Internal State
+
+        /// <summary>
+        /// Source input for inflation
+        /// </summary>
+        private ReadOnlyCompositeStream? _input;
+
+        /// <summary>
+        /// Current number of bytes read from the input
+        /// </summary>
+        private long _inputSize;
+
+        /// <summary>
+        /// Output stream
+        /// </summary>
+        private Stream? _output;
+
+        /// <summary>
+        /// Current number of bytes written to the output
+        /// </summary>
+        private long _outputSize;
+
+        /// <summary>
+        /// Internal buffer for reading
+        /// </summary>
+        private readonly byte[] _buffer = new byte[0x4000];
+
+        /// <summary>
+        /// Current pointer to the internal buffer
+        /// </summary>
+        private ushort _bufferPosition;
+
+        /// <summary>
+        /// Size of the internal buffer
+        /// </summary>
+        private ushort _bufferSize;
+
+        #endregion
 
         public bool Inflate(ReadOnlyCompositeStream inf, string outf)
         {
-            InputBuffer = new byte[0x4000];
-            Input = inf;
-            Output = File.OpenWrite(outf);
-            InputSize = 0;
-            OutputSize = 0;
-            InputBufferSize = (ushort)InputBuffer.Length;
-            InputBufferPosition = InputBufferSize;
+            _input = inf;
+            _output = File.OpenWrite(outf);
+            _inputSize = 0;
+            _outputSize = 0;
+            _bufferSize = (ushort)_buffer.Length;
+            _bufferPosition = _bufferSize;
 
             CRC = CRC32.Start();
             bool inflated = SI_INFLATE();
-            inf.Seek(inf.Position - InputBufferSize + InputBufferPosition, SeekOrigin.Begin);
+            inf.Seek(inf.Position - _bufferSize + _bufferPosition, SeekOrigin.Begin);
             CRC = CRC32.End(CRC);
 
             Result = SI_ERROR;
-            Output.Close();
-            InputBuffer = [];
+            _output.Close();
             return inflated;
         }
 
         public override byte? SI_READ()
         {
-            if (InputBufferPosition >= InputBufferSize)
+            if (_bufferPosition >= _bufferSize)
             {
-                if (Input!.Position >= Input!.Length)
+                if (_input!.Position >= _input!.Length)
                 {
                     SI_BREAK = true;
                     return null;
                 }
                 else
                 {
-                    if (InputBufferSize > Input!.Length - Input!.Position)
-                        InputBufferSize = (ushort)(Input!.Length - Input!.Position);
+                    if (_bufferSize > _input!.Length - _input!.Position)
+                        _bufferSize = (ushort)(_input!.Length - _input!.Position);
 
-                    Input!.Read(InputBuffer, 0, InputBufferSize);
-                    InputBufferPosition = 0x0000;
+                    _input!.Read(_buffer, 0, _bufferSize);
+                    _bufferPosition = 0x0000;
                 }
             }
 
-            byte inflateread = InputBuffer[InputBufferPosition];
-            InputSize++;
-            InputBufferPosition++;
+            byte inflateread = _buffer[_bufferPosition];
+            _inputSize++;
+            _bufferPosition++;
             return inflateread;
         }
 
         public override void SI_WRITE(ushort amount)
         {
-            OutputSize += amount;
-            Output!.Write(SI_WINDOW, 0, amount);
+            _outputSize += amount;
+            _output!.Write(SI_WINDOW, 0, amount);
             CRC = CRC32.Add(CRC, SI_WINDOW, amount);
         }
     }
