@@ -526,7 +526,7 @@ namespace WiseUnpacker.HWUN
                     return null;
 
                 ActualNode = ActualNode.next[nextBit.Value]!;
-            } while (ActualNode.value != 0xffff && !SI_BREAK);
+            } while (ActualNode.value == 0xffff && !SI_BREAK);
 
             if (SI_BREAK)
                 SI_ERROR = 0x4000;
