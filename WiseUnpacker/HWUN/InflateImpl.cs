@@ -67,7 +67,7 @@ namespace WiseUnpacker.HWUN
         public bool Inflate(ReadOnlyCompositeStream inf, string outf)
         {
             _input = inf;
-            _output = File.OpenWrite(outf);
+            _output = File.Open(outf, FileMode.Create, FileAccess.Write, FileShare.None);
             _inputSize = 0;
             _outputSize = 0;
             _bufferSize = (ushort)_buffer.Length;
@@ -80,7 +80,7 @@ namespace WiseUnpacker.HWUN
                 var ds = new DeflateStream(_input, CompressionMode.Decompress);
                 while (true)
                 {
-                    byte[] buf = new byte[16 * 1024];
+                    byte[] buf = new byte[1024];
                     int read = ds.Read(buf, 0, buf.Length);
                     CRC = CRC32.Add(CRC, buf, (ushort)read);
                     _output.Write(buf, 0, read);
@@ -89,6 +89,7 @@ namespace WiseUnpacker.HWUN
                         break;
                 }
 
+                // Set the potential size of the data
                 _inputSize = _input.Position - start;
                 _outputSize = _output.Length;
             }

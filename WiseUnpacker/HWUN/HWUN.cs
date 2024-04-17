@@ -257,12 +257,16 @@ namespace WiseUnpacker.HWUN
                     inflater.CRC = 0x04034b50;
 
                 // Set the file end
-                fileEnd = fileStart + inflater.InputSize - 1;
+                if (pkzip)
+                    fileEnd = fileStart + 4;
+                else
+                    fileEnd = fileStart + inflater.InputSize - 1;
 
                 // If no inflation error occurred
                 if (inflated)
                 {
-                    /// Read the new CRC or signature
+                    // Read the new CRC or signature
+                    _inputFile.Seek(fileEnd, SeekOrigin.Begin);
                     newcrc = _inputFile.ReadUInt32();
 
                     // Attempt to find the correct CRC value
@@ -297,7 +301,7 @@ namespace WiseUnpacker.HWUN
                 // If we had an inflate error specifically
                 if (!inflated)
                     break;
-            } while (newcrc != inflater.CRC);
+            } while (newcrc != inflater.CRC && _inputFile.Position < _inputFile.Length - 5);
 
             // Write the ending offset for the last file to the dumpfile
             dumpFile.Write(BitConverter.GetBytes(fileEnd), 0, 4);
