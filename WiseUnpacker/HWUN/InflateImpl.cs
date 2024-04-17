@@ -1,5 +1,5 @@
 using System.IO;
-using SabreTools.IO;
+using SabreTools.IO.Streams;
 
 namespace WiseUnpacker.HWUN
 {

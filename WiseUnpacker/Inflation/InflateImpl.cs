@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
-using SabreTools.IO;
-using WiseUnpacker.Files;
+using SabreTools.IO.Streams;
 
 namespace WiseUnpacker.Inflation
 {

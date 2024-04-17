@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
-using SabreTools.IO;
+using SabreTools.IO.Extensions;
+using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
 using WiseUnpacker.Files;
 using WiseUnpacker.HWUN;

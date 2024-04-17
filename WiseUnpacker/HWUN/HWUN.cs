@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using SabreTools.IO;
+using SabreTools.IO.Extensions;
+using SabreTools.IO.Streams;
 
 namespace WiseUnpacker.HWUN
 {
