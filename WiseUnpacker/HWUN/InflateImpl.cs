@@ -85,7 +85,7 @@ namespace WiseUnpacker.HWUN
                     CRC = CRC32.Add(CRC, buf, (ushort)read);
                     _output.Write(buf, 0, read);
 
-                    if (read < buf.Length)
+                    if (read == 0)
                         break;
                 }
 
