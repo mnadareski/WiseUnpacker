@@ -1,9 +1,10 @@
 using System.IO;
+using System.IO.Compression;
 using SabreTools.IO.Streams;
 
 namespace WiseUnpacker.HWUN
 {
-    internal class InflateImpl : SecureInflate
+    internal class InflateImpl
     {
         #region Properties
 
@@ -16,11 +17,6 @@ namespace WiseUnpacker.HWUN
         /// Current number of bytes written to the output
         /// </summary>
         public long OutputSize => _outputSize;
-
-        /// <summary>
-        /// Inflation result
-        /// </summary>
-        public ushort Result { get; private set; }
 
         /// <summary>
         /// Calculated CRC for inflated data
@@ -78,45 +74,32 @@ namespace WiseUnpacker.HWUN
             _bufferPosition = _bufferSize;
 
             CRC = CRC32.Start();
-            bool inflated = SI_INFLATE();
-            inf.Seek(inf.Position - _bufferSize + _bufferPosition, SeekOrigin.Begin);
+            try
+            {
+                long start = _input.Position;
+                var ds = new DeflateStream(_input, CompressionMode.Decompress);
+                while (true)
+                {
+                    byte[] buf = new byte[16 * 1024];
+                    int read = ds.Read(buf, 0, buf.Length);
+                    CRC = CRC32.Add(CRC, buf, (ushort)read);
+                    _output.Write(buf, 0, read);
+
+                    if (read < buf.Length)
+                        break;
+                }
+
+                _inputSize = _input.Position - start;
+                _outputSize = _output.Length;
+            }
+            catch
+            {
+                return false;
+            }
             CRC = CRC32.End(CRC);
 
-            Result = SI_ERROR;
             _output.Close();
-            return inflated;
-        }
-
-        public override byte? SI_READ()
-        {
-            if (_bufferPosition >= _bufferSize)
-            {
-                if (_input!.Position >= _input!.Length)
-                {
-                    SI_BREAK = true;
-                    return null;
-                }
-                else
-                {
-                    if (_bufferSize > _input!.Length - _input!.Position)
-                        _bufferSize = (ushort)(_input!.Length - _input!.Position);
-
-                    _input!.Read(_buffer, 0, _bufferSize);
-                    _bufferPosition = 0x0000;
-                }
-            }
-
-            byte inflateread = _buffer[_bufferPosition];
-            _inputSize++;
-            _bufferPosition++;
-            return inflateread;
-        }
-
-        public override void SI_WRITE(ushort amount)
-        {
-            _outputSize += amount;
-            _output!.Write(SI_WINDOW, 0, amount);
-            CRC = CRC32.Add(CRC, SI_WINDOW, amount);
+            return true;
         }
     }
 }

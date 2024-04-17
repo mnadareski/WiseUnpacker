@@ -246,7 +246,7 @@ namespace WiseUnpacker.HWUN
                     _ = _inputFile.ReadUInt32(); // Compressed size
                     _ = _inputFile.ReadUInt32(); // Uncompressed size
                     ushort filenameLength = _inputFile.ReadUInt16();
-                    ushort extraLength = _inputFile.ReadUInt16(); 
+                    ushort extraLength = _inputFile.ReadUInt16();
                     if (filenameLength + extraLength > 0)
                         _ = _inputFile.ReadBytes(filenameLength + extraLength);
                 }
@@ -260,14 +260,14 @@ namespace WiseUnpacker.HWUN
                 fileEnd = fileStart + inflater.InputSize - 1;
 
                 // If no inflation error occurred
-                if (inflated || inflater.Result == 0x0000)
+                if (inflated)
                 {
-                    // Read the new CRC
+                    /// Read the new CRC or signature
                     newcrc = _inputFile.ReadUInt32();
 
                     // Attempt to find the correct CRC value
                     uint attempt = 0;
-                    while (inflater.CRC != newcrc && attempt < 8 && _inputFile.Position + 1 < _inputFile.Length)
+                    while (inflater.CRC != newcrc && attempt < (pkzip ? int.MaxValue : 8) && _inputFile.Position + 1 < _inputFile.Length)
                     {
                         _inputFile.Seek(-3, SeekOrigin.Current);
                         newcrc = _inputFile.ReadUInt32();
@@ -280,11 +280,12 @@ namespace WiseUnpacker.HWUN
                     {
                         fileEnd -= 4;
                         _inputFile.Seek(-4, SeekOrigin.Current);
+                        newcrc = 0xfffffffe;
                     }
                 }
 
                 // If an error occurred or the CRC does not match
-                if (!inflated || inflater.Result != 0x0000 || newcrc != inflater.CRC)
+                if (!inflated || newcrc != inflater.CRC)
                 {
                     inflater.CRC = 0xffffffff;
                     newcrc = 0xfffffffe;
@@ -334,10 +335,10 @@ namespace WiseUnpacker.HWUN
                     newcrc = _inputFile.ReadUInt32();
                     realOffset = approxOffset + pos;
                     pos++;
-                } while ((!inflated || inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
+                } while ((!inflated || inflater.CRC != newcrc || newcrc == 0x00000000) && pos != 0x100);
 
                 // Try to find the ending position based on a valid CRC
-                if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == 0x100)
+                if ((inflater.CRC != newcrc || newcrc == 0x00000000) && pos == 0x100)
                 {
                     pos = -1;
                     do
@@ -347,7 +348,7 @@ namespace WiseUnpacker.HWUN
                         newcrc = _inputFile.ReadUInt32();
                         realOffset = approxOffset + pos;
                         pos--;
-                    } while ((!inflated || inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != -0x100);
+                    } while ((!inflated || inflater.CRC != newcrc || newcrc == 0x00000000) && pos != -0x100);
                 }
             }
             else
@@ -357,7 +358,7 @@ namespace WiseUnpacker.HWUN
             }
 
             // Check for indicators of no WISE installer
-            if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == -0x100)
+            if ((inflater.CRC != newcrc || newcrc == 0x00000000) && pos == -0x100)
             {
                 realOffset = 0xFFFFFFFF;
                 return false;
