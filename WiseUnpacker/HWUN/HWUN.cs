@@ -493,11 +493,11 @@ namespace WiseUnpacker.HWUN
         private bool RenameFiles(string dir, int extracted)
         {
             string nn = string.Empty;
-            uint fileOffset2, scriptOffset1 = 0, scriptOffset2;
-            long l0, fileOffset1 = 0, offs;
+            uint fileOffset2, scriptOffset1, scriptOffset2;
+            long l0, fileOffset1, offs;
 
             // "Searching for script file"
-            uint res = 1;
+            uint res;
             uint instcnt = 0;
 
             // Search for the script file
@@ -543,7 +543,7 @@ namespace WiseUnpacker.HWUN
                 dumpEntryOffset += 1;
                 fileOffset1 = dumpFileOffsets[dumpEntryOffset + 0];
                 fileOffset2 = dumpFileOffsets[dumpEntryOffset + 1];
-                l0 = 0xffffffff;
+                l0 = -1; // l0 = 0xffffffff;
                 res = 1;
 
                 // Find the name offset for this entry, if possible
@@ -591,7 +591,7 @@ namespace WiseUnpacker.HWUN
                 }
 
                 // If a valid name was found at the offset
-                entry = (dumpEntryOffset + 0x04) / 0x04;
+                entry = dumpEntryOffset + 1;
                 if (res == 0)
                 {
                     // Sanitize the new file path
