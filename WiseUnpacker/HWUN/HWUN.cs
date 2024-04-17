@@ -673,13 +673,17 @@ namespace WiseUnpacker.HWUN
                 while (!found && offset < scriptFile.Length)
                 {
                     // Search for the first instance of "%\"
-                    while (offset < scriptFile.Length && (ReadByte(scriptFile, offset + 0) != '%') || ReadByte(scriptFile, offset + 1) != '\\')
+                    while (ReadByte(scriptFile, offset + 0) != '%' || ReadByte(scriptFile, offset + 1) != '\\')
                     {
                         offset++;
+
+                        // If the end of the file has been reached
+                        if (offset >= scriptFile.Length - 1)
+                            break;
                     }
 
                     // If the value was not found
-                    if (offset >= scriptFile.Length)
+                    if (offset >= scriptFile.Length - 1)
                         break;
 
                     // Look for a previous entry in the script file
