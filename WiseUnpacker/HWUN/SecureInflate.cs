@@ -424,11 +424,8 @@ namespace WiseUnpacker.HWUN
         /// </summary>
         private ushort? ReadBits(byte NumberOfBits)
         {
-            ushort ResultMask;
-            ushort Result;
-
-            ResultMask = 1;
-            Result = 0;
+            ushort ResultMask = 1;
+            ushort Result = 0;
             while (NumberOfBits > 0)
             {
                 if (BitNumber == 8)
@@ -447,6 +444,7 @@ namespace WiseUnpacker.HWUN
                 BitNumber++;
                 NumberOfBits--;
             }
+
             return Result;
         }
 
@@ -777,8 +775,7 @@ namespace WiseUnpacker.HWUN
         {
             while (length > 0)
             {
-                OutputByte(SI_WINDOW[(SI_POSITION + 0x8000 - distance) & 0x7fff]);
-                // OutputByte($ff);
+                OutputByte(SI_WINDOW[SI_POSITION - distance]);
                 length--;
             }
         }
@@ -959,7 +956,7 @@ namespace WiseUnpacker.HWUN
                                 {
                                     // No-op?
                                 }
-                                else if (Literal <= 0x11d)
+                                else if (Literal <= 0x11D)
                                 {
                                     uint? extrabits = ReadBits(LengthcodeValueExtrabits[Literal]);
                                     if (extrabits == null)
@@ -995,6 +992,7 @@ namespace WiseUnpacker.HWUN
 
             if ((SI_ERROR & 0xc000) == 0x0000 && SI_POSITION > 0x0000)
                 SI_WRITE(SI_POSITION);
+
             DeAllocateStaticTables();
             SI_WINDOW = [];
 
