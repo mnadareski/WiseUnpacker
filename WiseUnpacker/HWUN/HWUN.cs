@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO;
 
@@ -488,20 +489,23 @@ namespace WiseUnpacker.HWUN
 
             // Open the dumpfile
             string dumpFilePath = Path.Combine(dir, "WISE0000");
-            Stream dumpFile = File.Open(dumpFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            long entry = (dumpFile.Length - 0x04) / 0x04;
+            uint[] dumpFileOffsets;
+            using (var dumpFileStream = File.Open(dumpFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                dumpFileOffsets = ParseDumpFile(dumpFileStream);
+            }
 
             // Calculate the offset shift value
-            long shift, shiftCheck = 0;
-            bool shiftFound = false;
+            long entry = dumpFileOffsets.Length - 1, shift, shiftCheck = 0;
+            bool shiftFound;
             do
             {
                 // Get the first shift value
-                shift = SearchForOffsetShift(scriptFile, dumpFile, out shiftFound, ref entry);
+                shift = SearchForOffsetShift(scriptFile, dumpFileOffsets, out shiftFound, ref entry);
 
                 // If a valid shift value was found, get the next shift to compare
                 if (shiftFound)
-                    shiftCheck = SearchForOffsetShift(scriptFile, dumpFile, out shiftFound, ref entry);
+                    shiftCheck = SearchForOffsetShift(scriptFile, dumpFileOffsets, out shiftFound, ref entry);
 
             } while (entry > 0 && (!shiftFound || shift != shiftCheck));
 
@@ -509,18 +513,17 @@ namespace WiseUnpacker.HWUN
             if (!shiftFound)
             {
                 scriptFile.Close();
-                dumpFile.Close();
                 return false;
             }
 
             // Rename the files
-            long dumpEntryOffset = 0x04;
-            while (dumpEntryOffset + 8 < dumpFile.Length)
+            long dumpEntryOffset = 1;
+            while (dumpEntryOffset + 2 < dumpFileOffsets.Length)
             {
                 // Read the current entry and next entry offsets
-                dumpEntryOffset += 0x04;
-                fileOffset1 = ReadDWORD(dumpFile, dumpEntryOffset + 0x00);
-                fileOffset2 = ReadDWORD(dumpFile, dumpEntryOffset + 0x04);
+                dumpEntryOffset += 1;
+                fileOffset1 = dumpFileOffsets[dumpEntryOffset + 0];
+                fileOffset2 = dumpFileOffsets[dumpEntryOffset + 1];
                 l0 = 0xffffffff;
                 res = 1;
 
@@ -598,9 +601,26 @@ namespace WiseUnpacker.HWUN
 
             // Close the script and dump files
             scriptFile.Close();
-            dumpFile.Close();
 
             return true;
+        }
+
+        /// <summary>
+        /// Raed a dumpfile and parse out the offsets
+        /// </summary>
+        public static uint[] ParseDumpFile(Stream dumpFile)
+        {
+            List<uint> offsets = [];
+
+            long length = dumpFile.Length;
+            while (length > 0)
+            {
+                uint offset = dumpFile.ReadUInt32();
+                offsets.Add(offset);
+                length -= 4;
+            }
+
+            return [.. offsets];
         }
 
         /// <summary>
@@ -668,35 +688,37 @@ namespace WiseUnpacker.HWUN
         }
 
         /// <summary>
-        /// Compare an entry in a scriptfile and dumpfile to get an offset shift, if possible
+        /// Compare an entry in a scriptfile and dumpfile offsets to get an offset shift, if possible
         /// </summary>
-        private static long SearchForOffsetShift(Stream scriptFile, Stream dumpFile, out bool found, ref long entry)
+        private static long SearchForOffsetShift(Stream scriptFile, uint[] dumpFileOffsets, out bool found, ref long entry)
         {
             // Create variables for the two offsets
-            uint dumpOffset;
-            uint scriptOffset = 0;
+            uint dumpOffset1;
+            uint scriptOffset1 = 0;
 
             // Search for the offset shift
             do
             {
                 // Get the real offset values from the dump file
-                dumpOffset = ReadDWORD(dumpFile, entry * 0x04 - 0x04);
-                uint nextDumpOffset = ReadDWORD(dumpFile, entry * 0x04 - 0x00);
-                long scriptPosition = scriptFile!.Length - 0x07;
-                found = false;
+                dumpOffset1 = dumpFileOffsets[entry - 1];
+                uint dumpOffset2 = dumpFileOffsets[entry - 0];
+
+                // Start at the end of the scriptfile
+                long scriptPosition = scriptFile.Length - 0x07;
 
                 // Attempt to align the offset values
-                while (scriptPosition >= 0 && !found)
+                found = false;
+                while (scriptPosition > 0 && !found)
                 {
                     scriptPosition--;
-                    scriptOffset = ReadDWORD(scriptFile, scriptPosition + 0x00);
-                    uint nextScriptOffset = ReadDWORD(scriptFile, scriptPosition + 0x04);
+                    scriptOffset1 = ReadDWORD(scriptFile, scriptPosition + 0x00);
+                    uint scriptOffset2 = ReadDWORD(scriptFile, scriptPosition + 0x04);
 
                     // If the correct offset shift has been found
-                    if (nextScriptOffset > scriptOffset
-                        && nextScriptOffset < nextDumpOffset
-                        && scriptOffset < dumpOffset
-                        && nextScriptOffset - scriptOffset == nextDumpOffset - dumpOffset)
+                    if (scriptOffset2 > scriptOffset1
+                        && scriptOffset2 < dumpOffset2
+                        && scriptOffset1 < dumpOffset1
+                        && scriptOffset2 - scriptOffset1 == dumpOffset2 - dumpOffset1)
                     {
                         found = true;
                     }
@@ -707,7 +729,7 @@ namespace WiseUnpacker.HWUN
                     entry--;
             } while (!found && entry > 0);
 
-            return dumpOffset - scriptOffset;
+            return dumpOffset1 - scriptOffset1;
         }
 
         #endregion
