@@ -9,37 +9,24 @@ using MZ = SabreTools.Models.MSDOS;
 using LE = SabreTools.Models.LinearExecutable;
 using NE = SabreTools.Models.NewExecutable;
 using PE = SabreTools.Models.PortableExecutable;
+using System.Collections.Generic;
 
 namespace WiseUnpacker
 {
     public class WiseUnpacker
     {
-        // Inflation helper
-        private Inflation.InflateImpl? inflate;
-
         // IO values
         private ReadOnlyCompositeStream? inputFile;
-        private bool pkzip;
 
         // Deterministic values
         private static readonly FormatProperty[] knownFormats = FormatProperty.GenerateKnownFormats();
         private FormatProperty? currentFormat;
         private long dataBase;
 
-        // Heuristic values
-        private long offsetApproximate;
-        private long offsetReal;
-        private long fileStart;
-        private long fileEnd;
-        private long extracted;
-
         /// <summary>
         /// Create a new heuristic unpacker
         /// </summary>
-        public WiseUnpacker()
-        {
-            inflate = null;
-        }
+        public WiseUnpacker() { }
 
         /// <summary>
         /// Extract a file to an output using HWUN
@@ -78,31 +65,7 @@ namespace WiseUnpacker
 
             // Fall back on heuristics if we couldn't match
             if (currentFormat.ArchiveEnd == 0)
-            {
-                inputFile.Seek(0, SeekOrigin.Begin);
-                Approximate();
-                if (!pkzip)
-                {
-                    if (FindReal(outputPath))
-                    {
-                        ExtractFiles(outputPath);
-                        RenameFiles(outputPath);
-                        Close();
-                        return true;
-                    }
-                }
-                else
-                {
-                    offsetReal = offsetApproximate;
-                    ExtractFiles(outputPath);
-                    RenameFiles(outputPath);
-                    Close();
-                    return true;
-                }
-
-                Close();
-                return false;
-            }
+                return ExtractToHWUN(file, outputPath);
 
             // Skip over the addditional DLL name, if we expect it
             long dataStart = currentFormat.ExecutableOffset;
@@ -148,9 +111,9 @@ namespace WiseUnpacker
                 inputFile.Read(waitingBytes, 1, waitingBytes[0]);
             }
 
-            offsetReal = inputFile.Position;
-            ExtractFiles(outputPath);
-            RenameFiles(outputPath);
+            long offsetReal = inputFile.Position;
+            int extracted = ExtractFiles(outputPath, currentFormat.NoCrc, offsetReal);
+            RenameFiles(outputPath, extracted);
 
             Close();
             return true;
@@ -182,87 +145,6 @@ namespace WiseUnpacker
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Approximate the file offset for the Wise installer
-        /// </summary>
-        private void Approximate()
-        {
-            byte[] buf = new byte[0xc200];
-            inputFile!.Seek(0, SeekOrigin.Begin);
-            inputFile.Read(buf, 0, 0xc000);
-            offsetApproximate = 0xbffc;
-
-            int tempOffset;
-            while ((buf[offsetApproximate] != 0 || buf[offsetApproximate + 1] != 0) && offsetApproximate > 0x20)
-            {
-                offsetApproximate -= 1;
-                if (buf[offsetApproximate] == 0 && buf[offsetApproximate + 1] == 0)
-                {
-                    int temp = 0;
-                    for (tempOffset = 1; tempOffset <= 0x20; tempOffset++)
-                    {
-                        if (buf[offsetApproximate - tempOffset] == 0)
-                            temp++;
-                    }
-
-                    if (temp < 0x4)
-                        offsetApproximate -= 2;
-                }
-            }
-
-            offsetApproximate += 2;
-            while (buf[offsetApproximate + 3] == 0 && offsetApproximate + 4 < 0xc000)
-            {
-                offsetApproximate += 4;
-            }
-
-            int tempBlock = 0;
-            if (buf[offsetApproximate] <= 0x20 && buf[offsetApproximate + 1] > 0 && buf[offsetApproximate + 1] + offsetApproximate + 3 < 0xc000)
-            {
-                int temp = buf[offsetApproximate + 1] + 0x2;
-                for (tempOffset = 0x2; tempOffset < temp; tempOffset++)
-                {
-                    if (buf[offsetApproximate + tempOffset] >= 0x80)
-                        tempBlock++;
-                }
-
-                if (tempBlock * 0x100 / temp < 0x10)
-                    offsetApproximate += temp;
-            }
-
-            tempOffset = 0x2;
-            while (tempBlock != 0x4034b50 && tempOffset < 0x80 && offsetApproximate - tempOffset >= 0 && offsetApproximate - tempOffset <= 0xbffc)
-            {
-                byte[] tempBlockBuf = new byte[4];
-                Array.ConstrainedCopy(buf, (int)(offsetApproximate - tempOffset), tempBlockBuf, 0, 4);
-                tempBlock = BitConverter.ToInt32(tempBlockBuf, 0);
-                tempOffset++;
-            }
-
-            if (tempOffset < 0x80)
-            {
-                pkzip = true;
-                tempOffset = 0;
-                int tempFlag = 0;
-                while (tempFlag != 0x4034b50 && tempOffset < offsetApproximate)
-                {
-                    byte[] tempFlagBuf = new byte[4];
-                    Array.ConstrainedCopy(buf, tempOffset, tempFlagBuf, 0, 4);
-                    tempFlag = BitConverter.ToInt32(tempFlagBuf, 0);
-                    tempOffset++;
-                }
-
-                tempOffset -= 1;
-                offsetApproximate = tempOffset;
-                if (tempFlag != 0x4034b50)
-                    pkzip = false;
-            }
-            else
-            {
-                pkzip = false;
-            }
         }
 
         /// <summary>
@@ -407,7 +289,7 @@ namespace WiseUnpacker
                                 && (mz.Model.Header.RelocationItems == 0 || mz.Model.Header.RelocationItems == 3))
                             {
                                 currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
-                                fileEnd = (int)(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size);
+                                _ = (int)(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size);
                                 searchAgainAtEnd = true;
                                 break;
                             }
@@ -425,346 +307,417 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Based on the approximate values, find the real file offset
-        /// </summary>
-        private bool FindReal(string outputPath)
-        {
-            if (!pkzip)
-            {
-                if (offsetApproximate < 0x100)
-                    offsetApproximate = 0x100;
-                else if (offsetApproximate > 0xbf00)
-                    offsetApproximate = 0xbf00;
-            }
-
-            int pos;
-            uint newcrc = 0;
-            if (offsetApproximate >= 0 && offsetApproximate <= 0xffff)
-            {
-                pos = 0;
-                do
-                {
-                    inputFile!.Seek(offsetApproximate + pos, SeekOrigin.Begin);
-                    Inflate(inputFile, Path.Combine(outputPath, "WISE0001"));
-                    newcrc = inputFile.ReadUInt32();
-                    offsetReal = (uint)(offsetApproximate + pos);
-                    pos++;
-                }
-                while ((inflate!.CRC != newcrc || inflate.Result != 0 || newcrc == 0) && pos != 0x100);
-
-                if ((inflate.CRC != newcrc || newcrc == 0 || inflate.Result != 0) && pos == 0x100)
-                {
-                    pos = -1;
-                    do
-                    {
-                        inputFile.Seek(offsetApproximate + pos, SeekOrigin.Begin);
-                        Inflate(inputFile, Path.Combine(outputPath, "WISE0001"));
-                        newcrc = inputFile.ReadUInt32();
-                        offsetReal = (uint)(offsetApproximate + pos);
-                        pos -= 1;
-                    }
-                    while ((inflate.CRC != newcrc || inflate.Result != 0 || newcrc == 0) && pos != -0x100);
-                }
-            }
-            else
-            {
-                inflate!.CRC = ~newcrc;
-                pos = -0x100;
-            }
-
-            if ((inflate.CRC != newcrc || newcrc == 0 || inflate.Result != 0) && pos == -0x100)
-            {
-                offsetReal = 0xffffffff;
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Extract all files to the output directory
-        /// </summary>
-        /// <param name="outputPath">Output directory for extracted files</param>
-        private void ExtractFiles(string outputPath)
-        {
-            uint newcrc = 0;
-
-            Stream dumpFile = File.OpenWrite(Path.Combine(outputPath, "WISE0000"));
-            inputFile!.Seek((int)offsetReal, SeekOrigin.Begin);
-            do
-            {
-                extracted++;
-                long fs = inputFile.Position;
-                if (pkzip)
-                {
-                    byte[] buf = new byte[0x400];
-                    inputFile.Read(buf, 0, 0xe);
-                    newcrc = inputFile.ReadUInt32();
-                    inputFile.Read(buf, 0, 0x8);
-                    inputFile.Read(buf, 0, 0x2);
-                    short len1 = BitConverter.ToInt16(buf, 0);
-                    inputFile.Read(buf, 0, 0x2);
-                    short len2 = BitConverter.ToInt16(buf, 0);
-                    if (len1 + len2 > 0)
-                        inputFile.Read(buf, 0, len1 + len2);
-                }
-
-                if (inputFile.Position == inputFile.Length)
-                    break;
-
-                Inflate(inputFile, Path.Combine(outputPath, $"WISE{extracted.ToString("X").PadLeft(4, '0')}"));
-                fileStart = fs;
-                if (pkzip)
-                    inflate!.CRC = 0x4034b50;
-
-                fileEnd = fileStart + inflate!.InputSize - 1;
-                if (inflate.Result == 0)
-                {
-                    newcrc = inputFile.ReadUInt32();
-                    int attempt = 0;
-                    while (inflate.CRC != newcrc && attempt < 8 && inputFile.Position + 1 < inputFile.Length)
-                    {
-                        inputFile.Seek(inputFile.Position - 3, SeekOrigin.Begin);
-                        newcrc = inputFile.ReadUInt32();
-                        attempt++;
-                    }
-
-                    fileEnd = inputFile.Position - 1;
-                    if (pkzip)
-                    {
-                        fileEnd -= 4;
-                        inputFile.Seek(inputFile.Position - 4, SeekOrigin.Begin);
-                    }
-                }
-
-                if (inflate.Result != 0 || newcrc != inflate.CRC)
-                {
-                    inflate.CRC = 0xffffffff;
-                    newcrc = 0xfffffffe;
-                }
-
-                dumpFile.Write(BitConverter.GetBytes((int)fileStart), 0, 4);
-            }
-            while (newcrc == inflate.CRC);
-
-            dumpFile.Write(BitConverter.GetBytes((int)fileEnd), 0, 4);
-            dumpFile.Close();
-        }
-
-        /// <summary>
-        /// Run inflation on an input file with an output path
-        /// </summary>
-        /// <param name="inf">Input multipart file</param>
-        /// <param name="outputPath">Output directory for extracted files</param>
-        private void Inflate(ReadOnlyCompositeStream inf, string outputPath)
-        {
-            inflate = new Inflation.InflateImpl(inf, outputPath);
-            inflate.SI_INFLATE();
-            inflate.Close();
-        }
-
-        /// <summary>
-        /// Rename extracted files based on Wise installer names
-        /// </summary>
-        /// <param name="outputPath">Output directory for extracted files</param>
-        private void RenameFiles(string outputPath)
-        {
-            ReadOnlyFile? extractedFile = null;
-            string newName = string.Empty;
-            long l;
-            int sh0, sh1, l1, l2, l3 = 0, l4, l5;
-
-            int res = 1;
-            int instcnt = 0;
-            int fileno = 1;
-            for (; fileno < extracted && fileno < 6 && res != 0; fileno++)
-            {
-                extractedFile = new ReadOnlyFile(outputPath, $"WISE{fileno.ToString("X").PadLeft(4, '0')}");
-                l = 0;
-                while (res != 0 && l < extractedFile.Length)
-                {
-                    while (l < extractedFile.Length && (extractedFile.ReadByte(l + 0) != 0x25 || extractedFile.ReadByte(l + 1) != 0x5c))
-                    {
-                        l++;
-                    }
-
-                    if (l < extractedFile.Length)
-                    {
-                        l1 = 1;
-                        while (l1 < 0x40 && (extractedFile.ReadByte(l - l1 + 0) != 0x25 || extractedFile.ReadByte(l - l1 + 1) == 0x5c))
-                        {
-                            l1++;
-                        }
-
-                        if (l1 < 0x40)
-                            res = 0;
-                        else
-                            l++;
-                    }
-                }
-
-                if (res != 0)
-                    extractedFile.Close();
-            }
-
-            if (fileno < 6 && fileno < extracted)
-            {
-                var df = new ReadOnlyFile(outputPath, "WISE0000");
-                l5 = (int)((df.Length - 0x4) / 0x4);
-
-                do
-                {
-                    do
-                    {
-                        l1 = df.ReadInt32(l5 * 0x4 - 0x4);
-                        l2 = df.ReadInt32(l5 * 0x4 - 0);
-                        l = extractedFile!.Length - 0x7;
-                        res = 1;
-
-                        while (l >= 0 && res != 0)
-                        {
-                            l -= 1;
-                            l3 = extractedFile.ReadInt32(l + 0);
-                            l4 = extractedFile.ReadInt32(l + 0x4);
-                            if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
-                                res = 0;
-                        }
-
-                        if (res != 0)
-                            l5 -= 1;
-                    }
-                    while (res != 0 && l5 != 0);
-
-                    sh0 = l1 - l3;
-
-                    if (res == 0)
-                    {
-                        do
-                        {
-                            l1 = df.ReadInt32(l5 * 0x4 - 0x4);
-                            l2 = df.ReadInt32(l5 * 0x4 - 0);
-                            l = extractedFile.Length - 0x7;
-                            res = 1;
-                            while (l >= 0 && res != 0)
-                            {
-                                l -= 1;
-                                l3 = extractedFile.ReadInt32(l + 0);
-                                l4 = extractedFile.ReadInt32(l + 0x4);
-                                if (l4 > l3 && l4 < l2 && l3 < l1 && l4 - l3 == l2 - l1)
-                                    res = 0;
-                            }
-
-                            if (res != 0)
-                                l5 -= 1;
-                        }
-                        while (res != 0 && l5 != 0);
-                    }
-
-                    sh1 = l1 - l3;
-                }
-                while (l5 != 0 && (res != 0 || sh0 != sh1));
-
-                if (res == 0)
-                {
-                    /* shiftvalue = sh0 */
-                    l5 = -0x4;
-                    while (l5 + 8 < df.Length)
-                    {
-                        l5 += 0x4;
-                        l1 = df.ReadInt32(l5 + 0);
-                        l2 = df.ReadInt32(l5 + 0x4);
-                        uint l0 = 0xffffffff;
-                        res = 1;
-                        while (l0 + 0x29 < extractedFile.Length && res != 0)
-                        {
-                            l0 += 1;
-                            l3 = extractedFile.ReadInt32(l0 + 0);
-                            l4 = extractedFile.ReadInt32(l0 + 0x4);
-                            if (l1 == l3 + sh0 && l2 == l4 + sh0)
-                                res = 0;
-                        }
-
-                        int offset = 0;
-                        if (res == 0)
-                        {
-                            l2 = extractedFile.ReadInt16(l0 - 2);
-                            newName = "";
-                            offset = (int)l0;
-                            l0 += 0x28;
-                            res = 2;
-                            if (extractedFile.ReadByte(l0) == 0x25)
-                            {
-                                while (extractedFile.ReadByte(l0) != 0)
-                                {
-                                    newName += (char)extractedFile.ReadByte(l0);
-                                    if (extractedFile.ReadByte(l0) < 0x20)
-                                        res = 1;
-
-                                    if (extractedFile.ReadByte(l0) == 0x25 && res != 1)
-                                        res = 3;
-
-                                    if (extractedFile.ReadByte(l0) == 0x5c && extractedFile.ReadByte(l0 - 1) == 0x25 && res == 3)
-                                        res = 4;
-
-                                    if (res == 4)
-                                        res = 0;
-
-                                    l0++;
-                                }
-                            }
-
-                            if (res != 0)
-                                res = 0x80;
-                        }
-
-                        l1 = (l5 + 0x4) / 0x4;
-                        if (res == 0)
-                        {
-                            newName = newName
-                                .Replace("%", string.Empty)
-                                .Replace("\\\\", "\\")
-                                .Replace('\\', Path.DirectorySeparatorChar);
-
-                            newName = Path.Combine(outputPath, newName);
-
-                            string fname = Path.Combine(outputPath, $"WISE{l1.ToString("X").PadLeft(4, '0')}");
-
-                            /* Make directories */
-                            string? nnDir = Path.GetDirectoryName(Path.GetFullPath(newName));
-                            Directory.CreateDirectory(nnDir!);
-
-                            /* Rename file */
-                            File.Delete(newName);
-                            File.Move(fname, newName);
-                            var dt = extractedFile.ReadDateTime(offset + 0x8);
-                            File.SetCreationTime(newName, dt);
-                            File.SetLastWriteTime(newName, dt);
-                        }
-                        else if (res == 0x80)
-                        {
-                            instcnt++;
-
-                            /* Rename file */
-                            File.Delete(Path.Combine(outputPath, $"INST{instcnt.ToString("X").PadLeft(4, '0')}"));
-                            File.Move(Path.Combine(outputPath, $"WISE{l1.ToString("X").PadLeft(4, '0')}"),
-                                Path.Combine(outputPath, $"INST{instcnt.ToString("X").PadLeft(4, '0')}"));
-                        }
-                    }
-                }
-
-                df.Close();
-                extractedFile.Close();
-            }
-        }
-
-        /// <summary>
         /// Close the possible Wise installer
         /// </summary>
         private void Close()
         {
             inputFile?.Close();
         }
+
+        #region Copied from HWUN -- TODO: Remove redundant implementations
+
+        /// <summary>
+        /// Extract all files to a directory
+        /// </summary>
+        private int ExtractFiles(string dir, bool pkzip, long offset)
+        {
+            uint newcrc = 0;
+            var inflater = new InflateImpl();
+
+            // "Extracting files"
+            int extracted = 0;
+            long fileEnd = 0;
+            var dumpFile = File.OpenWrite(Path.Combine(dir, "WISE0000"));
+            inputFile!.Seek(offset, SeekOrigin.Begin);
+
+            do
+            {
+                // Increment the number of extracted files
+                extracted++;
+
+                // Cache the current position as the file start
+                long fileStart = inputFile.Position;
+                if (fileStart == inputFile.Length - 1)
+                    break;
+
+                // Read PKZIP header values
+                if (pkzip)
+                {
+                    _ = inputFile.ReadUInt32(); // Signature
+                    _ = inputFile.ReadUInt16(); // Version
+                    _ = inputFile.ReadUInt16(); // Flags
+                    _ = inputFile.ReadUInt16(); // Compression
+                    _ = inputFile.ReadUInt16(); // Modification time
+                    _ = inputFile.ReadUInt16(); // Modification date
+                    newcrc = inputFile.ReadUInt32();
+                    _ = inputFile.ReadUInt32(); // Compressed size
+                    _ = inputFile.ReadUInt32(); // Uncompressed size
+                    ushort filenameLength = inputFile.ReadUInt16();
+                    ushort extraLength = inputFile.ReadUInt16();
+                    if (filenameLength + extraLength > 0)
+                        _ = inputFile.ReadBytes(filenameLength + extraLength);
+                }
+
+                // Inflate the data to a new file
+                bool inflated = inflater.Inflate(inputFile, Path.Combine(dir, $"WISE{extracted:X4}"));
+                if (pkzip)
+                    inflater.CRC = 0x04034b50;
+
+                // Set the file end
+                if (pkzip)
+                    fileEnd = fileStart + 4;
+                else
+                    fileEnd = fileStart + inflater.InputSize - 1;
+
+                // If no inflation error occurred
+                if (inflated)
+                {
+                    // Read the new CRC or signature
+                    inputFile.Seek(fileEnd, SeekOrigin.Begin);
+                    newcrc = inputFile.ReadUInt32();
+
+                    // Attempt to find the correct CRC value
+                    uint attempt = 0;
+                    while (inflater.CRC != newcrc && attempt < (pkzip ? int.MaxValue : 8) && inputFile.Position + 1 < inputFile.Length)
+                    {
+                        inputFile.Seek(-3, SeekOrigin.Current);
+                        newcrc = inputFile.ReadUInt32();
+                        attempt++;
+                    }
+
+                    // Set the real file end
+                    fileEnd = inputFile.Position - 1;
+                    if (pkzip)
+                    {
+                        fileEnd -= 4;
+                        inputFile.Seek(-4, SeekOrigin.Current);
+                        newcrc = 0xfffffffe;
+                    }
+                }
+
+                // If an error occurred or the CRC does not match
+                if (!inflated || newcrc != inflater.CRC)
+                {
+                    inflater.CRC = 0xffffffff;
+                    newcrc = 0xfffffffe;
+                }
+
+                // Write the starting offset of the file to the dumpfile
+                dumpFile.Write(BitConverter.GetBytes(fileStart), 0, 4);
+
+                // If we had an inflate error specifically
+                if (!inflated)
+                    break;
+            } while (newcrc != inflater.CRC && inputFile.Position < inputFile.Length - 5);
+
+            // Write the ending offset for the last file to the dumpfile
+            dumpFile.Write(BitConverter.GetBytes(fileEnd), 0, 4);
+            dumpFile.Close();
+
+            return extracted;
+        }
+
+        /// <summary>
+        /// Raed a dumpfile and parse out the offsets
+        /// </summary>
+        public static uint[] ParseDumpFile(Stream dumpFile)
+        {
+            List<uint> offsets = [];
+
+            long length = dumpFile.Length;
+            while (length > 0)
+            {
+                uint offset = dumpFile.ReadUInt32();
+                offsets.Add(offset);
+                length -= 4;
+            }
+
+            return [.. offsets];
+        }
+
+        /// <summary>
+        /// Read a byte from a position in the stream
+        /// </summary>
+        private static byte ReadByte(Stream stream, long position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+            return stream.ReadByteValue();
+        }
+
+        /// <summary>
+        /// Read a WORD from a position in the stream
+        /// </summary>
+        private static ushort ReadWORD(Stream stream, long position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+            return stream.ReadUInt16();
+        }
+
+        /// <summary>
+        /// Read a DWORD from a position in the stream
+        /// </summary>
+        private static uint ReadDWORD(Stream stream, long position)
+        {
+            stream.Seek(position, SeekOrigin.Begin);
+            return stream.ReadUInt32();
+        }
+
+        /// <summary>
+        /// Rename files in the output directory
+        /// </summary>
+        private bool RenameFiles(string dir, int extracted)
+        {
+            string nn = string.Empty;
+            uint fileOffset2, scriptOffset1, scriptOffset2;
+            long l0, fileOffset1, offs;
+
+            // "Searching for script file"
+            uint res;
+            uint instcnt = 0;
+
+            // Search for the script file
+            uint fileno = 0;
+            Stream? scriptFile = SearchForScriptFile(dir, extracted, ref fileno);
+            if (scriptFile == null || fileno >= 6 || fileno >= extracted)
+                return false;
+
+            // Open the dumpfile
+            string dumpFilePath = Path.Combine(dir, "WISE0000");
+            uint[] dumpFileOffsets;
+            using (var dumpFileStream = File.Open(dumpFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                dumpFileOffsets = ParseDumpFile(dumpFileStream);
+            }
+
+            // Calculate the offset shift value
+            long entry = dumpFileOffsets.Length - 1, shift, shiftCheck = 0;
+            bool shiftFound;
+            do
+            {
+                // Get the first shift value
+                shift = SearchForOffsetShift(scriptFile, dumpFileOffsets, out shiftFound, ref entry);
+
+                // If a valid shift value was found, get the next shift to compare
+                if (shiftFound)
+                    shiftCheck = SearchForOffsetShift(scriptFile, dumpFileOffsets, out shiftFound, ref entry);
+
+            } while (entry > 0 && (!shiftFound || shift != shiftCheck));
+
+            // If the offset shift could not be calculated
+            if (!shiftFound)
+            {
+                scriptFile.Close();
+                return false;
+            }
+
+            // Rename the files
+            long dumpEntryOffset = 1;
+            while (dumpEntryOffset + 2 < dumpFileOffsets.Length)
+            {
+                // Read the current entry and next entry offsets
+                dumpEntryOffset += 1;
+                fileOffset1 = dumpFileOffsets[dumpEntryOffset + 0];
+                fileOffset2 = dumpFileOffsets[dumpEntryOffset + 1];
+                l0 = -1; // l0 = 0xffffffff;
+                res = 1;
+
+                // Find the name offset for this entry, if possible
+                while (l0 + 0x29 < scriptFile.Length && res != 0)
+                {
+                    l0++;
+                    scriptOffset1 = ReadDWORD(scriptFile, l0 + 0x00);
+                    scriptOffset2 = ReadDWORD(scriptFile, l0 + 0x04);
+                    if ((fileOffset1 == scriptOffset1 + shift) && (fileOffset2 == scriptOffset2 + shift))
+                        res = 0;
+                }
+
+                // If a name offset was found
+                if (res == 0)
+                {
+                    fileOffset2 = ReadWORD(scriptFile, l0 - 2);
+                    nn = string.Empty;
+                    offs = l0;
+                    l0 += 0x28;
+                    res = 2;
+
+                    char nextChar = (char)ReadByte(scriptFile, l0);
+                    if (nextChar == '%')
+                    {
+                        while (nextChar != 0)
+                        {
+                            nextChar = (char)ReadByte(scriptFile, l0);
+                            if (nextChar == 0x00)
+                            {
+                                res = 0;
+                                break;
+                            }
+
+                            nn += nextChar;
+                            if (nextChar < 0x20)
+                                res = 1;
+                            if (nextChar == '%' && res != 1)
+                                res = 3;
+                            if (nextChar == '\\' && (ReadByte(scriptFile, l0 - 1) == '%') && res == 3)
+                                res = 4;
+                            if (res == 4)
+                                res = 0;
+
+                            l0++;
+                        }
+                    }
+
+                    // If no valid name is found, mark as an Install file
+                    if (res != 0)
+                        res = 0x80;
+                }
+
+                // If a valid name was found at the offset
+                entry = dumpEntryOffset + 1;
+                if (res == 0)
+                {
+                    // Sanitize the new file path
+                    nn = nn.Replace("%", string.Empty);
+                    string oldfile = Path.Combine(dir, $"WISE{entry:X4}");
+                    string newfile = Path.Combine(dir, nn);
+
+                    // Make directories
+                    var dirname = Path.GetDirectoryName(newfile);
+                    if (dirname != null)
+                        Directory.CreateDirectory(dirname);
+
+                    // Rename file
+                    File.Move(oldfile, newfile);
+                }
+                else if (res == 0x80)
+                {
+                    instcnt++;
+                    string oldfile = Path.Combine(dir, $"WISE{entry:X4}");
+                    string newfile = Path.Combine(dir, $"INST{instcnt:X4}");
+
+                    // Rename file
+                    File.Move(oldfile, newfile);
+                }
+            }
+
+            // Close the script and dump files
+            scriptFile.Close();
+
+            return true;
+        }
+
+        /// <summary>
+        /// Search the first 6 entries for a script file
+        /// </summary>
+        /// <remarks>
+        /// The script file contains all of the strings and filenames that are used for
+        /// the WISE installer. This method searches for a file that contains multiple
+        /// instances of "%\", which usually come from strings that look like:
+        /// "%MAINDIR%\INSTALL.LOG"
+        /// </remarks>
+        private static Stream? SearchForScriptFile(string dir, int extracted, ref uint fileno)
+        {
+            // Check for boundary cases first
+            if (fileno >= extracted || fileno >= 6)
+                return null;
+
+            // Search up to the first 6 extacted files for a script file
+            Stream? scriptFile = null;
+            bool found = false;
+            while (fileno < extracted && fileno < 6 && !found)
+            {
+                // Increment the current file number
+                fileno++;
+
+                // Open the generic-named file associated with the number
+                string bfPath = Path.Combine(dir, $"WISE{fileno:X4}");
+                scriptFile = File.Open(bfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                long offset = 0;
+                while (!found && offset < scriptFile.Length)
+                {
+                    // Search for the first instance of "%\"
+                    while (ReadByte(scriptFile, offset + 0) != '%' || ReadByte(scriptFile, offset + 1) != '\\')
+                    {
+                        offset++;
+
+                        // If the end of the file has been reached
+                        if (offset >= scriptFile.Length - 1)
+                            break;
+                    }
+
+                    // If the value was not found
+                    if (offset >= scriptFile.Length - 1)
+                        break;
+
+                    // Look for a previous entry in the script file
+                    long offsetCheck = 0x01;
+                    while (offsetCheck < 0x40 && (ReadByte(scriptFile, offset - offsetCheck + 0) != '%' || ReadByte(scriptFile, offset - offsetCheck + 1) == '\\'))
+                    {
+                        offsetCheck++;
+                    }
+
+                    // If a previous entry is found
+                    if (offsetCheck < 0x40)
+                        found = true;
+
+                    // Otherwise, keep searching
+                    else
+                        offset++;
+                }
+
+                // Close the file if it wasn't the script file
+                if (!found)
+                    scriptFile.Close();
+            }
+
+            return scriptFile;
+        }
+
+        /// <summary>
+        /// Compare an entry in a scriptfile and dumpfile offsets to get an offset shift, if possible
+        /// </summary>
+        private static long SearchForOffsetShift(Stream scriptFile, uint[] dumpFileOffsets, out bool found, ref long entry)
+        {
+            // Create variables for the two offsets
+            uint dumpOffset1;
+            uint scriptOffset1 = 0;
+
+            // Search for the offset shift
+            do
+            {
+                // Get the real offset values from the dump file
+                dumpOffset1 = dumpFileOffsets[entry - 1];
+                uint dumpOffset2 = dumpFileOffsets[entry - 0];
+
+                // Start at the end of the scriptfile
+                long scriptPosition = scriptFile.Length - 0x07;
+
+                // Attempt to align the offset values
+                found = false;
+                while (scriptPosition > 0 && !found)
+                {
+                    scriptPosition--;
+                    scriptOffset1 = ReadDWORD(scriptFile, scriptPosition + 0x00);
+                    uint scriptOffset2 = ReadDWORD(scriptFile, scriptPosition + 0x04);
+
+                    // If the correct offset shift has been found
+                    if (scriptOffset2 > scriptOffset1
+                        && scriptOffset2 < dumpOffset2
+                        && scriptOffset1 < dumpOffset1
+                        && scriptOffset2 - scriptOffset1 == dumpOffset2 - dumpOffset1)
+                    {
+                        found = true;
+                    }
+                }
+
+                // If the shift wasn't found, move back an entry
+                if (!found)
+                    entry--;
+            } while (!found && entry > 0);
+
+            return dumpOffset1 - scriptOffset1;
+        }
+
+        #endregion
     }
 }

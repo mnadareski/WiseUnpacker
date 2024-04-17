@@ -430,6 +430,24 @@ namespace WiseUnpacker.HWUN
         }
 
         /// <summary>
+        /// Raed a dumpfile and parse out the offsets
+        /// </summary>
+        public static uint[] ParseDumpFile(Stream dumpFile)
+        {
+            List<uint> offsets = [];
+
+            long length = dumpFile.Length;
+            while (length > 0)
+            {
+                uint offset = dumpFile.ReadUInt32();
+                offsets.Add(offset);
+                length -= 4;
+            }
+
+            return [.. offsets];
+        }
+
+        /// <summary>
         /// Parse options from an input string
         /// </summary>
         private void ParseOptions(string? options)
@@ -628,24 +646,6 @@ namespace WiseUnpacker.HWUN
             scriptFile.Close();
 
             return true;
-        }
-
-        /// <summary>
-        /// Raed a dumpfile and parse out the offsets
-        /// </summary>
-        public static uint[] ParseDumpFile(Stream dumpFile)
-        {
-            List<uint> offsets = [];
-
-            long length = dumpFile.Length;
-            while (length > 0)
-            {
-                uint offset = dumpFile.ReadUInt32();
-                offsets.Add(offset);
-                length -= 4;
-            }
-
-            return [.. offsets];
         }
 
         /// <summary>
