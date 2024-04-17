@@ -4,8 +4,6 @@ using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
 using WiseUnpacker.HWUN;
-using LE = SabreTools.Models.LinearExecutable;
-using NE = SabreTools.Models.NewExecutable;
 using PE = SabreTools.Models.PortableExecutable;
 
 namespace WiseUnpacker
@@ -120,6 +118,7 @@ namespace WiseUnpacker
         /// <summary>
         /// Jump to the .data section of an executable stream
         /// </summary>
+        /// TODO: MZ-only is not supported
         private void JumpToTheData()
         {
             currentFormat = new FormatProperty
@@ -130,105 +129,62 @@ namespace WiseUnpacker
             };
             dataBase = 0;
 
+            // Try to read as NE
+            var ne = NewExecutable.Create(inputFile);
+            if (ne != null)
+            {
+                currentFormat.ExecutableType = ExecutableType.NE;
+                currentFormat.ExecutableOffset = ne.Model.Stub!.Header!.NewExeHeaderAddr;
+                currentFormat.CodeSectionLength = -1;
+                currentFormat.DataSectionLength = -1;
+                return;
+            }
+
+            // Try to read as LE/LX
+            var le = LinearExecutable.Create(inputFile);
+            if (le != null)
+            {
+                currentFormat.ExecutableType = ExecutableType.LE;
+                currentFormat.ExecutableOffset = le.Model.Stub!.Header!.NewExeHeaderAddr;
+                currentFormat.CodeSectionLength = -1;
+                currentFormat.DataSectionLength = -1;
+                return;
+            }
+
             bool searchAgainAtEnd = true;
             do
             {
+                // Reset the state
                 searchAgainAtEnd = false;
                 dataBase += currentFormat.ExecutableOffset;
                 currentFormat.ExecutableOffset = 0;
-
                 currentFormat.ExecutableType = ExecutableType.Unknown;
                 inputFile!.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
 
-                // Read the MS-DOS header
-                var mz = MSDOS.Create(inputFile);
-                if (mz?.Model?.Header == null)
-                    continue;
-
-                // If we have a valid MS-DOS header but not stub
-                var header = mz.Model.Header;
-                if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40)
-                    continue;
-
-                // Set the executable offset and seek
-                currentFormat.ExecutableOffset = header.NewExeHeaderAddr;
-                inputFile.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
-                byte[] magic = inputFile.ReadBytes(4);
-                string magicString = Encoding.ASCII.GetString(magic);
-
-                // Handle 2-byte signatures
-                switch (magicString.Substring(0, 2))
-                {
-                    case NE.Constants.SignatureString:
-                        currentFormat.ExecutableType = ProcessNe();
-                        break;
-
-                    // TODO: Write new LE/LX handling
-                    case LE.Constants.LESignatureString:
-                    case LE.Constants.LXSignatureString:
-                        currentFormat.ExecutableType = ProcessPe(ref searchAgainAtEnd);
-                        break;
-
-                    default:
-                        break;
-                }
-
-                // Handle 4-byte signatures
-                switch (magicString)
-                {
-                    case PE.Constants.SignatureString:
-                        currentFormat.ExecutableType = ProcessPe(ref searchAgainAtEnd);
-                        break;
-
-                    default:
-                        break;
-                }
-
+                // Try to read as PE
+                var pe = PortableExecutable.Create(inputFile);
+                if (pe != null)
+                    currentFormat.ExecutableType = ProcessPe(pe, ref searchAgainAtEnd);
             }
             while (searchAgainAtEnd);
         }
 
         /// <summary>
-        /// Process an NE executable header
-        /// </summary>
-        private ExecutableType ProcessNe()
-        {
-            try
-            {
-                inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
-                var ne = SabreTools.Serialization.Deserializers.NewExecutable.ParseExecutableHeader(inputFile);
-                if (ne == null)
-                    return ExecutableType.Unknown;
-
-                return ExecutableType.NE;
-            }
-            catch
-            {
-                return ExecutableType.Unknown;
-            }
-        }
-
-        /// <summary>
         /// Process a PE executable header
         /// </summary>
-        private ExecutableType ProcessPe(ref bool searchAgainAtEnd)
+        private ExecutableType ProcessPe(PortableExecutable pe, ref bool searchAgainAtEnd)
         {
             try
             {
-                inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset + 4, SeekOrigin.Begin);
-                var pe = PortableExecutable.Create(inputFile);
-                if (pe == null)
-                    return ExecutableType.Unknown;
-
                 // Get the text section
                 var section = pe.GetFirstSection(".text");
                 if (section != null)
-                    currentFormat.CodeSectionLength = section.VirtualSize;
+                    currentFormat!.CodeSectionLength = section.VirtualSize;
 
                 // Get the data section
                 section = pe.GetFirstSection(".data");
                 if (section != null)
-                    currentFormat.DataSectionLength = section.VirtualSize;
+                    currentFormat!.DataSectionLength = section.VirtualSize;
 
                 // Get the rsrc section
                 PE.SectionHeader? resource = null;
@@ -252,7 +208,7 @@ namespace WiseUnpacker
                             continue;
 
                         // We only care about .data and .rsrc
-                        switch (System.Text.Encoding.ASCII.GetString(section.Name).TrimEnd('\0'))
+                        switch (Encoding.ASCII.GetString(section.Name).TrimEnd('\0'))
                         {
                             case ".data":
                             case ".rsrc":
@@ -269,7 +225,7 @@ namespace WiseUnpacker
                     {
                         for (int f = 0; f <= 20000 - 0x80; f++)
                         {
-                            inputFile.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
+                            inputFile!.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
 
                             // Read the MS-DOS header
                             var mz = MSDOS.Create(inputFile);
@@ -282,7 +238,7 @@ namespace WiseUnpacker
                                 continue;
 
                             // Set the executable offset and seek
-                            currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
+                            currentFormat!.ExecutableOffset = (int)temp.PointerToRawData + f;
                             inputFile.Seek(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size, SeekOrigin.Begin);
                             searchAgainAtEnd = true;
                             break;
@@ -290,7 +246,7 @@ namespace WiseUnpacker
                     }
                 }
 
-                currentFormat.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
+                currentFormat!.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
                 return ExecutableType.PE;
             }
             catch
