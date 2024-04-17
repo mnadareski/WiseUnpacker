@@ -571,6 +571,12 @@ namespace WiseUnpacker.HWUN
                         while (nextChar != 0)
                         {
                             nextChar = (char)ReadByte(scriptFile, l0);
+                            if (nextChar == 0x00)
+                            {
+                                res = 0;
+                                break;
+                            }
+
                             nn += nextChar;
                             if (nextChar < 0x20)
                                 res = 1;
