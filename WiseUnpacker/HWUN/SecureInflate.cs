@@ -358,6 +358,7 @@ namespace WiseUnpacker.HWUN
             {
                 if (HuffmanNode.next[0] == null)
                     AddNewChildToHuffmanNode(HuffmanNode, 0, 0xffff);
+
                 if (Codelength == 1)
                 {
                     HuffmanNode.endnode[0] = true;
@@ -368,17 +369,19 @@ namespace WiseUnpacker.HWUN
                 {
                     result = AddNewCodeToHuffmanTree(HuffmanNode.next[0]!, (byte)(Codelength - 1), Codevalue);
                 }
-                // if result then write(0);
             }
             else
+            {
                 result = false;
+            }
+
             if (result == false)
             {
                 if (!HuffmanNode.endnode[1])
                 {
-                    HuffmanNode.endnode[0] = true;
                     if (HuffmanNode.next[1] == null)
                         AddNewChildToHuffmanNode(HuffmanNode, 1, 0xffff);
+
                     if (Codelength == 1)
                     {
                         HuffmanNode.endnode[1] = true;
@@ -389,14 +392,13 @@ namespace WiseUnpacker.HWUN
                     {
                         result = AddNewCodeToHuffmanTree(HuffmanNode.next[1]!, (byte)(Codelength - 1), Codevalue);
                     }
-                    // if result then write(1);
                 }
                 else
                 {
                     result = false;
-                    HuffmanNode.endnode[1] = true;
                 }
             }
+
             return result;
         }
 
@@ -546,18 +548,20 @@ namespace WiseUnpacker.HWUN
             HighestCodeLength = 0x00;
             for (CodeValue = 0x00; CodeValue <= CodelengthNumber - 0x01; CodeValue++)
             {
-                if (!SI_BREAK)
-                {
-                    uint? actualCodeLength = ReadBits(3);
-                    if (actualCodeLength == null)
-                        return false;
+                if (SI_BREAK)
+                    break;
 
-                    ActualCodeLength = (byte)actualCodeLength.Value;
-                    if (ActualCodeLength > HighestCodeLength)
-                        HighestCodeLength = ActualCodeLength;
-                    CodelengthCodelength[CodelengthOrder[CodeValue]] = ActualCodeLength;
-                }
+                uint? actualCodeLength = ReadBits(3);
+                if (actualCodeLength == null)
+                    return false;
+
+                ActualCodeLength = (byte)actualCodeLength.Value;
+                if (ActualCodeLength > HighestCodeLength)
+                    HighestCodeLength = ActualCodeLength;
+
+                CodelengthCodelength[CodelengthOrder[CodeValue]] = ActualCodeLength;
             }
+
             if (SI_BREAK)
             {
                 SI_ERROR = SI_USERBREAK;
@@ -575,11 +579,13 @@ namespace WiseUnpacker.HWUN
                         BuildSuccess = AddNewCodeToHuffmanTree(CodelengthHuffmanTree!, CodeLength, CodeValue);
                 }
             }
+
             CodelengthCodelength = [];
             if (BuildSuccess)
             {
                 if (HighestCodeLength == 0)
                     HighestCodeLength++;
+
                 BuildSuccess = !AddNewCodeToHuffmanTree(CodelengthHuffmanTree!, HighestCodeLength, 0);
                 if (!BuildSuccess)
                 {
@@ -600,73 +606,73 @@ namespace WiseUnpacker.HWUN
             Highest2 = 0;
             for (CodeValue = 0x000; CodeValue <= LiteralNumber + DistanceNumber - 0x01; CodeValue++)
             {
-                if (!SI_BREAK)
+                if (SI_BREAK)
+                    break;
+
+                if (RepeatAmount == 0)
                 {
-                    if (RepeatAmount == 0)
+                    ushort? lengthcode = DecodeValue(CodelengthHuffmanTree!);
+                    if (lengthcode == null)
+                        return false;
+
+                    Lengthcode = (byte)lengthcode.Value;
+                    if (Lengthcode < 0x10)
                     {
-                        ushort? lengthcode = DecodeValue(CodelengthHuffmanTree!);
-                        if (lengthcode == null)
-                            return false;
-
-                        Lengthcode = (byte)lengthcode.Value;
-                        if (Lengthcode < 0x10)
+                        AlphabetCodelength[CodeValue] = Lengthcode;
+                        if (CodeValue < LiteralNumber)
                         {
-                            AlphabetCodelength[CodeValue] = Lengthcode;
-                            if (CodeValue < LiteralNumber)
-                            {
-                                if (Lengthcode > HighestCodeLength)
-                                    HighestCodeLength = Lengthcode;
-                            }
-                            else
-                            {
-                                if (Lengthcode > Highest2)
-                                    Highest2 = Lengthcode;
-                            }
+                            if (Lengthcode > HighestCodeLength)
+                                HighestCodeLength = Lengthcode;
                         }
-                        else if (Lengthcode == 0x10)
+                        else
                         {
-                            uint? repeatAmount = ReadBits(2);
-                            if (repeatAmount == null)
-                                return false;
-
-                            RepeatAmount = (ushort)(0x02 + repeatAmount.Value);
-                            RepeatValue = AlphabetCodelength[CodeValue - 0x01];
-                            AlphabetCodelength[CodeValue] = RepeatValue;
-                        }
-                        else if (Lengthcode == 0x11)
-                        {
-                            uint? repeatAmount = ReadBits(3);
-                            if (repeatAmount == null)
-                                return false;
-
-                            RepeatAmount = (ushort)(0x02 + repeatAmount.Value);
-                            RepeatValue = 0x00;
-                            AlphabetCodelength[CodeValue] = RepeatValue;
-                        }
-                        else if (Lengthcode == 0x12)
-                        {
-                            uint? repeatAmount = ReadBits(7);
-                            if (repeatAmount == null)
-                                return false;
-
-                            RepeatAmount = (ushort)(0x0a + repeatAmount.Value);
-                            RepeatValue = 0x00;
-                            AlphabetCodelength[CodeValue] = RepeatValue;
-                        }
-
-                        if (SI_BREAK)
-                        {
-                            SI_ERROR = SI_USERBREAK;
-                            AlphabetCodelength = [];
-                            FreeHuffmanTree(ref CodelengthHuffmanTree);
-                            return false;
+                            if (Lengthcode > Highest2)
+                                Highest2 = Lengthcode;
                         }
                     }
-                    else
+                    else if (Lengthcode == 0x10)
                     {
+                        uint? repeatAmount = ReadBits(2);
+                        if (repeatAmount == null)
+                            return false;
+
+                        RepeatAmount = (ushort)(0x02 + repeatAmount.Value);
+                        RepeatValue = AlphabetCodelength[CodeValue - 0x01];
                         AlphabetCodelength[CodeValue] = RepeatValue;
-                        RepeatAmount--;
                     }
+                    else if (Lengthcode == 0x11)
+                    {
+                        uint? repeatAmount = ReadBits(3);
+                        if (repeatAmount == null)
+                            return false;
+
+                        RepeatAmount = (ushort)(0x02 + repeatAmount.Value);
+                        RepeatValue = 0x00;
+                        AlphabetCodelength[CodeValue] = RepeatValue;
+                    }
+                    else if (Lengthcode == 0x12)
+                    {
+                        uint? repeatAmount = ReadBits(7);
+                        if (repeatAmount == null)
+                            return false;
+
+                        RepeatAmount = (ushort)(0x0a + repeatAmount.Value);
+                        RepeatValue = 0x00;
+                        AlphabetCodelength[CodeValue] = RepeatValue;
+                    }
+
+                    if (SI_BREAK)
+                    {
+                        SI_ERROR = SI_USERBREAK;
+                        AlphabetCodelength = [];
+                        FreeHuffmanTree(ref CodelengthHuffmanTree);
+                        return false;
+                    }
+                }
+                else
+                {
+                    AlphabetCodelength[CodeValue] = RepeatValue;
+                    RepeatAmount--;
                 }
             }
 
@@ -687,6 +693,7 @@ namespace WiseUnpacker.HWUN
             {
                 if (HighestCodeLength == 0)
                     HighestCodeLength++;
+
                 BuildSuccess = !AddNewCodeToHuffmanTree(LiteralHuffmanTree!, HighestCodeLength, 0);
                 if (!BuildSuccess)
                 {
@@ -714,10 +721,12 @@ namespace WiseUnpacker.HWUN
                         BuildSuccess = AddNewCodeToHuffmanTree(DistanceHuffmanTree!, CodeLength, CodeValue);
                 }
             }
+
             if (BuildSuccess)
             {
                 if (Highest2 == 0)
                     Highest2++;
+
                 BuildSuccess = !AddNewCodeToHuffmanTree(DistanceHuffmanTree!, Highest2, 0);
                 if (!BuildSuccess)
                 {
