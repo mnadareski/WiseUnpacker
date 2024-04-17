@@ -9,6 +9,7 @@ using LE = SabreTools.Models.LinearExecutable;
 using NE = SabreTools.Models.NewExecutable;
 using PE = SabreTools.Models.PortableExecutable;
 using System.Collections.Generic;
+using System.Text;
 
 namespace WiseUnpacker
 {
@@ -33,7 +34,7 @@ namespace WiseUnpacker
         public bool ExtractToHWUN(string file, string outputPath, string? options = null)
         {
             var hwun = new Unpacker(file, options);
-            return hwun.Run( outputPath);
+            return hwun.Run(outputPath);
         }
 
         /// <summary>
@@ -49,7 +50,7 @@ namespace WiseUnpacker
 
             if (!Open(file))
                 return false;
-                        
+
             // Move to data and determine if this is a known format
             JumpToTheData();
             inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
@@ -140,31 +141,51 @@ namespace WiseUnpacker
 
                 currentFormat.ExecutableType = ExecutableType.Unknown;
                 inputFile!.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
+
+                // Read the MS-DOS header
                 var executable = MSDOS.Create(inputFile);
+                if (executable?.Model?.Header == null)
+                    continue;
 
-                if (executable?.Model?.Header != null
-                    && (executable.Model.Header.Magic == PE.Constants.SignatureString || executable.Model.Header.Magic == MZ.Constants.SignatureString)
-                    && executable.Model.Header.HeaderParagraphSize >= 4
-                    && executable.Model.Header.NewExeHeaderAddr >= 0x40)
-                {
-                    currentFormat.ExecutableOffset = executable.Model.Header.NewExeHeaderAddr;
-                    inputFile.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
-                    executable = MSDOS.Create(inputFile);
-                }
+                // If we have a valid MS-DOS header but not stub
+                var header = executable.Model.Header;
+                if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40)
+                    continue;
 
-                switch (executable?.Model?.Header?.Magic)
+                // Set the executable offset and seek
+                currentFormat.ExecutableOffset = header.NewExeHeaderAddr;
+                inputFile.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
+                byte[] magic = inputFile.ReadBytes(4);
+                string magicString = Encoding.ASCII.GetString(magic);
+
+                // Handle 2-byte signatures
+                switch (magicString.Substring(0, 2))
                 {
                     case NE.Constants.SignatureString:
                         currentFormat.ExecutableType = ProcessNe();
                         break;
+
+                    // TODO: Write new LE/LX handling
                     case LE.Constants.LESignatureString:
                     case LE.Constants.LXSignatureString:
-                    case PE.Constants.SignatureString:
                         currentFormat.ExecutableType = ProcessPe(ref searchAgainAtEnd);
                         break;
+
                     default:
                         break;
                 }
+
+                // Handle 4-byte signatures
+                switch (magicString)
+                {
+                    case PE.Constants.SignatureString:
+                        currentFormat.ExecutableType = ProcessPe(ref searchAgainAtEnd);
+                        break;
+
+                    default:
+                        break;
+                }
+
             }
             while (searchAgainAtEnd);
         }
@@ -177,7 +198,7 @@ namespace WiseUnpacker
             try
             {
                 inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
-                var ne = NewExecutable.Create(inputFile);
+                var ne = SabreTools.Serialization.Deserializers.NewExecutable.ParseExecutableHeader(inputFile);
                 if (ne == null)
                     return ExecutableType.Unknown;
 
