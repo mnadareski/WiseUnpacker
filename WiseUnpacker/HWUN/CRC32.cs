@@ -7,9 +7,9 @@ namespace WiseUnpacker.HWUN
 {
     internal static class CRC32
     {
-        private const uint _polynomial = 0xedb88320;
+        private const uint _polynomial = 0xEDB88320;
 
-        private static uint[] _table = new uint[256];
+        private static readonly uint[] _table = new uint[256];
 
         static CRC32()
         {
@@ -23,18 +23,18 @@ namespace WiseUnpacker.HWUN
 
         public static uint Add(uint crc, byte b)
         {
-            return _table[(byte)(crc ^ b)] ^ ((crc >> 8) & 0x00ffffff);
+            // TODO: Determine why the 0x00FFFFFF mask is being applied
+            return _table[(byte)(crc ^ b)] ^ ((crc >> 8) & 0x00FFFFFF);
         }
 
-        public unsafe static uint Add(uint crc, byte[] buffer, ushort length)
+        public static uint Add(uint crc, byte[] buffer, ushort length)
         {
             if (length == 0)
                 return crc;
 
-            int bufferPtr = 0;
-            for (ushort i = 0; i <= length - 1; i++)
+            for (ushort i = 0; i < length; i++)
             {
-                crc = _table[crc ^ buffer[bufferPtr + i]] ^ (crc >> 8);
+                crc = _table[(byte)crc ^ buffer[i]] ^ (crc >> 8);
             }
 
             return crc;
