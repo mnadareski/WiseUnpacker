@@ -1,4 +1,4 @@
-﻿namespace WiseUnpacker.Files
+﻿namespace WiseUnpacker
 {
     public enum ExecutableType
     {
