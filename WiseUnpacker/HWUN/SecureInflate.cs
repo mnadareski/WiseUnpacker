@@ -253,7 +253,6 @@ namespace WiseUnpacker.HWUN
 
                 // put value entry into distance code table
                 DistancecodeValueOffset[pos] = DistancecodeOffset;
-                // write(hexa(DistancecodeOffset,4),'/',hexa(DistancecodeExtrabits,1),'  ');
                 DistancecodeValueExtrabits[pos] = (byte)DistancecodeExtrabits;
 
                 // increase length and distance code values
@@ -812,21 +811,6 @@ namespace WiseUnpacker.HWUN
 
                 BlockType = (byte)blockType.Value;
 
-                // writeln('LastBlock              = $',hexa(LastBlock,2));
-                // write('BlockType              = $',hexa(BlockType,2),' (');
-                // if (BlockType == 0)
-                //     Console.WriteLine("stored");
-                // else if (BlockType == 1)
-                //     Console.WriteLine("static huffman");
-                // else if (BlockType == 2)
-                //     Console.WriteLine("dynamic huffman");
-                // else
-                // {
-                //     Console.WriteLine("illegal");
-                //     SI_ERROR = 0x8003;
-                // }
-                // writeln(')');
-
                 // Decompress the specific block
                 if (BlockType == 0)
                 {
@@ -846,8 +830,6 @@ namespace WiseUnpacker.HWUN
                         return false;
 
                     Distance = (ushort)(distByte1.Value + distByte2.Value * 0x100);
-                    // writeln('Length                 = $',hexa(Length,4));
-                    // writeln('Length complement      = $',hexa(Distance,4));
                     if ((Length ^ Distance) != 0xffff)
                     {
                         SI_ERROR = 0x8020;
@@ -929,79 +911,75 @@ namespace WiseUnpacker.HWUN
                         } while (Literal != 0x100);
                         FreeStaticCodeTrees();
                     }
-                    else if (BlockType == 2)
+                }
+                else if (BlockType == 2)
+                {
+                    uint? literalBits = ReadBits(5);
+                    uint? distanceBits = ReadBits(5);
+                    uint? codelengthBits = ReadBits(4);
+                    if (literalBits == null || distanceBits == null || codelengthBits == null)
+                        return false;
+
+                    LiteralNumber = (ushort)(LiteralAlphabetLengthOffset + literalBits.Value);
+                    DistanceNumber = (ushort)(DistanceAlphabetLengthOffset + distanceBits.Value);
+                    CodelengthNumber = (ushort)(LengthcodeAlphabetLengthOffset + codelengthBits.Value);
+                    bool readDynamic = ReadDynamicCodeTrees(CodelengthNumber, LiteralNumber, DistanceNumber);
+                    if (!readDynamic)
+                        return false;
+
+                    if ((SI_ERROR & 0x8000) == 0x000)
                     {
-                        uint? literalBits = ReadBits(5);
-                        uint? distanceBits = ReadBits(5);
-                        uint? codelengthBits = ReadBits(4);
-                        if (literalBits == null || distanceBits == null || codelengthBits == null)
-                            return false;
-
-                        LiteralNumber = (ushort)(LiteralAlphabetLengthOffset + literalBits.Value);
-                        DistanceNumber = (ushort)(DistanceAlphabetLengthOffset + distanceBits.Value);
-                        CodelengthNumber = (ushort)(LengthcodeAlphabetLengthOffset + codelengthBits.Value);
-                        bool readDynamic = ReadDynamicCodeTrees(CodelengthNumber, LiteralNumber, DistanceNumber);
-                        if (!readDynamic)
-                            return false;
-
-                        // writeln('LiteralNumber          = $',hexa(LiteralNumber,4));
-                        // writeln('DistanceNumber         = $',hexa(DistanceNumber,4));
-                        // writeln('CodelengthNumber       = $',hexa(CodelengthNumber,4));
-                        // writeln('DynamicCodeTreesCheck  = $',hexa(SI_ERROR,4)+' ('+SI_GetError+')');
-                        if ((SI_ERROR & 0x8000) == 0x000)
+                        do
                         {
-                            do
-                            {
-                                ushort? literal = DecodeValue(LiteralHuffmanTree!);
-                                if (literal == null)
-                                    return false;
+                            ushort? literal = DecodeValue(LiteralHuffmanTree!);
+                            if (literal == null)
+                                return false;
 
-                                Literal = literal.Value;
-                                if ((SI_ERROR & 0xc000) != 0x0000)
+                            Literal = literal.Value;
+                            if ((SI_ERROR & 0xc000) != 0x0000)
+                            {
+                                Literal = 0x100;
+                            }
+                            else
+                            {
+                                if (Literal < 0x100)
                                 {
-                                    Literal = 0x100;
+                                    OutputByte((byte)Literal);
+                                }
+                                else if (Literal == 0x100)
+                                {
+                                    // No-op?
+                                }
+                                else if (Literal <= 0x11d)
+                                {
+                                    uint? extrabits = ReadBits(LengthcodeValueExtrabits[Literal]);
+                                    if (extrabits == null)
+                                        return false;
+
+                                    Length = (ushort)(LengthcodeValueOffset[Literal] + extrabits.Value);
+
+                                    ushort? distance = DecodeValue(DistanceHuffmanTree!);
+                                    if (distance == null)
+                                        return false;
+
+                                    Distance = distance.Value;
+
+                                    extrabits = ReadBits(DistancecodeValueExtrabits[Distance]);
+                                    if (extrabits == null)
+                                        return false;
+
+                                    Distance = (ushort)(DistancecodeValueOffset[Distance] + extrabits.Value);
+                                    CopyBytes(Distance, Length);
                                 }
                                 else
                                 {
-                                    if (Literal < 0x100)
-                                    {
-                                        OutputByte((byte)Literal);
-                                    }
-                                    else if (Literal == 0x100)
-                                    {
-                                        // No-op?
-                                    }
-                                    else if (Literal <= 0x11d)
-                                    {
-                                        uint? extrabits = ReadBits(LengthcodeValueExtrabits[Literal]);
-                                        if (extrabits == null)
-                                            return false;
-
-                                        Length = (ushort)(LengthcodeValueOffset[Literal] + extrabits.Value);
-
-                                        ushort? distance = DecodeValue(DistanceHuffmanTree!);
-                                        if (distance == null)
-                                            return false;
-
-                                        Distance = distance.Value;
-
-                                        extrabits = ReadBits(DistancecodeValueExtrabits[Distance]);
-                                        if (extrabits == null)
-                                            return false;
-
-                                        Distance = (ushort)(DistancecodeValueOffset[Distance] + extrabits.Value);
-                                        CopyBytes(Distance, Length);
-                                    }
-                                    else
-                                    {
-                                        SI_ERROR = 0x8000;
-                                        Literal = 0x100;
-                                    }
+                                    SI_ERROR = 0x8000;
+                                    Literal = 0x100;
                                 }
-                            } while (Literal != 0x100);
-                            if ((SI_ERROR & 0x8000) == 0x0000 && SI_ERROR != 0x8000)
-                                FreeDynamicCodeTrees();
-                        }
+                            }
+                        } while (Literal != 0x100);
+                        if ((SI_ERROR & 0x8000) == 0x0000 && SI_ERROR != 0x8000)
+                            FreeDynamicCodeTrees();
                     }
                 }
             } while (LastBlock != 1);
