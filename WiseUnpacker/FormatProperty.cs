@@ -15,7 +15,7 @@ namespace WiseUnpacker
     {
         public ExecutableType ExecutableType { get; set; }
         public long ExecutableOffset { get; set; }
-        public bool Dll { get; private set; }
+        public bool Dll { get; set; }
         public long ArchiveStart { get; set; }
         public long ArchiveEnd { get; set; } // Position in the archive head of the archive end
         public bool InitText { get; set; }

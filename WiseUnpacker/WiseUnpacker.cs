@@ -142,12 +142,12 @@ namespace WiseUnpacker
                 inputFile!.Seek(dataBase + currentFormat.ExecutableOffset, SeekOrigin.Begin);
 
                 // Read the MS-DOS header
-                var executable = MSDOS.Create(inputFile);
-                if (executable?.Model?.Header == null)
+                var mz = MSDOS.Create(inputFile);
+                if (mz?.Model?.Header == null)
                     continue;
 
                 // If we have a valid MS-DOS header but not stub
-                var header = executable.Model.Header;
+                var header = mz.Model.Header;
                 if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40)
                     continue;
 
@@ -271,19 +271,22 @@ namespace WiseUnpacker
                         for (int f = 0; f <= 20000 - 0x80; f++)
                         {
                             inputFile.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
-                            var mz = MSDOS.Create(inputFile);
 
-                            if (mz?.Model?.Header != null
-                                && (mz.Model.Header.Magic == PE.Constants.SignatureString || mz.Model.Header.Magic == MZ.Constants.SignatureString)
-                                && mz.Model.Header.HeaderParagraphSize >= 4
-                                && mz.Model.Header.NewExeHeaderAddr >= 0x40
-                                && (mz.Model.Header.RelocationItems == 0 || mz.Model.Header.RelocationItems == 3))
-                            {
-                                currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
-                                _ = (int)(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size);
-                                searchAgainAtEnd = true;
-                                break;
-                            }
+                            // Read the MS-DOS header
+                            var mz = MSDOS.Create(inputFile);
+                            if (mz?.Model?.Header == null)
+                                continue;
+
+                            // If we have a valid MS-DOS header but not stub
+                            var header = mz.Model.Header;
+                            if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40 || (header.RelocationItems != 0 && header.RelocationItems != 3))
+                                continue;
+
+                            // Set the executable offset and seek
+                            currentFormat.ExecutableOffset = (int)temp.PointerToRawData + f;
+                            inputFile.Seek(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size, SeekOrigin.Begin);
+                            searchAgainAtEnd = true;
+                            break;
                         }
                     }
                 }
