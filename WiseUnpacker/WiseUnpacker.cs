@@ -4,7 +4,6 @@ using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
 using WiseUnpacker.HWUN;
-using MZ = SabreTools.Models.MSDOS;
 using LE = SabreTools.Models.LinearExecutable;
 using NE = SabreTools.Models.NewExecutable;
 using PE = SabreTools.Models.PortableExecutable;
