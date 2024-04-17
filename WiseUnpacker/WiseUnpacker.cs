@@ -119,34 +119,6 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Open a potentially-multipart file for analysis and extraction
-        /// </summary>
-        /// <param name="file">Possible wise installer base</param>
-        /// <returns>True if the file could be opened, false otherwise</returns>
-        private bool Open(string file)
-        {
-            var fileStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            inputFile = new ReadOnlyCompositeStream([fileStream]);
-            if (inputFile == null)
-                return false;
-
-            file = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(file!))!, Path.GetFileNameWithoutExtension(file));
-
-            int fileno = 2;
-            string extraFileName = $"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}";
-
-            while (File.Exists(extraFileName))
-            {
-                fileStream = File.Open(extraFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                inputFile.AddStream(fileStream);
-                fileno++;
-                extraFileName = $"{file}.w{fileno / 10 + 48}{fileno % 10 + 48}";
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Jump to the .data section of an executable stream
         /// </summary>
         private void JumpToTheData()
@@ -414,6 +386,50 @@ namespace WiseUnpacker
             dumpFile.Close();
 
             return extracted;
+        }
+
+        /// <summary>
+        /// Open a potentially-multipart file for analysis and extraction
+        /// </summary>
+        /// <param name="file">Possible wise installer base</param>
+        /// <returns>True if the file could be opened, false otherwise</returns>
+        private bool Open(string file)
+        {
+            // If the file exists as-is
+            if (File.Exists(file))
+            {
+                var fileStream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                inputFile = new ReadOnlyCompositeStream([fileStream]);
+
+                // Strip the extension
+                file = Path.GetFileNameWithoutExtension(file);
+            }
+
+            // If the base name was provided, try to open the associated exe
+            else if (File.Exists($"{file}.exe"))
+            {
+                var fileStream = File.Open($"{file}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                inputFile = new ReadOnlyCompositeStream([fileStream]);
+            }
+
+            // Otherwise, the file cannot be opened
+            else
+            {
+                return false;
+            }
+
+            // Loop through and try to read all additional files
+            byte fileno = 2;
+            string extraPath = $"{file}.w{fileno:X}";
+            while (File.Exists(extraPath))
+            {
+                var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                inputFile.AddStream(fileStream);
+                fileno++;
+                extraPath = $"{file}.w{fileno:X}";
+            }
+
+            return true;
         }
 
         /// <summary>
