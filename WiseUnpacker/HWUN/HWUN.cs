@@ -236,13 +236,19 @@ namespace WiseUnpacker.HWUN
                 // Read PKZIP header values
                 if (pkzip)
                 {
-                    _ = _inputFile.ReadBytes(0x0E);
+                    _ = _inputFile.ReadUInt32(); // Signature
+                    _ = _inputFile.ReadUInt16(); // Version
+                    _ = _inputFile.ReadUInt16(); // Flags
+                    _ = _inputFile.ReadUInt16(); // Compression
+                    _ = _inputFile.ReadUInt16(); // Modification time
+                    _ = _inputFile.ReadUInt16(); // Modification date
                     newcrc = _inputFile.ReadUInt32();
-                    _ = _inputFile.ReadBytes(0x08);
-                    ushort len1 = _inputFile.ReadUInt16();
-                    ushort len2 = _inputFile.ReadUInt16();
-                    if (len1 + len2 > 0)
-                        _ = _inputFile.ReadBytes(len1 + len2);
+                    _ = _inputFile.ReadUInt32(); // Compressed size
+                    _ = _inputFile.ReadUInt32(); // Uncompressed size
+                    ushort filenameLength = _inputFile.ReadUInt16();
+                    ushort extraLength = _inputFile.ReadUInt16(); 
+                    if (filenameLength + extraLength > 0)
+                        _ = _inputFile.ReadBytes(filenameLength + extraLength);
                 }
 
                 // Inflate the data to a new file
