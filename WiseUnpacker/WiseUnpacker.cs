@@ -184,66 +184,22 @@ namespace WiseUnpacker
                 // Get the data section
                 section = pe.GetFirstSection(".data");
                 if (section != null)
+                {
                     currentFormat!.DataSectionLength = section.VirtualSize;
+                    bool containsExe = ScanSectionForExecutable(pe, section);
+                    if (containsExe)
+                        searchAgainAtEnd = true;
+                }
 
                 // Get the rsrc section
                 PE.SectionHeader? resource = null;
                 section = pe.GetFirstSection(".rsrc");
                 if (section != null)
-                    resource = section;
-
-                // Find the last section of .data or .rsrc if the relocations are not stripped
-#if NET20 || NET35
-                if ((pe.Model.COFFFileHeader!.Characteristics & PE.Characteristics.IMAGE_FILE_RELOCS_STRIPPED) == 0)
-#else
-                if (!pe.Model.COFFFileHeader!.Characteristics.HasFlag(PE.Characteristics.IMAGE_FILE_RELOCS_STRIPPED))
-#endif
                 {
-                    PE.SectionHeader? temp = null;
-                    for (int sectionNumber = 0; sectionNumber < (pe.SectionNames ?? []).Length; sectionNumber++)
-                    {
-                        // Get the section for the index
-                        section = pe.GetSection(sectionNumber);
-                        if (section?.Name == null)
-                            continue;
-
-                        // We only care about .data and .rsrc
-                        switch (Encoding.ASCII.GetString(section.Name).TrimEnd('\0'))
-                        {
-                            case ".data":
-                            case ".rsrc":
-                                temp = section;
-                                break;
-
-                            default:
-                                break;
-                        }
-                    }
-
-                    // The unpacker of the self-extractor does not use any resource functions either.
-                    if (temp != null && temp.SizeOfRawData > 20000)
-                    {
-                        for (int f = 0; f <= 20000 - 0x80; f++)
-                        {
-                            inputFile!.Seek(dataBase + temp.PointerToRawData + f, SeekOrigin.Begin);
-
-                            // Read the MS-DOS header
-                            var mz = MSDOS.Create(inputFile);
-                            if (mz?.Model?.Header == null)
-                                continue;
-
-                            // If we have a valid MS-DOS header but not stub
-                            var header = mz.Model.Header;
-                            if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40 || (header.RelocationItems != 0 && header.RelocationItems != 3))
-                                continue;
-
-                            // Set the executable offset and seek
-                            currentFormat!.ExecutableOffset = (int)temp.PointerToRawData + f;
-                            inputFile.Seek(dataBase + temp.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size, SeekOrigin.Begin);
-                            searchAgainAtEnd = true;
-                            break;
-                        }
-                    }
+                    resource = section;
+                    bool containsExe = ScanSectionForExecutable(pe, section);
+                    if (containsExe)
+                        searchAgainAtEnd = true;
                 }
 
                 currentFormat!.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
@@ -261,6 +217,40 @@ namespace WiseUnpacker
         private void Close()
         {
             inputFile?.Close();
+        }
+
+        /// <summary>
+        /// Scan a section for executable data
+        /// </summary>
+        /// <returns>True if the section contained executable data, false otherwise</returns>
+        private bool ScanSectionForExecutable(PortableExecutable pe, PE.SectionHeader? section)
+        {
+            // If we have an invalid section
+            if (section == null || section.SizeOfRawData <= 20000)
+                return false;
+
+            // Loop through the raw data and attempt to create an executable
+            for (int f = 0; f <= 20000 - 0x80; f++)
+            {
+                inputFile!.Seek(dataBase + section.PointerToRawData + f, SeekOrigin.Begin);
+
+                // Read the MS-DOS header
+                var mz = MSDOS.Create(inputFile);
+                if (mz?.Model?.Header == null)
+                    continue;
+
+                // If we have a valid MS-DOS header but not stub
+                var header = mz.Model.Header;
+                if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40 || (header.RelocationItems != 0 && header.RelocationItems != 3))
+                    continue;
+
+                // Set the executable offset and seek
+                currentFormat!.ExecutableOffset = (int)section.PointerToRawData + f;
+                inputFile.Seek(dataBase + section.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size, SeekOrigin.Begin);
+                return true;
+            }
+
+            return false; ;
         }
     }
 }
