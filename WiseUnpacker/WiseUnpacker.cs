@@ -1,5 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+using System.Text;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
@@ -8,8 +8,6 @@ using MZ = SabreTools.Models.MSDOS;
 using LE = SabreTools.Models.LinearExecutable;
 using NE = SabreTools.Models.NewExecutable;
 using PE = SabreTools.Models.PortableExecutable;
-using System.Collections.Generic;
-using System.Text;
 
 namespace WiseUnpacker
 {
