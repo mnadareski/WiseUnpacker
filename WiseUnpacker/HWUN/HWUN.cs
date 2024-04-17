@@ -38,11 +38,11 @@ namespace WiseUnpacker.HWUN
         public Unpacker(string file)
         {
             // Input path(s)
-            _inputFile = new ReadOnlyCompositeStream();
-            if (!OpenFile(file))
+            if (!OpenFile(file, out var stream) || stream == null)
                 throw new FileNotFoundException(nameof(file));
 
             // Default options
+            _inputFile = stream;
             _rollback = 0;
             unchecked { _userOffset = (uint)-1; }
             _renaming = true;
@@ -54,11 +54,11 @@ namespace WiseUnpacker.HWUN
         public Unpacker(string file, string? options)
         {
             // Input path(s)
-            _inputFile = new ReadOnlyCompositeStream();
-            if (!OpenFile(file))
+            if (!OpenFile(file, out var stream) || stream == null)
                 throw new FileNotFoundException(nameof(file));
 
             // Default options
+            _inputFile = stream;
             _rollback = 0;
             unchecked { _userOffset = (uint)-1; }
             _renaming = true;
@@ -76,7 +76,7 @@ namespace WiseUnpacker.HWUN
             Directory.CreateDirectory(dir);
 
             // Run the approximation
-            long approxOffset = Approximate(out bool pkzip);
+            long approxOffset = Approximate(_inputFile, out bool pkzip);
 
             // If the data is not PKZIP
             if (!pkzip)
@@ -87,10 +87,10 @@ namespace WiseUnpacker.HWUN
                 else
                     approxOffset -= _rollback;
 
-                bool realFound = FindReal(dir, approxOffset, out long realOffset);
+                bool realFound = FindReal(_inputFile, dir, approxOffset, out long realOffset);
                 if (realFound)
                 {
-                    int extracted = ExtractFiles(dir, pkzip, realOffset);
+                    int extracted = ExtractFiles(_inputFile, dir, pkzip, realOffset);
                     if (_renaming)
                         RenameFiles(dir, extracted);
                 }
@@ -102,7 +102,7 @@ namespace WiseUnpacker.HWUN
             else
             {
                 // Use the approximate offset as the real offset
-                int extracted = ExtractFiles(dir, pkzip, approxOffset);
+                int extracted = ExtractFiles(_inputFile, dir, pkzip, approxOffset);
                 if (_renaming)
                     RenameFiles(dir, extracted);
             }
@@ -116,12 +116,12 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Approximate the location of the WISE information
         /// </summary>
-        private long Approximate(out bool pkzip)
+        private static long Approximate(ReadOnlyCompositeStream input, out bool pkzip)
         {
             // Read the first 0xC000 bytes into a buffer
             byte[] buf = new byte[0xC200];
-            _inputFile.Seek(0x0000, SeekOrigin.Begin);
-            _inputFile.Read(buf, 0, 0xC000);
+            input.Seek(0x0000, SeekOrigin.Begin);
+            input.Read(buf, 0, 0xC000);
 
             // Use the initial offset and search for non-zero values
             long approxOffset = 0xC000;
@@ -212,7 +212,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Extract all files to a directory
         /// </summary>
-        private int ExtractFiles(string dir, bool pkzip, long offset)
+        internal static int ExtractFiles(ReadOnlyCompositeStream input, string dir, bool pkzip, long offset)
         {
             uint newcrc = 0;
             var inflater = new InflateImpl();
@@ -221,7 +221,7 @@ namespace WiseUnpacker.HWUN
             int extracted = 0;
             long fileEnd = 0;
             var dumpFile = File.OpenWrite(Path.Combine(dir, "WISE0000"));
-            _inputFile.Seek(offset, SeekOrigin.Begin);
+            input.Seek(offset, SeekOrigin.Begin);
 
             do
             {
@@ -229,30 +229,30 @@ namespace WiseUnpacker.HWUN
                 extracted++;
 
                 // Cache the current position as the file start
-                long fileStart = _inputFile.Position;
-                if (fileStart == _inputFile.Length - 1)
+                long fileStart = input.Position;
+                if (fileStart == input.Length - 1)
                     break;
 
                 // Read PKZIP header values
                 if (pkzip)
                 {
-                    _ = _inputFile.ReadUInt32(); // Signature
-                    _ = _inputFile.ReadUInt16(); // Version
-                    _ = _inputFile.ReadUInt16(); // Flags
-                    _ = _inputFile.ReadUInt16(); // Compression
-                    _ = _inputFile.ReadUInt16(); // Modification time
-                    _ = _inputFile.ReadUInt16(); // Modification date
-                    newcrc = _inputFile.ReadUInt32();
-                    _ = _inputFile.ReadUInt32(); // Compressed size
-                    _ = _inputFile.ReadUInt32(); // Uncompressed size
-                    ushort filenameLength = _inputFile.ReadUInt16();
-                    ushort extraLength = _inputFile.ReadUInt16();
+                    _ = input.ReadUInt32(); // Signature
+                    _ = input.ReadUInt16(); // Version
+                    _ = input.ReadUInt16(); // Flags
+                    _ = input.ReadUInt16(); // Compression
+                    _ = input.ReadUInt16(); // Modification time
+                    _ = input.ReadUInt16(); // Modification date
+                    newcrc = input.ReadUInt32();
+                    _ = input.ReadUInt32(); // Compressed size
+                    _ = input.ReadUInt32(); // Uncompressed size
+                    ushort filenameLength = input.ReadUInt16();
+                    ushort extraLength = input.ReadUInt16();
                     if (filenameLength + extraLength > 0)
-                        _ = _inputFile.ReadBytes(filenameLength + extraLength);
+                        _ = input.ReadBytes(filenameLength + extraLength);
                 }
 
                 // Inflate the data to a new file
-                bool inflated = inflater.Inflate(_inputFile, Path.Combine(dir, $"WISE{extracted:X4}"));
+                bool inflated = inflater.Inflate(input, Path.Combine(dir, $"WISE{extracted:X4}"));
                 if (pkzip)
                     inflater.CRC = 0x04034b50;
 
@@ -266,24 +266,24 @@ namespace WiseUnpacker.HWUN
                 if (inflated)
                 {
                     // Read the new CRC or signature
-                    _inputFile.Seek(fileEnd, SeekOrigin.Begin);
-                    newcrc = _inputFile.ReadUInt32();
+                    input.Seek(fileEnd, SeekOrigin.Begin);
+                    newcrc = input.ReadUInt32();
 
                     // Attempt to find the correct CRC value
                     uint attempt = 0;
-                    while (inflater.CRC != newcrc && attempt < (pkzip ? int.MaxValue : 8) && _inputFile.Position + 1 < _inputFile.Length)
+                    while (inflater.CRC != newcrc && attempt < (pkzip ? int.MaxValue : 8) && input.Position + 1 < input.Length)
                     {
-                        _inputFile.Seek(-3, SeekOrigin.Current);
-                        newcrc = _inputFile.ReadUInt32();
+                        input.Seek(-3, SeekOrigin.Current);
+                        newcrc = input.ReadUInt32();
                         attempt++;
                     }
 
                     // Set the real file end
-                    fileEnd = _inputFile.Position - 1;
+                    fileEnd = input.Position - 1;
                     if (pkzip)
                     {
                         fileEnd -= 4;
-                        _inputFile.Seek(-4, SeekOrigin.Current);
+                        input.Seek(-4, SeekOrigin.Current);
                         newcrc = 0xfffffffe;
                     }
                 }
@@ -301,7 +301,7 @@ namespace WiseUnpacker.HWUN
                 // If we had an inflate error specifically
                 if (!inflated)
                     break;
-            } while (newcrc != inflater.CRC && _inputFile.Position < _inputFile.Length - 5);
+            } while (newcrc != inflater.CRC && input.Position < input.Length - 5);
 
             // Write the ending offset for the last file to the dumpfile
             dumpFile.Write(BitConverter.GetBytes(fileEnd), 0, 4);
@@ -313,7 +313,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Find the real offset for non-zipped contents
         /// </summary>
-        private bool FindReal(string dir, long approxOffset, out long realOffset)
+        private static bool FindReal(ReadOnlyCompositeStream input, string dir, long approxOffset, out long realOffset)
         {
             realOffset = 0x00;
             uint newcrc = 0;
@@ -334,9 +334,9 @@ namespace WiseUnpacker.HWUN
                 bool inflated;
                 do
                 {
-                    _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
-                    inflated = inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
-                    newcrc = _inputFile.ReadUInt32();
+                    input.Seek(approxOffset + pos, SeekOrigin.Begin);
+                    inflated = inflater.Inflate(input, Path.Combine(dir, "WISE0001"));
+                    newcrc = input.ReadUInt32();
                     realOffset = approxOffset + pos;
                     pos++;
                 } while ((!inflated || inflater.CRC != newcrc || newcrc == 0x00000000) && pos != 0x100);
@@ -347,9 +347,9 @@ namespace WiseUnpacker.HWUN
                     pos = -1;
                     do
                     {
-                        _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
-                        inflated = inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
-                        newcrc = _inputFile.ReadUInt32();
+                        input.Seek(approxOffset + pos, SeekOrigin.Begin);
+                        inflated = inflater.Inflate(input, Path.Combine(dir, "WISE0001"));
+                        newcrc = input.ReadUInt32();
                         realOffset = approxOffset + pos;
                         pos--;
                     } while ((!inflated || inflater.CRC != newcrc || newcrc == 0x00000000) && pos != -0x100);
@@ -390,13 +390,13 @@ namespace WiseUnpacker.HWUN
         /// Open a potential WISE installer file and any additional files
         /// </summary>
         /// <returns>True if the file could be opened, false otherwise</returns>
-        private bool OpenFile(string name)
+        internal static bool OpenFile(string name, out ReadOnlyCompositeStream? stream)
         {
             // If the file exists as-is
             if (File.Exists(name))
             {
                 var fileStream = File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                _inputFile = new ReadOnlyCompositeStream([fileStream]);
+                stream = new ReadOnlyCompositeStream([fileStream]);
 
                 // Strip the extension
                 name = Path.GetFileNameWithoutExtension(name);
@@ -406,12 +406,13 @@ namespace WiseUnpacker.HWUN
             else if (File.Exists($"{name}.exe"))
             {
                 var fileStream = File.Open($"{name}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                _inputFile = new ReadOnlyCompositeStream([fileStream]);
+                stream = new ReadOnlyCompositeStream([fileStream]);
             }
 
             // Otherwise, the file cannot be opened
             else
             {
+                stream = null;
                 return false;
             }
 
@@ -421,7 +422,7 @@ namespace WiseUnpacker.HWUN
             while (File.Exists(extraPath))
             {
                 var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                _inputFile.AddStream(fileStream);
+                stream.AddStream(fileStream);
                 fileno++;
                 extraPath = $"{name}.w{fileno:X}";
             }
@@ -432,7 +433,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Raed a dumpfile and parse out the offsets
         /// </summary>
-        public static uint[] ParseDumpFile(Stream dumpFile)
+        private static uint[] ParseDumpFile(Stream dumpFile)
         {
             List<uint> offsets = [];
 
@@ -508,7 +509,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Rename files in the output directory
         /// </summary>
-        private bool RenameFiles(string dir, int extracted)
+        internal static bool RenameFiles(string dir, int extracted)
         {
             string nn = string.Empty;
             uint fileOffset2, scriptOffset1, scriptOffset2;
@@ -657,7 +658,7 @@ namespace WiseUnpacker.HWUN
         /// instances of "%\", which usually come from strings that look like:
         /// "%MAINDIR%\INSTALL.LOG"
         /// </remarks>
-        private static Stream? SearchForScriptFile(string dir, int extracted, ref uint fileno)
+        internal static Stream? SearchForScriptFile(string dir, int extracted, ref uint fileno)
         {
             // Check for boundary cases first
             if (fileno >= extracted || fileno >= 6)
@@ -719,7 +720,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Compare an entry in a scriptfile and dumpfile offsets to get an offset shift, if possible
         /// </summary>
-        private static long SearchForOffsetShift(Stream scriptFile, uint[] dumpFileOffsets, out bool found, ref long entry)
+        internal static long SearchForOffsetShift(Stream scriptFile, uint[] dumpFileOffsets, out bool found, ref long entry)
         {
             // Create variables for the two offsets
             uint dumpOffset1;
