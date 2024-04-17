@@ -15,7 +15,7 @@ namespace WiseUnpacker.HWUN
         public ushort Result { get; private set; }
         public uint CRC { get; set; }
 
-        public void Inflate(ReadOnlyCompositeStream inf, string outf)
+        public bool Inflate(ReadOnlyCompositeStream inf, string outf)
         {
             InputBuffer = new byte[0x4000];
             Input = inf;
@@ -26,22 +26,24 @@ namespace WiseUnpacker.HWUN
             InputBufferPosition = InputBufferSize;
 
             CRC = CRC32.Start();
-            SI_INFLATE();
+            bool inflated = SI_INFLATE();
             inf.Seek(inf.Position - InputBufferSize + InputBufferPosition, SeekOrigin.Begin);
             CRC = CRC32.End(CRC);
 
             Result = SI_ERROR;
             Output.Close();
             InputBuffer = [];
+            return inflated;
         }
 
-        public override byte SI_READ()
+        public override byte? SI_READ()
         {
             if (InputBufferPosition >= InputBufferSize)
             {
                 if (Input!.Position >= Input!.Length)
                 {
                     SI_BREAK = true;
+                    return null;
                 }
                 else
                 {

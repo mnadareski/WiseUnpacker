@@ -218,7 +218,7 @@ namespace WiseUnpacker.HWUN
 
             // "Extracting files"
             int extracted = 0;
-            long fileEnd;
+            long fileEnd = 0;
             var dumpFile = File.OpenWrite(Path.Combine(dir, "WISE0000"));
             _inputFile.Seek(offset, SeekOrigin.Begin);
 
@@ -229,6 +229,8 @@ namespace WiseUnpacker.HWUN
 
                 // Cache the current position as the file start
                 long fileStart = _inputFile.Position;
+                if (fileStart == _inputFile.Length - 1)
+                    break;
 
                 // Read PKZIP header values
                 if (pkzip)
@@ -243,7 +245,7 @@ namespace WiseUnpacker.HWUN
                 }
 
                 // Inflate the data to a new file
-                inflater.Inflate(_inputFile, Path.Combine(dir, $"WISE{extracted:X4}"));
+                bool inflated = inflater.Inflate(_inputFile, Path.Combine(dir, $"WISE{extracted:X4}"));
                 if (pkzip)
                     inflater.CRC = 0x04034b50;
 
@@ -251,7 +253,7 @@ namespace WiseUnpacker.HWUN
                 fileEnd = fileStart + inflater.InputSize - 1;
 
                 // If no inflation error occurred
-                if (inflater.Result == 0x0000)
+                if (inflated || inflater.Result == 0x0000)
                 {
                     // Read the new CRC
                     newcrc = _inputFile.ReadUInt32();
@@ -275,7 +277,7 @@ namespace WiseUnpacker.HWUN
                 }
 
                 // If an error occurred or the CRC does not match
-                if (inflater.Result != 0x0000 || newcrc != inflater.CRC)
+                if (!inflated || inflater.Result != 0x0000 || newcrc != inflater.CRC)
                 {
                     inflater.CRC = 0xffffffff;
                     newcrc = 0xfffffffe;
@@ -283,6 +285,10 @@ namespace WiseUnpacker.HWUN
 
                 // Write the starting offset of the file to the dumpfile
                 dumpFile.Write(BitConverter.GetBytes(fileStart), 0, 4);
+
+                // If we had an inflate error specifically
+                if (!inflated)
+                    break;
             } while (newcrc != inflater.CRC);
 
             // Write the ending offset for the last file to the dumpfile
@@ -313,14 +319,15 @@ namespace WiseUnpacker.HWUN
             {
                 // Attempt to find the real first file by inflating blocks
                 pos = 0x0000;
+                bool inflated;
                 do
                 {
                     _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
-                    inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
+                    inflated = inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
                     newcrc = _inputFile.ReadUInt32();
                     realOffset = approxOffset + pos;
                     pos++;
-                } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
+                } while ((!inflated || inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != 0x100);
 
                 // Try to find the ending position based on a valid CRC
                 if ((inflater.CRC != newcrc || newcrc == 0x00000000 || inflater.Result != 0x0000) && pos == 0x100)
@@ -329,11 +336,11 @@ namespace WiseUnpacker.HWUN
                     do
                     {
                         _inputFile.Seek(approxOffset + pos, SeekOrigin.Begin);
-                        inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
+                        inflated = inflater.Inflate(_inputFile, Path.Combine(dir, "WISE0001"));
                         newcrc = _inputFile.ReadUInt32();
                         realOffset = approxOffset + pos;
                         pos--;
-                    } while ((inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != -0x100);
+                    } while ((!inflated || inflater.CRC != newcrc || inflater.Result != 0x0000 || newcrc == 0x00000000) && pos != -0x100);
                 }
             }
             else

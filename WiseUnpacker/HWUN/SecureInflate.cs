@@ -421,7 +421,7 @@ namespace WiseUnpacker.HWUN
         /// not too much bytes are read and the caller doesn't have to calculate
         /// the byte/word/integer/whatever value by hand.
         /// </summary>
-        private ushort ReadBits(byte NumberOfBits)
+        private ushort? ReadBits(byte NumberOfBits)
         {
             ushort ResultMask;
             ushort Result;
@@ -433,8 +433,13 @@ namespace WiseUnpacker.HWUN
                 if (BitNumber == 8)
                 {
                     BitNumber = 0;
-                    BitBuffer = SI_READ();
+                    byte? tempBuffer = SI_READ();
+                    if (tempBuffer == null)
+                        return null;
+
+                    BitBuffer = tempBuffer.Value;
                 }
+
                 Result += (ushort)((BitBuffer & 0x01) * ResultMask);
                 ResultMask = (ushort)(ResultMask << 0x01);
                 BitBuffer = (byte)(BitBuffer >> 0x01);
@@ -448,13 +453,21 @@ namespace WiseUnpacker.HWUN
         /// Reads one bits from the input stream and returns it/them
         /// as a byte.
         /// </summary>
-        private byte ReadBit()
+        private byte? ReadBit()
         {
             if (BitNumber == 8)
             {
                 BitNumber = 0;
-                BitBuffer = SI_READ();
+                byte? tempBuffer = SI_READ();
+                if (tempBuffer == null)
+                    return null;
+
+                BitBuffer = tempBuffer.Value;
             }
+
+            if (SI_BREAK)
+                return 0;
+
             byte ReadBit = (byte)(BitBuffer & 0x01);
             BitBuffer = (byte)(BitBuffer >> 0x01);
             BitNumber++;
@@ -503,18 +516,24 @@ namespace WiseUnpacker.HWUN
             FreeHuffmanTree(ref DistanceHuffmanTree);
         }
 
-        private ushort DecodeValue(HuffmanNode ActualNode)
+        private ushort? DecodeValue(HuffmanNode ActualNode)
         {
             do
             {
-                ActualNode = ActualNode.next[ReadBit()]!;
-            } while (ActualNode.value != 0xffff || SI_BREAK);
+                byte? nextBit = ReadBit();
+                if (nextBit == null)
+                    return null;
+
+                ActualNode = ActualNode.next[nextBit.Value]!;
+            } while (ActualNode.value != 0xffff && !SI_BREAK);
+
             if (SI_BREAK)
                 SI_ERROR = 0x4000;
+
             return ActualNode.value;
         }
 
-        private void ReadDynamicCodeTrees(ushort CodelengthNumber, ushort LiteralNumber, ushort DistanceNumber)
+        private bool ReadDynamicCodeTrees(ushort CodelengthNumber, ushort LiteralNumber, ushort DistanceNumber)
         {
             ushort CodeValue;
             byte Lengthcode, CodeLength;
@@ -530,7 +549,11 @@ namespace WiseUnpacker.HWUN
             {
                 if (!SI_BREAK)
                 {
-                    ActualCodeLength = (byte)ReadBits(3);
+                    uint? actualCodeLength = ReadBits(3);
+                    if (actualCodeLength == null)
+                        return false;
+
+                    ActualCodeLength = (byte)actualCodeLength.Value;
                     if (ActualCodeLength > HighestCodeLength)
                         HighestCodeLength = ActualCodeLength;
                     CodelengthCodelength[CodelengthOrder[CodeValue]] = ActualCodeLength;
@@ -540,7 +563,7 @@ namespace WiseUnpacker.HWUN
             {
                 SI_ERROR = SI_USERBREAK;
                 CodelengthCodelength = [];
-                return;
+                return false;
             }
 
             // Build up tree
@@ -562,13 +585,13 @@ namespace WiseUnpacker.HWUN
                 if (!BuildSuccess)
                 {
                     SI_ERROR = (ushort)((SI_ERROR & 0x7fc3) + 0x8024);
-                    return;
+                    return false;
                 }
             }
             else
             {
                 SI_ERROR = (ushort)((SI_ERROR & 0x7fc3) + 0x8034);
-                return;
+                return false;
             }
 
             // Real literal + distance (alphabet) codelengths
@@ -582,7 +605,11 @@ namespace WiseUnpacker.HWUN
                 {
                     if (RepeatAmount == 0)
                     {
-                        Lengthcode = (byte)DecodeValue(CodelengthHuffmanTree!);
+                        ushort? lengthcode = DecodeValue(CodelengthHuffmanTree!);
+                        if (lengthcode == null)
+                            return false;
+
+                        Lengthcode = (byte)lengthcode.Value;
                         if (Lengthcode < 0x10)
                         {
                             AlphabetCodelength[CodeValue] = Lengthcode;
@@ -599,28 +626,41 @@ namespace WiseUnpacker.HWUN
                         }
                         else if (Lengthcode == 0x10)
                         {
-                            RepeatAmount = (ushort)(0x02 + ReadBits(2));
+                            uint? repeatAmount = ReadBits(2);
+                            if (repeatAmount == null)
+                                return false;
+
+                            RepeatAmount = (ushort)(0x02 + repeatAmount.Value);
                             RepeatValue = AlphabetCodelength[CodeValue - 0x01];
                             AlphabetCodelength[CodeValue] = RepeatValue;
                         }
                         else if (Lengthcode == 0x11)
                         {
-                            RepeatAmount = (ushort)(0x02 + ReadBits(3));
+                            uint? repeatAmount = ReadBits(3);
+                            if (repeatAmount == null)
+                                return false;
+
+                            RepeatAmount = (ushort)(0x02 + repeatAmount.Value);
                             RepeatValue = 0x00;
                             AlphabetCodelength[CodeValue] = RepeatValue;
                         }
                         else if (Lengthcode == 0x12)
                         {
-                            RepeatAmount = (ushort)(0x0a + ReadBits(7));
+                            uint? repeatAmount = ReadBits(7);
+                            if (repeatAmount == null)
+                                return false;
+
+                            RepeatAmount = (ushort)(0x0a + repeatAmount.Value);
                             RepeatValue = 0x00;
                             AlphabetCodelength[CodeValue] = RepeatValue;
                         }
+
                         if (SI_BREAK)
                         {
                             SI_ERROR = SI_USERBREAK;
                             AlphabetCodelength = [];
                             FreeHuffmanTree(ref CodelengthHuffmanTree);
-                            return;
+                            return false;
                         }
                     }
                     else
@@ -654,7 +694,7 @@ namespace WiseUnpacker.HWUN
                     SI_ERROR = (ushort)((SI_ERROR & 0x7fc3) + 0x8028);
                     FreeHuffmanTree(ref LiteralHuffmanTree);
                     AlphabetCodelength = [];
-                    return;
+                    return false;
                 }
             }
             else
@@ -662,7 +702,7 @@ namespace WiseUnpacker.HWUN
                 SI_ERROR = (ushort)((SI_ERROR & 0x7fc3) + 0x8038);
                 FreeHuffmanTree(ref LiteralHuffmanTree);
                 AlphabetCodelength = [];
-                return;
+                return false;
             }
 
             // Build up distance tree
@@ -685,7 +725,7 @@ namespace WiseUnpacker.HWUN
                     SI_ERROR = (ushort)((SI_ERROR & 0x7fc3) + 0x802c);
                     FreeHuffmanTree(ref DistanceHuffmanTree);
                     AlphabetCodelength = [];
-                    return;
+                    return false;
                 }
             }
             else
@@ -693,9 +733,11 @@ namespace WiseUnpacker.HWUN
                 SI_ERROR = (ushort)((SI_ERROR & 0x7fc3) + 0x803c);
                 FreeHuffmanTree(ref DistanceHuffmanTree);
                 AlphabetCodelength = [];
-                return;
+                return false;
             }
+
             AlphabetCodelength = [];
+            return true;
         }
 
         private void FreeDynamicCodeTrees()
@@ -733,14 +775,14 @@ namespace WiseUnpacker.HWUN
             }
         }
 
-        public abstract byte SI_READ();
+        public abstract byte? SI_READ();
 
         public abstract void SI_WRITE(ushort amount);
 
         /// <summary>
         /// Starts the inflate process
         /// </summary>
-        public unsafe void SI_INFLATE()
+        public unsafe bool SI_INFLATE()
         {
             byte LastBlock = 0, BlockType;
             ushort CodelengthNumber, LiteralNumber, DistanceNumber;
@@ -758,8 +800,17 @@ namespace WiseUnpacker.HWUN
             SI_WINDOW = new byte[0x8000];
             do
             {
-                LastBlock = ReadBit();
-                BlockType = (byte)ReadBits(2);
+                byte? lastBlock = ReadBit();
+                if (lastBlock == null)
+                    return false;
+
+                LastBlock = lastBlock.Value;
+
+                uint? blockType = ReadBits(2);
+                if (blockType == null)
+                    return false;
+
+                BlockType = (byte)blockType.Value;
 
                 // writeln('LastBlock              = $',hexa(LastBlock,2));
                 // write('BlockType              = $',hexa(BlockType,2),' (');
@@ -781,17 +832,35 @@ namespace WiseUnpacker.HWUN
                 {
                     // ignore all bits till next byte
                     BitNumber = 8;
-                    Length = (ushort)(SI_READ() + SI_READ() * 0x100);
-                    Distance = (ushort)(SI_READ() + SI_READ() * 0x100);
+
+                    byte? lenByte1 = SI_READ();
+                    byte? lenByte2 = SI_READ();
+                    if (lenByte1 == null || lenByte2 == null)
+                        return false;
+
+                    Length = (ushort)(lenByte1.Value + lenByte2.Value * 0x100);
+
+                    byte? distByte1 = SI_READ();
+                    byte? distByte2 = SI_READ();
+                    if (distByte1 == null || distByte2 == null)
+                        return false;
+
+                    Distance = (ushort)(distByte1.Value + distByte2.Value * 0x100);
                     // writeln('Length                 = $',hexa(Length,4));
                     // writeln('Length complement      = $',hexa(Distance,4));
                     if ((Length ^ Distance) != 0xffff)
+                    {
                         SI_ERROR = 0x8020;
+                    }
                     else
                     {
                         while (Length > 0 && (SI_ERROR & 0xc000) == 0x0000)
                         {
-                            Literal = SI_READ();
+                            byte? literal = SI_READ();
+                            if (literal == null)
+                                return false;
+
+                            Literal = literal.Value;
                             OutputByte((byte)Literal);
                             Length--;
                         }
@@ -804,21 +873,38 @@ namespace WiseUnpacker.HWUN
                     {
                         do
                         {
-                            Literal = DecodeValue(LiteralHuffmanTree!);
+                            ushort? literal = DecodeValue(LiteralHuffmanTree!);
+                            if (literal == null)
+                                return false;
+
+                            Literal = literal.Value;
                             if ((SI_ERROR & 0xc000) != 0)
+                            {
                                 Literal = 0x100;
+                            }
                             else
                             {
                                 if (Literal < 0x100)
+                                {
                                     OutputByte((byte)Literal);
+                                }
                                 else if (Literal == 0x100)
                                 {
                                     // No-op?
                                 }
                                 else if (Literal <= 0x11d)
                                 {
-                                    Length = (ushort)(LengthcodeValueOffset[Literal] + ReadBits(LengthcodeValueExtrabits[Literal]));
-                                    Distance = DecodeValue(DistanceHuffmanTree!);
+                                    uint? extraBits = ReadBits(LengthcodeValueExtrabits[Literal]);
+                                    if (extraBits == null)
+                                        return false;
+
+                                    Length = (ushort)(LengthcodeValueOffset[Literal] + extraBits.Value);
+
+                                    ushort? distance = DecodeValue(DistanceHuffmanTree!);
+                                    if (distance == null)
+                                        return false;
+
+                                    Distance = distance.Value;
                                     if (Distance > 0x1d)
                                     {
                                         SI_ERROR = 0x8000;
@@ -826,7 +912,11 @@ namespace WiseUnpacker.HWUN
                                     }
                                     else
                                     {
-                                        Distance = (ushort)(DistancecodeValueOffset[Distance] + ReadBits(DistancecodeValueExtrabits[Distance]));
+                                        extraBits = ReadBits(DistancecodeValueExtrabits[Distance]);
+                                        if (extraBits == null)
+                                            return false;
+
+                                        Distance = (ushort)(DistancecodeValueOffset[Distance] + extraBits.Value);
                                         CopyBytes(Distance, Length);
                                     }
                                 }
@@ -841,10 +931,19 @@ namespace WiseUnpacker.HWUN
                     }
                     else if (BlockType == 2)
                     {
-                        LiteralNumber = (ushort)(LiteralAlphabetLengthOffset + ReadBits(5));
-                        DistanceNumber = (ushort)(DistanceAlphabetLengthOffset + ReadBits(5));
-                        CodelengthNumber = (ushort)(LengthcodeAlphabetLengthOffset + ReadBits(4));
-                        ReadDynamicCodeTrees(CodelengthNumber, LiteralNumber, DistanceNumber);
+                        uint? literalBits = ReadBits(5);
+                        uint? distanceBits = ReadBits(5);
+                        uint? codelengthBits = ReadBits(4);
+                        if (literalBits == null || distanceBits == null || codelengthBits == null)
+                            return false;
+
+                        LiteralNumber = (ushort)(LiteralAlphabetLengthOffset + literalBits.Value);
+                        DistanceNumber = (ushort)(DistanceAlphabetLengthOffset + distanceBits.Value);
+                        CodelengthNumber = (ushort)(LengthcodeAlphabetLengthOffset + codelengthBits.Value);
+                        bool readDynamic = ReadDynamicCodeTrees(CodelengthNumber, LiteralNumber, DistanceNumber);
+                        if (!readDynamic)
+                            return false;
+
                         // writeln('LiteralNumber          = $',hexa(LiteralNumber,4));
                         // writeln('DistanceNumber         = $',hexa(DistanceNumber,4));
                         // writeln('CodelengthNumber       = $',hexa(CodelengthNumber,4));
@@ -853,22 +952,44 @@ namespace WiseUnpacker.HWUN
                         {
                             do
                             {
-                                Literal = DecodeValue(LiteralHuffmanTree!);
+                                ushort? literal = DecodeValue(LiteralHuffmanTree!);
+                                if (literal == null)
+                                    return false;
+
+                                Literal = literal.Value;
                                 if ((SI_ERROR & 0xc000) != 0x0000)
+                                {
                                     Literal = 0x100;
+                                }
                                 else
                                 {
                                     if (Literal < 0x100)
+                                    {
                                         OutputByte((byte)Literal);
+                                    }
                                     else if (Literal == 0x100)
                                     {
                                         // No-op?
                                     }
                                     else if (Literal <= 0x11d)
                                     {
-                                        Length = (ushort)(LengthcodeValueOffset[Literal] + ReadBits(LengthcodeValueExtrabits[Literal]));
-                                        Distance = DecodeValue(DistanceHuffmanTree!);
-                                        Distance = (ushort)(DistancecodeValueOffset[Distance] + ReadBits(DistancecodeValueExtrabits[Distance]));
+                                        uint? extrabits = ReadBits(LengthcodeValueExtrabits[Literal]);
+                                        if (extrabits == null)
+                                            return false;
+
+                                        Length = (ushort)(LengthcodeValueOffset[Literal] + extrabits.Value);
+
+                                        ushort? distance = DecodeValue(DistanceHuffmanTree!);
+                                        if (distance == null)
+                                            return false;
+
+                                        Distance = distance.Value;
+
+                                        extrabits = ReadBits(DistancecodeValueExtrabits[Distance]);
+                                        if (extrabits == null)
+                                            return false;
+
+                                        Distance = (ushort)(DistancecodeValueOffset[Distance] + extrabits.Value);
                                         CopyBytes(Distance, Length);
                                     }
                                     else
@@ -889,6 +1010,8 @@ namespace WiseUnpacker.HWUN
                 SI_WRITE(SI_POSITION);
             DeAllocateStaticTables();
             SI_WINDOW = [];
+
+            return true;
         }
 
         #endregion
