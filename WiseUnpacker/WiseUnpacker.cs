@@ -3,7 +3,6 @@ using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
-using WiseUnpacker.Files;
 using WiseUnpacker.HWUN;
 using MZ = SabreTools.Models.MSDOS;
 using LE = SabreTools.Models.LinearExecutable;
