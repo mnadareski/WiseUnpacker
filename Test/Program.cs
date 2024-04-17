@@ -29,7 +29,7 @@ namespace Test
 
             // Attempt to extract the file
             var unpacker = new WiseUnpacker.WiseUnpacker();
-            if (unpacker.ExtractToHWUN(input, outdir!))
+            if (unpacker.ExtractTo(input, outdir!))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
