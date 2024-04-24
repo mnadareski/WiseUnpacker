@@ -34,11 +34,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SabreTools.Compression" Version="0.4.5" />
+    <PackageReference Include="SabreTools.Compression" Version="0.5.0" />
     <PackageReference Include="SabreTools.Hashing" Version="1.2.0" />
     <PackageReference Include="SabreTools.IO" Version="1.4.0" />
-    <PackageReference Include="SabreTools.Models" Version="1.4.4" />
-    <PackageReference Include="SabreTools.Serialization" Version="1.5.4" />
+    <PackageReference Include="SabreTools.Models" Version="1.4.5" />
+    <PackageReference Include="SabreTools.Serialization" Version="1.5.5" />
   </ItemGroup>
 
 </Project>
