@@ -28,8 +28,7 @@ namespace Test
                 outdir = Path.GetFullPath(args[1]);
 
             // Attempt to extract the file
-            var unpacker = new WiseUnpacker.WiseUnpacker();
-            if (unpacker.ExtractTo(input, outdir!))
+            if (WiseUnpacker.WiseUnpacker.ExtractTo(input, outdir!))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
