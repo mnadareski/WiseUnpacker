@@ -13,7 +13,6 @@ namespace WiseUnpacker
         private ReadOnlyCompositeStream? inputFile;
 
         // Deterministic values
-        private static readonly FormatProperty[] knownFormats = FormatProperty.GenerateKnownFormats();
         private FormatProperty? currentFormat;
         private long dataBase;
 
@@ -49,11 +48,11 @@ namespace WiseUnpacker
             inputFile = stream;
             JumpToTheData();
             inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
-            for (int i = 0; i < knownFormats.Length; i++)
+            for (int i = 0; i < FormatProperty.KnownFormats.Length; i++)
             {
-                if (currentFormat.Equals(knownFormats[i]))
+                if (currentFormat.Equals(FormatProperty.KnownFormats[i]))
                 {
-                    currentFormat = knownFormats[i];
+                    currentFormat = FormatProperty.KnownFormats[i];
                     break;
                 }
             }

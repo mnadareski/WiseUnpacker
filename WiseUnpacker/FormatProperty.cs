@@ -36,11 +36,11 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Generate an array of all known formats
+        /// Array of all known formats
         /// </summary>
-        public static FormatProperty[] GenerateKnownFormats()
+        public static FormatProperty[] KnownFormats
         {
-            return
+            get =>
             [
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x84b0, Dll = false, ArchiveStart = 0x11, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = true  },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e10, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
