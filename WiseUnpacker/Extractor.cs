@@ -1,6 +1,6 @@
 ﻿namespace WiseUnpacker
 {
-    public static class WiseUnpacker
+    public static class Extractor
     {
         /// <summary>
         /// Attempt to extract a Wise installer

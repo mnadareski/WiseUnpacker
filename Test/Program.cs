@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using WiseUnpacker;
 
 namespace Test
 {
@@ -28,7 +29,7 @@ namespace Test
                 outdir = Path.GetFullPath(args[1]);
 
             // Attempt to extract the file
-            if (WiseUnpacker.WiseUnpacker.ExtractTo(input, outdir!))
+            if (Extractor.ExtractTo(input, outdir!))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
