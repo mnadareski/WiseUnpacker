@@ -4,7 +4,7 @@ using SabreTools.IO.Streams;
 
 namespace WiseUnpacker.HWUN
 {
-    internal class InflateImpl
+    internal class Inflater
     {
         #region Properties
 

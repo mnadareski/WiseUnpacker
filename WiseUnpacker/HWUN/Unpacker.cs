@@ -215,7 +215,7 @@ namespace WiseUnpacker.HWUN
         internal static int ExtractFiles(ReadOnlyCompositeStream input, string dir, bool pkzip, long offset)
         {
             uint newcrc = 0;
-            var inflater = new InflateImpl();
+            var inflater = new Inflater();
 
             // "Extracting files"
             int extracted = 0;
@@ -318,7 +318,7 @@ namespace WiseUnpacker.HWUN
             realOffset = 0x00;
             uint newcrc = 0;
             long pos;
-            var inflater = new InflateImpl();
+            var inflater = new Inflater();
 
             // Reset the offset if out of bounds
             if (approxOffset < 0x100)
