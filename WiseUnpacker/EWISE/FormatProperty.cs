@@ -9,7 +9,7 @@
 
 using System;
 
-namespace WiseUnpacker
+namespace WiseUnpacker.EWISE
 {
     public class FormatProperty : IEquatable<FormatProperty>
     {
@@ -29,10 +29,10 @@ namespace WiseUnpacker
             if (other == null)
                 return false;
 
-            return this.ExecutableOffset == other.ExecutableOffset
-                && this.ExecutableType == other.ExecutableType
-                && (this.CodeSectionLength == other.CodeSectionLength || other.CodeSectionLength == -1)
-                && (this.DataSectionLength == other.DataSectionLength || other.DataSectionLength == -1);
+            return ExecutableOffset == other.ExecutableOffset
+                && ExecutableType == other.ExecutableType
+                && (CodeSectionLength == other.CodeSectionLength || other.CodeSectionLength == -1)
+                && (DataSectionLength == other.DataSectionLength || other.DataSectionLength == -1);
         }
 
         /// <summary>
