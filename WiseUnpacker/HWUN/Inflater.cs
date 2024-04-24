@@ -11,12 +11,12 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Current number of bytes read from the input
         /// </summary>
-        public long InputSize => _inputSize;
+        public long InputSize { get; private set; }
 
         /// <summary>
         /// Current number of bytes written to the output
         /// </summary>
-        public long OutputSize => _outputSize;
+        public long OutputSize { get; private set; }
 
         /// <summary>
         /// Calculated CRC for inflated data
@@ -25,73 +25,35 @@ namespace WiseUnpacker.HWUN
 
         #endregion
 
-        #region Internal State
-
         /// <summary>
-        /// Source input for inflation
+        /// Inflate an input stream to an output file path
         /// </summary>
-        private ReadOnlyCompositeStream? _input;
-
-        /// <summary>
-        /// Current number of bytes read from the input
-        /// </summary>
-        private long _inputSize;
-
-        /// <summary>
-        /// Output stream
-        /// </summary>
-        private Stream? _output;
-
-        /// <summary>
-        /// Current number of bytes written to the output
-        /// </summary>
-        private long _outputSize;
-
-        /// <summary>
-        /// Internal buffer for reading
-        /// </summary>
-        private readonly byte[] _buffer = new byte[0x4000];
-
-        /// <summary>
-        /// Current pointer to the internal buffer
-        /// </summary>
-        private ushort _bufferPosition;
-
-        /// <summary>
-        /// Size of the internal buffer
-        /// </summary>
-        private ushort _bufferSize;
-
-        #endregion
-
-        public bool Inflate(ReadOnlyCompositeStream inf, string outf)
+        public bool Inflate(ReadOnlyCompositeStream input, string outputPath)
         {
-            _input = inf;
-            _output = File.Open(outf, FileMode.Create, FileAccess.Write, FileShare.None);
-            _inputSize = 0;
-            _outputSize = 0;
-            _bufferSize = (ushort)_buffer.Length;
-            _bufferPosition = _bufferSize;
+            var output = File.Open(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            InputSize = 0;
+            OutputSize = 0;
 
             CRC = CRC32.Start();
             try
             {
-                long start = _input.Position;
-                var ds = new DeflateStream(_input, CompressionMode.Decompress);
+                long start = input.Position;
+                var ds = new DeflateStream(input, CompressionMode.Decompress);
                 while (true)
                 {
                     byte[] buf = new byte[1024];
                     int read = ds.Read(buf, 0, buf.Length);
                     CRC = CRC32.Add(CRC, buf, (ushort)read);
-                    _output.Write(buf, 0, read);
+                    output.Write(buf, 0, read);
 
                     if (read == 0)
                         break;
                 }
 
                 // Set the potential size of the data
-                _inputSize = _input.Position - start;
-                _outputSize = _output.Length;
+                InputSize = input.Position - start;
+                OutputSize = output.Length;
             }
             catch
             {
@@ -99,7 +61,7 @@ namespace WiseUnpacker.HWUN
             }
             CRC = CRC32.End(CRC);
 
-            _output.Close();
+            output?.Close();
             return true;
         }
     }
