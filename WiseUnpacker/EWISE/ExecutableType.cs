@@ -1,4 +1,4 @@
-﻿namespace WiseUnpacker
+﻿namespace WiseUnpacker.EWISE
 {
     public enum ExecutableType
     {
