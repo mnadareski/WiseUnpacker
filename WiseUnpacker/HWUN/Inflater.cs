@@ -1,5 +1,6 @@
 using System.IO;
 using System.IO.Compression;
+using CRC32;
 using SabreTools.IO.Streams;
 
 namespace WiseUnpacker.HWUN
@@ -34,8 +35,9 @@ namespace WiseUnpacker.HWUN
 
             InputSize = 0;
             OutputSize = 0;
+            CRC = 0;
 
-            CRC = CRC32.Start();
+            var crc = new OptimizedCRC();
             try
             {
                 long start = input.Position;
@@ -44,7 +46,7 @@ namespace WiseUnpacker.HWUN
                 {
                     byte[] buf = new byte[1024];
                     int read = ds.Read(buf, 0, buf.Length);
-                    CRC = CRC32.Add(CRC, buf, (ushort)read);
+                    crc.Update(buf, 0, read);
                     output.Write(buf, 0, read);
 
                     if (read == 0)
@@ -59,7 +61,7 @@ namespace WiseUnpacker.HWUN
             {
                 return false;
             }
-            CRC = CRC32.End(CRC);
+            CRC = (uint)crc.Value;
 
             output?.Close();
             return true;
