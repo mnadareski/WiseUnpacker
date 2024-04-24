@@ -1,9 +1,8 @@
 using System.IO;
 using System.IO.Compression;
 using CRC32;
-using SabreTools.IO.Streams;
 
-namespace WiseUnpacker.HWUN
+namespace WiseUnpacker
 {
     internal class Inflater
     {
