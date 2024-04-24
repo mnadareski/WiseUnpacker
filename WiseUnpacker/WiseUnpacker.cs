@@ -14,7 +14,6 @@ namespace WiseUnpacker
 
         // Deterministic values
         private FormatProperty? currentFormat;
-        private long dataBase;
 
         /// <summary>
         /// Create a new heuristic unpacker
@@ -46,7 +45,7 @@ namespace WiseUnpacker
 
             // Move to data and determine if this is a known format
             inputFile = stream;
-            JumpToTheData();
+            long dataBase = JumpToTheData();
             inputFile!.Seek(dataBase + currentFormat!.ExecutableOffset, SeekOrigin.Begin);
             for (int i = 0; i < FormatProperty.KnownFormats.Length; i++)
             {
@@ -117,7 +116,7 @@ namespace WiseUnpacker
         /// Jump to the .data section of an executable stream
         /// </summary>
         /// TODO: MZ-only is not supported
-        private void JumpToTheData()
+        private long JumpToTheData()
         {
             currentFormat = new FormatProperty
             {
@@ -125,7 +124,7 @@ namespace WiseUnpacker
                 ExecutableOffset = 0, // dataStart
                 CodeSectionLength = 0,
             };
-            dataBase = 0;
+            long dataBase = 0;
 
             // Try to read as NE
             var ne = NewExecutable.Create(inputFile);
@@ -135,7 +134,7 @@ namespace WiseUnpacker
                 currentFormat.ExecutableOffset = ne.Model.Stub!.Header!.NewExeHeaderAddr;
                 currentFormat.CodeSectionLength = -1;
                 currentFormat.DataSectionLength = -1;
-                return;
+                return dataBase;
             }
 
             // Try to read as LE/LX
@@ -146,7 +145,7 @@ namespace WiseUnpacker
                 currentFormat.ExecutableOffset = le.Model.Stub!.Header!.NewExeHeaderAddr;
                 currentFormat.CodeSectionLength = -1;
                 currentFormat.DataSectionLength = -1;
-                return;
+                return dataBase;
             }
 
             bool searchAgainAtEnd = true;
@@ -162,15 +161,17 @@ namespace WiseUnpacker
                 // Try to read as PE
                 var pe = PortableExecutable.Create(inputFile);
                 if (pe != null)
-                    currentFormat.ExecutableType = ProcessPe(pe, ref searchAgainAtEnd);
+                    currentFormat.ExecutableType = ProcessPe(pe, dataBase, ref searchAgainAtEnd);
             }
             while (searchAgainAtEnd);
+
+            return dataBase;
         }
 
         /// <summary>
         /// Process a PE executable header
         /// </summary>
-        private ExecutableType ProcessPe(PortableExecutable pe, ref bool searchAgainAtEnd)
+        private ExecutableType ProcessPe(PortableExecutable pe, long dataBase, ref bool searchAgainAtEnd)
         {
             try
             {
@@ -184,7 +185,7 @@ namespace WiseUnpacker
                 if (section != null)
                 {
                     currentFormat!.DataSectionLength = section.VirtualSize;
-                    bool containsExe = ScanSectionForExecutable(pe, section);
+                    bool containsExe = ScanSectionForExecutable(pe, section, dataBase);
                     if (containsExe)
                         searchAgainAtEnd = true;
                 }
@@ -195,7 +196,7 @@ namespace WiseUnpacker
                 if (section != null)
                 {
                     resource = section;
-                    bool containsExe = ScanSectionForExecutable(pe, section);
+                    bool containsExe = ScanSectionForExecutable(pe, section, dataBase);
                     if (containsExe)
                         searchAgainAtEnd = true;
                 }
@@ -221,7 +222,7 @@ namespace WiseUnpacker
         /// Scan a section for executable data
         /// </summary>
         /// <returns>True if the section contained executable data, false otherwise</returns>
-        private bool ScanSectionForExecutable(PortableExecutable pe, PE.SectionHeader? section)
+        private bool ScanSectionForExecutable(PortableExecutable pe, PE.SectionHeader? section, long dataBase)
         {
             // If we have an invalid section
             if (section == null || section.SizeOfRawData <= 20000)
@@ -248,7 +249,7 @@ namespace WiseUnpacker
                 return true;
             }
 
-            return false; ;
+            return false;
         }
     }
 }
