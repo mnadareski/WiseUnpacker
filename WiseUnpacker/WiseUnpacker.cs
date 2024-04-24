@@ -21,8 +21,32 @@ namespace WiseUnpacker
         public WiseUnpacker() { }
 
         /// <summary>
-        /// Extract a file to an output using HWUN
+        /// Attempt to extract a Wise installer
         /// </summary>
+        /// <param name="file">Path to the possible Wise installer</param>
+        /// <param name="outputPath">Output directory for extracted files</param>
+        /// <returns>True if extraction was a success, false otherwise</returns>
+        public bool ExtractTo(string file, string outputPath)
+        {
+            // Use E_WISE-derived code
+            if (ExtractToEWISE(file, outputPath))
+                return true;
+
+            // Use HWUN-derived code
+            if (ExtractToHWUN(file, outputPath))
+                return true;
+
+            // Everything failed
+            return false;
+        }
+
+        /// <summary>
+        /// Attempt to extract a Wise installer using HWUN
+        /// </summary>
+        /// <param name="file">Path to the possible Wise installer</param>
+        /// <param name="outputPath">Output directory for extracted files</param>
+        /// <param name="options">HWUN-compatible options string (optional)</param>
+        /// <returns>True if extraction was a success, false otherwise</returns>
         public bool ExtractToHWUN(string file, string outputPath, string? options = null)
         {
             var hwun = new Unpacker(file, options);
@@ -30,11 +54,12 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Attempt to extract a Wise installer
+        /// Attempt to extract a Wise installer using E_WISE
         /// </summary>
-        /// <param name="file">Possible Wise installer</param>
+        /// <param name="file">Path to the possible Wise installer</param>
         /// <param name="outputPath">Output directory for extracted files</param>
-        public bool ExtractTo(string file, string outputPath)
+        /// <returns>True if extraction was a success, false otherwise</returns>
+        public bool ExtractToEWISE(string file, string outputPath)
         {
             file = Path.GetFullPath(file);
             outputPath = Path.GetFullPath(outputPath);
@@ -56,11 +81,11 @@ namespace WiseUnpacker
                 }
             }
 
-            // Fall back on heuristics if we couldn't match
+            // No match means extraction cannot continue
             if (currentFormat.ArchiveEnd == 0)
-                return ExtractToHWUN(file, outputPath);
+                return false;
 
-            // Skip over the addditional DLL name, if we expect it
+            // Skip over the addditional DLL name, if expected
             long dataStart = currentFormat.ExecutableOffset;
             if (currentFormat.Dll)
             {
@@ -96,7 +121,7 @@ namespace WiseUnpacker
 
             inputFile.Seek(dataBase + dataStart + currentFormat.ArchiveStart, SeekOrigin.Begin);
 
-            // Skip over the initialization text, if we expect it
+            // Skip over the initialization text, if expected
             if (currentFormat.InitText)
             {
                 byte[] waitingBytes = new byte[256];
@@ -224,7 +249,7 @@ namespace WiseUnpacker
         /// <returns>True if the section contained executable data, false otherwise</returns>
         private bool ScanSectionForExecutable(PortableExecutable pe, PE.SectionHeader? section, long dataBase)
         {
-            // If we have an invalid section
+            // If the section is invalid
             if (section == null || section.SizeOfRawData <= 20000)
                 return false;
 
@@ -238,7 +263,7 @@ namespace WiseUnpacker
                 if (mz?.Model?.Header == null)
                     continue;
 
-                // If we have a valid MS-DOS header but not stub
+                // If the header is not a valid stub
                 var header = mz.Model.Header;
                 if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40 || (header.RelocationItems != 0 && header.RelocationItems != 3))
                     continue;
