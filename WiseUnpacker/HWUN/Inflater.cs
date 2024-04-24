@@ -29,7 +29,7 @@ namespace WiseUnpacker.HWUN
         /// <summary>
         /// Inflate an input stream to an output file path
         /// </summary>
-        public bool Inflate(ReadOnlyCompositeStream input, string outputPath)
+        public bool Inflate(Stream input, string outputPath)
         {
             var output = File.Open(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
 
