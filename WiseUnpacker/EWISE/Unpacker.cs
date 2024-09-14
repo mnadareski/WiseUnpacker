@@ -3,17 +3,18 @@ using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
 using PE = SabreTools.Models.PortableExecutable;
+using static WiseUnpacker.Common;
 
 namespace WiseUnpacker.EWISE
 {
-    internal class Unpacker : BaseUnpacker
+    internal class Unpacker : IWiseUnpacker
     {
         #region Instance Variables
 
         /// <summary>
         /// Input file to read and extract
         /// </summary>
-        private ReadOnlyCompositeStream _inputFile;
+        private readonly ReadOnlyCompositeStream _inputFile;
 
         /// <summary>
         /// Currently matching known format
@@ -57,11 +58,7 @@ namespace WiseUnpacker.EWISE
             };
         }
 
-        /// <summary>
-        /// Attempt to parse, extract, and rename all files from a WISE installer
-        /// </summary>
-        /// <param name="outputPath">Output directory for extracted files</param>
-        /// <returns>True if extraction was a success, false otherwise</returns>
+        /// <inheritdoc/>
         public bool Run(string outputPath)
         {
             // Move to data and determine if this is a known format

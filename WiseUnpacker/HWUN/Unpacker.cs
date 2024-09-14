@@ -2,17 +2,18 @@ using System;
 using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
+using static WiseUnpacker.Common;
 
 namespace WiseUnpacker.HWUN
 {
-    internal class Unpacker : BaseUnpacker
+    internal class Unpacker : IWiseUnpacker
     {
         #region Instance Variables
 
         /// <summary>
         /// Input file to read and extract
         /// </summary>
-        private ReadOnlyCompositeStream _inputFile;
+        private readonly ReadOnlyCompositeStream _inputFile;
 
         /// <summary>
         /// Number of bytes to roll back if data is not PKZIP
@@ -101,11 +102,7 @@ namespace WiseUnpacker.HWUN
             ParseOptions(options);
         }
 
-        /// <summary>
-        /// Attempt to parse, extract, and rename all files from a WISE installer
-        /// </summary>
-        /// <param name="outputPath">Output directory for extracted files</param>
-        /// <returns>True if extraction was a success, false otherwise</returns>
+        /// <inheritdoc/>
         public bool Run(string outputPath)
         {
             // Create the output directory to extract to
