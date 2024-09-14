@@ -42,6 +42,22 @@ namespace WiseUnpacker.EWISE
         }
 
         /// <summary>
+        /// Create a new E_WISE unpacker
+        /// </summary>
+        public Unpacker(Stream stream)
+        {
+            // TODO: Validate that the stream is seekable
+            // Default options
+            _inputFile = new ReadOnlyCompositeStream(stream);
+            _currentFormat = new FormatProperty
+            {
+                ExecutableType = ExecutableType.Unknown,
+                ExecutableOffset = 0,
+                CodeSectionLength = 0,
+            };
+        }
+
+        /// <summary>
         /// Attempt to parse, extract, and rename all files from a WISE installer
         /// </summary>
         /// <param name="outputPath">Output directory for extracted files</param>

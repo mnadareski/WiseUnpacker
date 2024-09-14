@@ -48,6 +48,22 @@ namespace WiseUnpacker.HWUN
         }
 
         /// <summary>
+        /// Create a new HWUN unpacker
+        /// </summary>
+        public Unpacker(Stream stream)
+        {
+            // Input stream
+            if (stream == null || !stream.CanRead || !stream.CanSeek)
+                throw new ArgumentException(nameof(stream));
+
+            // Default options
+            _inputFile = new ReadOnlyCompositeStream(stream);
+            _rollback = 0;
+            unchecked { _userOffset = (uint)-1; }
+            _renaming = true;
+        }
+
+        /// <summary>
         /// Create a new HWUN unpacker with options set
         /// </summary>
         public Unpacker(string file, string? options)
@@ -58,6 +74,25 @@ namespace WiseUnpacker.HWUN
 
             // Default options
             _inputFile = stream;
+            _rollback = 0;
+            unchecked { _userOffset = (uint)-1; }
+            _renaming = true;
+
+            // User-provided options
+            ParseOptions(options);
+        }
+
+        /// <summary>
+        /// Create a new HWUN unpacker with options set
+        /// </summary>
+        public Unpacker(Stream stream, string? options)
+        {
+            // Input stream
+            if (stream == null || !stream.CanRead || !stream.CanSeek)
+                throw new ArgumentException(nameof(stream));
+
+            // Default options
+            _inputFile = new ReadOnlyCompositeStream(stream);
             _rollback = 0;
             unchecked { _userOffset = (uint)-1; }
             _renaming = true;
