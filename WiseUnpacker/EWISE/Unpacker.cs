@@ -176,9 +176,17 @@ namespace WiseUnpacker.EWISE
                 _inputFile!.Seek(dataBase + _currentFormat.ExecutableOffset, SeekOrigin.Begin);
 
                 // Try to read as PE
-                var pe = PortableExecutable.Create(_inputFile);
-                if (pe != null)
-                    _currentFormat.ExecutableType = ProcessPe(pe, dataBase, ref searchAgainAtEnd);
+                PortableExecutable? pe;
+                try
+                {
+                    pe = PortableExecutable.Create(_inputFile);
+                    if (pe != null)
+                        _currentFormat.ExecutableType = ProcessPe(pe, dataBase, ref searchAgainAtEnd);
+                }
+                catch
+                {
+                    // Ignore exceptions for now
+                }
             }
             while (searchAgainAtEnd);
 
