@@ -11,7 +11,7 @@ namespace Test
             // Valide the arguments
             if (args == null || args.Length == 0)
             {
-                Console.WriteLine("One input file path required");
+                DisplayHelp("One input file path required");
                 return;
             }
 
@@ -20,7 +20,7 @@ namespace Test
             string? outdir = CreateOutdir(input);
             if (string.IsNullOrEmpty(outdir))
             {
-                Console.WriteLine("Could not determine output path");
+                DisplayHelp("Could not determine output path");
                 return;
             }
 
@@ -33,6 +33,24 @@ namespace Test
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
+        }
+
+        /// <summary>
+        /// Display a basic help text
+        /// </summary>
+        /// <param name="err">Additional error text to display, can be null to ignore</param>
+        private static void DisplayHelp(string? err = null)
+        {
+            if (!string.IsNullOrWhiteSpace(err))
+                Console.WriteLine($"Error: {err}");
+
+            Console.WriteLine(@"Usage: Test <input> [output]
+
+<input> is required and must be the path to the input file.
+Only one path can be specified at a time.
+
+[output] is optional and represents an output folder for extracted files.
+If not specified, a folder will be generated next to the input file.");
         }
 
         /// <summary>
