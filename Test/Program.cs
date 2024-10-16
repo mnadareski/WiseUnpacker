@@ -33,12 +33,6 @@ namespace Test
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
-
-            // Handle redirected inputs
-#if NET452_OR_GREATER || NETCOREAPP
-            if (!Console.IsInputRedirected)
-#endif
-                Console.ReadKey();
         }
 
         /// <summary>
