@@ -7,7 +7,7 @@ using static WiseUnpacker.Common;
 
 namespace WiseUnpacker.EWISE
 {
-    internal class Unpacker : IWiseUnpacker
+    internal sealed class Unpacker : IWiseUnpacker
     {
         #region Instance Variables
 
