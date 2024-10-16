@@ -41,7 +41,7 @@ namespace Test
         /// <param name="err">Additional error text to display, can be null to ignore</param>
         private static void DisplayHelp(string? err = null)
         {
-            if (!string.IsNullOrWhiteSpace(err))
+            if (!string.IsNullOrEmpty(err))
                 Console.WriteLine($"Error: {err}");
 
             Console.WriteLine(@"Usage: Test <input> [output]
