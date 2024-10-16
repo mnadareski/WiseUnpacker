@@ -9,7 +9,7 @@ namespace WiseUnpacker
     /// <summary>
     /// Common methods for Wise installer unpackers
     /// </summary>
-    internal abstract class Common
+    internal static class Common
     {
         /// <summary>
         /// Open a potential WISE installer file and any additional files
