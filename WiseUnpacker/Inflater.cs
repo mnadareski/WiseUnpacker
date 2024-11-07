@@ -1,6 +1,7 @@
+using System;
 using System.IO;
 using System.IO.Compression;
-using CRC32;
+using SabreTools.Hashing;
 
 namespace WiseUnpacker
 {
@@ -36,7 +37,7 @@ namespace WiseUnpacker
             OutputSize = 0;
             CRC = 0;
 
-            var crc = new OptimizedCRC();
+            var crc = new HashWrapper(HashType.CRC32);
             try
             {
                 long start = input.Position;
@@ -45,7 +46,7 @@ namespace WiseUnpacker
                 {
                     byte[] buf = new byte[1024];
                     int read = ds.Read(buf, 0, buf.Length);
-                    crc.Update(buf, 0, read);
+                    crc.Process(buf, 0, read);
                     output.Write(buf, 0, read);
 
                     if (read == 0)
@@ -60,7 +61,7 @@ namespace WiseUnpacker
             {
                 return false;
             }
-            CRC = (uint)crc.Value;
+            CRC = BitConverter.ToUInt32(crc.CurrentHashBytes!, 0);
 
             output?.Close();
             return true;
