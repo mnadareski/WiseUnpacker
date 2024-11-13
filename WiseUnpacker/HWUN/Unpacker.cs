@@ -154,7 +154,7 @@ namespace WiseUnpacker.HWUN
             // Read the first 0xC000 bytes into a buffer
             byte[] buf = new byte[0xC200];
             input.Seek(0x0000, SeekOrigin.Begin);
-            input.Read(buf, 0, 0xC000);
+            int read = input.Read(buf, 0, 0xC000);
 
             // Use the initial offset and search for non-zero values
             long approxOffset = 0xC000;

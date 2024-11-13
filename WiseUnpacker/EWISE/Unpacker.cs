@@ -82,12 +82,12 @@ namespace WiseUnpacker.EWISE
             if (_currentFormat.Dll)
             {
                 byte[] dll = new byte[256];
-                _inputFile.Read(dll, 0, 1);
+                int read = _inputFile.Read(dll, 0, 1);
                 dataStart++;
 
                 if (dll[0] != 0x00)
                 {
-                    _inputFile.Read(dll, 1, dll[0]);
+                    read = _inputFile.Read(dll, 1, dll[0]);
                     dataStart += dll[0];
 
                     _ = _inputFile.ReadInt32();
@@ -117,8 +117,8 @@ namespace WiseUnpacker.EWISE
             if (_currentFormat.InitText)
             {
                 byte[] waitingBytes = new byte[256];
-                _inputFile.Read(waitingBytes, 0, 1);
-                _inputFile.Read(waitingBytes, 1, waitingBytes[0]);
+                int read = _inputFile.Read(waitingBytes, 0, 1);
+                read = _inputFile.Read(waitingBytes, 1, waitingBytes[0]);
             }
 
             long offsetReal = _inputFile.Position;
