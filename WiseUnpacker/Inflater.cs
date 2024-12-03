@@ -61,9 +61,12 @@ namespace WiseUnpacker
             {
                 return false;
             }
-            CRC = BitConverter.ToUInt32(crc.CurrentHashBytes!, 0);
+            finally
+            {
+                output?.Close();
+            }
 
-            output?.Close();
+            CRC = BitConverter.ToUInt32(crc.CurrentHashBytes!, 0);
             return true;
         }
     }
