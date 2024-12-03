@@ -287,7 +287,7 @@ namespace WiseUnpacker
                     int postfix = 0;
                     while (File.Exists(newfile))
                     {
-                        newfile = Path.Combine(dir, $"{nn}_{postfix}");
+                        newfile = Path.Combine(dir, $"{nn}_{postfix++}");
                     }
 
                     // Rename file
@@ -303,7 +303,7 @@ namespace WiseUnpacker
                     int postfix = 0;
                     while (File.Exists(newfile))
                     {
-                        newfile = Path.Combine(dir, $"INST{instcnt:X4}_{postfix}");
+                        newfile = Path.Combine(dir, $"INST{instcnt:X4}_{postfix++}");
                     }
 
                     // Rename file
