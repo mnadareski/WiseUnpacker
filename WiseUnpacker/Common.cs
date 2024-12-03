@@ -273,6 +273,8 @@ namespace WiseUnpacker
                 {
                     // Sanitize the new file path
                     nn = nn.Replace("%", string.Empty);
+                    nn = nn.Replace("\\", "/");
+
                     string oldfile = Path.Combine(dir, $"WISE{entry:X4}");
                     string newfile = Path.Combine(dir, nn);
 
@@ -280,6 +282,13 @@ namespace WiseUnpacker
                     var dirname = Path.GetDirectoryName(newfile);
                     if (dirname != null)
                         Directory.CreateDirectory(dirname);
+
+                    // Ensure no overwrites
+                    int postfix = 0;
+                    while (File.Exists(newfile))
+                    {
+                        newfile = Path.Combine(dir, $"{nn}_{postfix}");
+                    }
 
                     // Rename file
                     File.Move(oldfile, newfile);
@@ -289,6 +298,13 @@ namespace WiseUnpacker
                     instcnt++;
                     string oldfile = Path.Combine(dir, $"WISE{entry:X4}");
                     string newfile = Path.Combine(dir, $"INST{instcnt:X4}");
+
+                    // Ensure no overwrites
+                    int postfix = 0;
+                    while (File.Exists(newfile))
+                    {
+                        newfile = Path.Combine(dir, $"INST{instcnt:X4}_{postfix}");
+                    }
 
                     // Rename file
                     File.Move(oldfile, newfile);
