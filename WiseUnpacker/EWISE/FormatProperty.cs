@@ -15,14 +15,9 @@ namespace WiseUnpacker.EWISE
     {
         public ExecutableType ExecutableType { get; set; }
         public long ExecutableOffset { get; set; }
-        public bool Dll { get; set; }
-        public long ArchiveStart { get; set; }
         public long ArchiveEnd { get; set; } // Position in the archive head of the archive end
-        public bool InitText { get; set; }
-        public long FilenamePosition { get; set; }
         public long CodeSectionLength { get; set; }
         public long DataSectionLength { get; set; }
-        public bool NoCrc { get; set; }
 
         public bool Equals(FormatProperty? other)
         {
@@ -42,29 +37,28 @@ namespace WiseUnpacker.EWISE
         {
             get =>
             [
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x84b0, Dll = false, ArchiveStart = 0x11, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = true  },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e10, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e50, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c20, Dll = false, ArchiveStart = 0x1e, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c30, Dll = false, ArchiveStart = 0x22, ArchiveEnd = -1,   InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3660, Dll = false, ArchiveStart = 0x40, ArchiveEnd = 0x3c, InitText = false, FilenamePosition = 0x04, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x36f0, Dll = false, ArchiveStart = 0x48, ArchiveEnd = 0x44, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3770, Dll = false, ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3780, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x37b0, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x37d0, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c80, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3bd0, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c10, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x84b0, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e10, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e50, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c20, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c30, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3660, ArchiveEnd = 0x3c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x36f0, ArchiveEnd = 0x44, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3770, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3780, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x37b0, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x37d0, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c80, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3bd0, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c10, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
 
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, Dll = false, ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = 0x3cf4, DataSectionLength = 0x1528, NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = 0x3cf4, DataSectionLength = 0x1568, NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = 0x3d54, DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = 0x3d44, DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = 0x3d04, DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3000, Dll = true,  ArchiveStart = 0x50, ArchiveEnd = 0x4c, InitText = false, FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3800, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
-                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3a00, Dll = true,  ArchiveStart = 0x5a, ArchiveEnd = 0x4c, InitText = true,  FilenamePosition = 0x1c, CodeSectionLength = -1,     DataSectionLength = -1,     NoCrc = false },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3000, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3800, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3a00, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, ArchiveEnd = 0x4c, CodeSectionLength = 0x3cf4, DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, ArchiveEnd = 0x4c, CodeSectionLength = 0x3d04, DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, ArchiveEnd = 0x4c, CodeSectionLength = 0x3d44, DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x6e00, ArchiveEnd = 0x4c, CodeSectionLength = 0x3d54, DataSectionLength = -1 },
             ];
         }
     }

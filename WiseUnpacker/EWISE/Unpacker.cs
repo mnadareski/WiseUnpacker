@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
-using PE = SabreTools.Models.PortableExecutable;
 using static WiseUnpacker.Common;
 
 namespace WiseUnpacker.EWISE
@@ -61,8 +60,8 @@ namespace WiseUnpacker.EWISE
         public bool Run(string outputPath)
         {
             // Move to data and determine if this is a known format
-            long dataBase = JumpToTheData();
-            _inputFile!.Seek(dataBase + _currentFormat!.ExecutableOffset, SeekOrigin.Begin);
+            JumpToTheData();
+            _inputFile!.Seek(_currentFormat!.ExecutableOffset, SeekOrigin.Begin);
             for (int i = 0; i < FormatProperty.KnownFormats.Length; i++)
             {
                 if (_currentFormat.Equals(FormatProperty.KnownFormats[i]))
@@ -79,23 +78,22 @@ namespace WiseUnpacker.EWISE
             // Get the overlay header and confirm values
             var overlayHeader = new WiseOverlayHeader(_inputFile);
 
-            // Check if flags are consistent
-#if NET20 || NET35
-            if (((overlayHeader.Flags & WiseOverlayHeaderFlags.PK_ZIP) != 0) ^ _currentFormat.NoCrc)
-#else
-            if (overlayHeader.Flags.HasFlag(WiseOverlayHeaderFlags.PK_ZIP) ^ _currentFormat.NoCrc)
-#endif
-                return false;
-
             // Check the archive end
             if (_currentFormat.ArchiveEnd > 0)
             {
                 if (overlayHeader.Eof != 0)
-                    _currentFormat.ArchiveEnd = overlayHeader.Eof + dataBase;
+                    _currentFormat.ArchiveEnd = overlayHeader.Eof;
             }
 
+            // Get if the format is PKZIP packed or not
+#if NET20 || NET35
+                bool pkzip = (overlayHeader.Flags & WiseOverlayHeaderFlags.PK_ZIP) != 0;
+#else
+                bool pkzip = overlayHeader.Flags.HasFlag(WiseOverlayHeaderFlags.PK_ZIP);
+#endif
+
             long offsetReal = _inputFile.Position;
-            int extracted = ExtractFiles(_inputFile, outputPath, _currentFormat.NoCrc, offsetReal);
+            int extracted = ExtractFiles(_inputFile, outputPath, pkzip, offsetReal);
             RenameFiles(outputPath, extracted);
 
             Close();
@@ -117,6 +115,7 @@ namespace WiseUnpacker.EWISE
             long dataBase = 0;
 
             // Try to read as NE
+            _inputFile.Seek(0, SeekOrigin.Begin);
             var ne = NewExecutable.Create(_inputFile);
             if (ne != null)
             {
@@ -128,6 +127,7 @@ namespace WiseUnpacker.EWISE
             }
 
             // Try to read as LE/LX
+            _inputFile.Seek(0, SeekOrigin.Begin);
             var le = LinearExecutable.Create(_inputFile);
             if (le != null)
             {
@@ -138,74 +138,28 @@ namespace WiseUnpacker.EWISE
                 return dataBase;
             }
 
-            bool searchAgainAtEnd = true;
-            do
+            // Try to read as PE
+            _inputFile.Seek(0, SeekOrigin.Begin);
+            var pe = PortableExecutable.Create(_inputFile);
+            if (pe != null)
             {
-                // Reset the state
-                searchAgainAtEnd = false;
-                dataBase += _currentFormat.ExecutableOffset;
-                _currentFormat.ExecutableOffset = 0;
-                _currentFormat.ExecutableType = ExecutableType.Unknown;
-                _inputFile!.Seek(dataBase + _currentFormat.ExecutableOffset, SeekOrigin.Begin);
+                _currentFormat.ExecutableType = ExecutableType.PE;
+                _currentFormat.ExecutableOffset = pe.OverlayAddress;
 
-                // Try to read as PE
-                PortableExecutable? pe;
-                try
-                {
-                    pe = PortableExecutable.Create(_inputFile);
-                    if (pe != null)
-                        _currentFormat.ExecutableType = ProcessPe(pe, dataBase, ref searchAgainAtEnd);
-                }
-                catch
-                {
-                    // Ignore exceptions for now
-                }
-            }
-            while (searchAgainAtEnd);
-
-            return dataBase;
-        }
-
-        /// <summary>
-        /// Process a PE executable header
-        /// </summary>
-        private ExecutableType ProcessPe(PortableExecutable pe, long dataBase, ref bool searchAgainAtEnd)
-        {
-            try
-            {
                 // Get the text section
                 var section = pe.GetFirstSection(".text");
                 if (section != null)
-                    _currentFormat!.CodeSectionLength = section.VirtualSize;
+                    _currentFormat.CodeSectionLength = section.VirtualSize;
 
                 // Get the data section
                 section = pe.GetFirstSection(".data");
                 if (section != null)
-                {
-                    _currentFormat!.DataSectionLength = section.VirtualSize;
-                    bool containsExe = ScanSectionForExecutable(pe, section, dataBase);
-                    if (containsExe)
-                        searchAgainAtEnd = true;
-                }
+                    _currentFormat.DataSectionLength = section.VirtualSize;
 
-                // Get the rsrc section
-                PE.SectionHeader? resource = null;
-                section = pe.GetFirstSection(".rsrc");
-                if (section != null)
-                {
-                    resource = section;
-                    bool containsExe = ScanSectionForExecutable(pe, section, dataBase);
-                    if (containsExe)
-                        searchAgainAtEnd = true;
-                }
+                return dataBase;
+            }
 
-                _currentFormat!.ExecutableOffset = (int)(resource!.PointerToRawData + resource.SizeOfRawData);
-                return ExecutableType.PE;
-            }
-            catch
-            {
-                return ExecutableType.Unknown;
-            }
+            return dataBase;
         }
 
         /// <summary>
@@ -214,40 +168,6 @@ namespace WiseUnpacker.EWISE
         private void Close()
         {
             _inputFile?.Close();
-        }
-
-        /// <summary>
-        /// Scan a section for executable data
-        /// </summary>
-        /// <returns>True if the section contained executable data, false otherwise</returns>
-        private bool ScanSectionForExecutable(PortableExecutable pe, PE.SectionHeader? section, long dataBase)
-        {
-            // If the section is invalid
-            if (section == null || section.SizeOfRawData <= 20000)
-                return false;
-
-            // Loop through the raw data and attempt to create an executable
-            for (int f = 0; f <= 20000 - 0x80; f++)
-            {
-                _inputFile!.Seek(dataBase + section.PointerToRawData + f, SeekOrigin.Begin);
-
-                // Read the MS-DOS header
-                var mz = MSDOS.Create(_inputFile);
-                if (mz?.Model?.Header == null)
-                    continue;
-
-                // If the header is not a valid stub
-                var header = mz.Model.Header;
-                if (header.HeaderParagraphSize < 4 || header.NewExeHeaderAddr < 0x40 || (header.RelocationItems != 0 && header.RelocationItems != 3))
-                    continue;
-
-                // Set the executable offset and seek
-                _currentFormat!.ExecutableOffset = (int)section.PointerToRawData + f;
-                _inputFile.Seek(dataBase + section.PointerToRawData + pe.Model.OptionalHeader!.ResourceTable!.Size, SeekOrigin.Begin);
-                return true;
-            }
-
-            return false;
         }
     }
 }

@@ -178,6 +178,14 @@ namespace WiseUnpacker
             FileDatUncompressedSize = data.ReadUInt32();
             Eof = data.ReadUInt32();
             DibCompressedSize = data.ReadUInt32();
+
+            // Handle older overlay data
+            if (DibCompressedSize > data.Length)
+            {
+                data.Seek(-4, SeekOrigin.Current);
+                return;
+            }
+
             DibUncompressedSize = data.ReadUInt32();
             Endianness = data.ReadBytes(2);
             InitTextLength = data.ReadByteValue();
