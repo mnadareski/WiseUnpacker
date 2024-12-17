@@ -1,10 +1,8 @@
 ﻿using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
-using SabreTools.Models.NewExecutable;
 using SabreTools.Serialization.Wrappers;
 using static WiseUnpacker.Common;
-using NEDeserializer = SabreTools.Serialization.Deserializers.NewExecutable;
 
 namespace WiseUnpacker.EWISE
 {
@@ -90,7 +88,7 @@ namespace WiseUnpacker.EWISE
 
             // Get if the format is PKZIP packed or not
 #if NET20 || NET35
-                bool pkzip = (overlayHeader.Flags & WiseOverlayHeaderFlags.PK_ZIP) != 0;
+            bool pkzip = (overlayHeader.Flags & WiseOverlayHeaderFlags.PK_ZIP) != 0;
 #else
             bool pkzip = overlayHeader.Flags.HasFlag(WiseOverlayHeaderFlags.PK_ZIP);
 #endif
