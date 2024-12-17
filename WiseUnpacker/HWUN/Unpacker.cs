@@ -244,6 +244,9 @@ namespace WiseUnpacker.HWUN
         /// </summary>
         private static bool FindReal(ReadOnlyCompositeStream input, string outputPath, long approxOffset, out long realOffset)
         {
+            // Create the output directory to extract to
+            Directory.CreateDirectory(outputPath);
+
             realOffset = 0x00;
             uint newcrc = 0;
             long pos;
