@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.IO.Compression;
+using SabreTools.Compression.Deflate;
 using SabreTools.Hashing;
 
 namespace WiseUnpacker
@@ -41,21 +41,21 @@ namespace WiseUnpacker
             try
             {
                 long start = input.Position;
-                var ds = new DeflateStream(input, CompressionMode.Decompress);
+                var ds = new DeflateStream(input, CompressionMode.Decompress, leaveOpen: true);
                 while (true)
                 {
                     byte[] buf = new byte[1024];
                     int read = ds.Read(buf, 0, buf.Length);
-                    crc.Process(buf, 0, read);
-                    output.Write(buf, 0, read);
-
                     if (read == 0)
                         break;
+
+                    crc.Process(buf, 0, read);
+                    output.Write(buf, 0, read);
                 }
 
-                // Set the potential size of the data
-                InputSize = input.Position - start;
-                OutputSize = output.Length;
+                // Save the deflate values
+                InputSize = ds.TotalIn;
+                OutputSize = ds.TotalOut;
             }
             catch
             {
@@ -66,7 +66,9 @@ namespace WiseUnpacker
                 output?.Close();
             }
 
-            CRC = BitConverter.ToUInt32(crc.CurrentHashBytes!, 0);
+            byte[] hashBytes = crc.CurrentHashBytes!;
+            Array.Reverse(hashBytes);
+            CRC = BitConverter.ToUInt32(hashBytes, 0);
             return true;
         }
     }

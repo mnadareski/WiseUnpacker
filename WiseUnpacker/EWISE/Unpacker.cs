@@ -77,48 +77,22 @@ namespace WiseUnpacker.EWISE
             if (_currentFormat.ArchiveEnd == 0)
                 return false;
 
-            // Skip over the addditional DLL name, if expected
-            long dataStart = _currentFormat.ExecutableOffset;
-            if (_currentFormat.Dll)
-            {
-                byte[] dll = new byte[256];
-                int read = _inputFile.Read(dll, 0, 1);
-                dataStart++;
-
-                if (dll[0] != 0x00)
-                {
-                    read = _inputFile.Read(dll, 1, dll[0]);
-                    dataStart += dll[0];
-
-                    _ = _inputFile.ReadInt32();
-                    dataStart += 4;
-                }
-            }
+            // Get the overlay header and confirm values
+            var overlayHeader = new WiseOverlayHeader(_inputFile);
 
             // Check if flags are consistent
-            if (!_currentFormat.NoCrc)
-            {
-                int flags = _inputFile.ReadInt32();
-                if ((flags & 0x0100) != 0)
-                    return false;
-            }
+#if NET20 || NET35
+            if (((overlayHeader.Flags & WiseOverlayHeaderFlags.PK_ZIP) != 0) ^ _currentFormat.NoCrc)
+#else
+            if (overlayHeader.Flags.HasFlag(WiseOverlayHeaderFlags.PK_ZIP) ^ _currentFormat.NoCrc)
+#endif
+                return false;
 
+            // Check the archive end
             if (_currentFormat.ArchiveEnd > 0)
             {
-                _inputFile.Seek(dataBase + dataStart + _currentFormat.ArchiveEnd, SeekOrigin.Begin);
-                int archiveEndLoaded = _inputFile.ReadInt32();
-                if (archiveEndLoaded != 0)
-                    _currentFormat.ArchiveEnd = archiveEndLoaded + dataBase;
-            }
-
-            _inputFile.Seek(dataBase + dataStart + _currentFormat.ArchiveStart, SeekOrigin.Begin);
-
-            // Skip over the initialization text, if expected
-            if (_currentFormat.InitText)
-            {
-                byte[] waitingBytes = new byte[256];
-                int read = _inputFile.Read(waitingBytes, 0, 1);
-                read = _inputFile.Read(waitingBytes, 1, waitingBytes[0]);
+                if (overlayHeader.Eof != 0)
+                    _currentFormat.ArchiveEnd = overlayHeader.Eof + dataBase;
             }
 
             long offsetReal = _inputFile.Position;

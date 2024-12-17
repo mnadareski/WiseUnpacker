@@ -105,9 +105,6 @@ namespace WiseUnpacker.HWUN
         /// <inheritdoc/>
         public bool Run(string outputPath)
         {
-            // Create the output directory to extract to
-            Directory.CreateDirectory(outputPath);
-
             // Run the approximation
             long approxOffset = Approximate(_inputFile, out bool pkzip);
 
@@ -271,10 +268,10 @@ namespace WiseUnpacker.HWUN
                     newcrc = input.ReadUInt32();
                     realOffset = approxOffset + pos;
                     pos++;
-                } while ((!inflated || inflater.CRC != newcrc || newcrc == 0x00000000) && pos != 0x100);
+                } while ((!inflated || newcrc == 0x00000000) && pos != 0x100);
 
                 // Try to find the ending position based on a valid CRC
-                if ((inflater.CRC != newcrc || newcrc == 0x00000000) && pos == 0x100)
+                if ((newcrc == 0x00000000) && pos == 0x100)
                 {
                     pos = -1;
                     do
@@ -284,17 +281,16 @@ namespace WiseUnpacker.HWUN
                         newcrc = input.ReadUInt32();
                         realOffset = approxOffset + pos;
                         pos--;
-                    } while ((!inflated || inflater.CRC != newcrc || newcrc == 0x00000000) && pos != -0x100);
+                    } while ((!inflated || newcrc == 0x00000000) && pos != -0x100);
                 }
             }
             else
             {
-                inflater.CRC = ~newcrc;
                 pos = -0x100;
             }
 
             // Check for indicators of no WISE installer
-            if ((inflater.CRC != newcrc || newcrc == 0x00000000) && pos == -0x100)
+            if ((newcrc == 0x00000000) && pos == -0x100)
             {
                 realOffset = 0xFFFFFFFF;
                 return false;

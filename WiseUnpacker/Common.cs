@@ -62,7 +62,9 @@ namespace WiseUnpacker
         /// </summary>
         internal static int ExtractFiles(ReadOnlyCompositeStream input, string outputPath, bool pkzip, long offset)
         {
-            uint newcrc = 0;
+            // Create the output directory to extract to
+            Directory.CreateDirectory(outputPath);
+
             var inflater = new Inflater();
 
             // "Extracting files"
@@ -82,6 +84,8 @@ namespace WiseUnpacker
                     break;
 
                 // Read PKZIP header values
+                uint zipCrc = 0;
+                uint zipSize = 0;
                 if (pkzip)
                 {
                     _ = input.ReadUInt32(); // Signature
@@ -90,9 +94,9 @@ namespace WiseUnpacker
                     _ = input.ReadUInt16(); // Compression
                     _ = input.ReadUInt16(); // Modification time
                     _ = input.ReadUInt16(); // Modification date
-                    newcrc = input.ReadUInt32();
+                    zipCrc = input.ReadUInt32();
                     _ = input.ReadUInt32(); // Compressed size
-                    _ = input.ReadUInt32(); // Uncompressed size
+                    zipSize = input.ReadUInt32(); // Uncompressed size
                     ushort filenameLength = input.ReadUInt16();
                     ushort extraLength = input.ReadUInt16();
                     if (filenameLength + extraLength > 0)
@@ -101,46 +105,31 @@ namespace WiseUnpacker
 
                 // Inflate the data to a new file
                 bool inflated = inflater.Inflate(input, Path.Combine(outputPath, $"WISE{extracted:X4}"));
-                if (pkzip)
-                    inflater.CRC = 0x04034b50;
 
-                // Set the file end
+                // Use the checksums based on the flag
                 if (pkzip)
-                    fileEnd = fileStart + 4;
-                else
-                    fileEnd = fileStart + inflater.InputSize - 1;
-
-                // If no inflation error occurred
-                if (inflated)
                 {
-                    // Read the new CRC or signature
-                    input.Seek(fileEnd, SeekOrigin.Begin);
-                    newcrc = input.ReadUInt32();
+                    if (inflater.CRC != zipCrc)
+                        break;
 
-                    // Attempt to find the correct CRC value
-                    uint attempt = 0;
-                    while (inflater.CRC != newcrc && attempt < (pkzip ? int.MaxValue : 8) && input.Position + 1 < input.Length)
+                    fileEnd = fileStart + zipSize;
+                    input.Seek(fileEnd, SeekOrigin.Begin);
+                }
+                else
+                {
+                    fileEnd = fileStart + inflater.InputSize;
+                    input.Seek(fileEnd, SeekOrigin.Begin);
+
+                    uint deflateCrc = input.ReadUInt32();
+                    if (inflater.CRC != deflateCrc)
                     {
                         input.Seek(-3, SeekOrigin.Current);
-                        newcrc = input.ReadUInt32();
-                        attempt++;
+                        deflateCrc = input.ReadUInt32();
+                        if (inflater.CRC != deflateCrc)
+                            break;
                     }
 
-                    // Set the real file end
-                    fileEnd = input.Position - 1;
-                    if (pkzip)
-                    {
-                        fileEnd -= 4;
-                        input.Seek(-4, SeekOrigin.Current);
-                        newcrc = 0xfffffffe;
-                    }
-                }
-
-                // If an error occurred or the CRC does not match
-                if (!inflated || newcrc != inflater.CRC)
-                {
-                    inflater.CRC = 0xffffffff;
-                    newcrc = 0xfffffffe;
+                    fileEnd = input.Position;
                 }
 
                 // Write the starting offset of the file to the dumpfile
@@ -149,7 +138,7 @@ namespace WiseUnpacker
                 // If we had an inflate error specifically
                 if (!inflated)
                     break;
-            } while (newcrc != inflater.CRC && input.Position < input.Length - 5);
+            } while (input.Position < input.Length - 5);
 
             // Write the ending offset for the last file to the dumpfile
             dumpFile.Write(BitConverter.GetBytes(fileEnd), 0, 4);
