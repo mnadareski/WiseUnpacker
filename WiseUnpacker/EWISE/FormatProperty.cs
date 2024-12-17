@@ -37,20 +37,20 @@ namespace WiseUnpacker.EWISE
         {
             get =>
             [
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x84b0, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e10, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e50, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c20, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c30, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3660, ArchiveEnd = 0x3c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x36f0, ArchiveEnd = 0x44, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3770, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3780, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x37b0, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x37d0, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
-                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c80, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3bd0, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c10, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c20, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c30, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3c80, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e10, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x3e50, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
+                new() { ExecutableType = ExecutableType.NE, ExecutableOffset = 0x84b0, ArchiveEnd = -1,   CodeSectionLength = -1,     DataSectionLength = -1 },
 
                 new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3000, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },
                 new() { ExecutableType = ExecutableType.PE, ExecutableOffset = 0x3800, ArchiveEnd = 0x4c, CodeSectionLength = -1,     DataSectionLength = -1 },

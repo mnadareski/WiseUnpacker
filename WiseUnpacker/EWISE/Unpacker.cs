@@ -1,7 +1,10 @@
 ﻿using System.IO;
+using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
+using SabreTools.Models.NewExecutable;
 using SabreTools.Serialization.Wrappers;
 using static WiseUnpacker.Common;
+using NEDeserializer = SabreTools.Serialization.Deserializers.NewExecutable;
 
 namespace WiseUnpacker.EWISE
 {
@@ -89,7 +92,7 @@ namespace WiseUnpacker.EWISE
 #if NET20 || NET35
                 bool pkzip = (overlayHeader.Flags & WiseOverlayHeaderFlags.PK_ZIP) != 0;
 #else
-                bool pkzip = overlayHeader.Flags.HasFlag(WiseOverlayHeaderFlags.PK_ZIP);
+            bool pkzip = overlayHeader.Flags.HasFlag(WiseOverlayHeaderFlags.PK_ZIP);
 #endif
 
             long offsetReal = _inputFile.Position;
@@ -117,12 +120,50 @@ namespace WiseUnpacker.EWISE
             // Try to read as NE
             _inputFile.Seek(0, SeekOrigin.Begin);
             var ne = NewExecutable.Create(_inputFile);
-            if (ne != null)
+            if (ne?.Model?.SegmentTable != null)
             {
                 _currentFormat.ExecutableType = ExecutableType.NE;
-                _currentFormat.ExecutableOffset = ne.Model.Stub!.Header!.NewExeHeaderAddr;
-                _currentFormat.CodeSectionLength = -1;
-                _currentFormat.DataSectionLength = -1;
+
+                if (ne.Model.SegmentTable.Length > 0)
+                    _currentFormat.CodeSectionLength = ne.Model.SegmentTable[0]!.Length;
+                if (ne.Model.SegmentTable.Length > 2)
+                    _currentFormat.DataSectionLength = ne.Model.SegmentTable[2]!.Length;
+
+                // Get the resource table offset and seek
+                uint resourceTableOffset = ne.Model.Header!.ResourceTableOffset
+                    + ne.Model.Stub!.Header!.NewExeHeaderAddr;
+                _inputFile.Seek(resourceTableOffset, SeekOrigin.Begin);
+
+                // Create an offset to set after
+                long afterOffset = _inputFile.Position;
+                
+                // Get the offset immediately following the resource table
+                ushort align = _inputFile.ReadUInt16();
+                for (int i = 0; i < ne.Model.Header.ResourceEntriesCount; i++)
+                {
+                    // Parse the resource type header
+                    _ = _inputFile.ReadUInt16(); // TypeID
+                    ushort resourceCount = _inputFile.ReadUInt16();
+                    _ = _inputFile.ReadUInt32(); // Reserved
+
+                    // Parse the resource type entries
+                    for (int j = 0; j < resourceCount; j++)
+                    {
+                        // Parse the resource entry header
+                        ushort offset = _inputFile.ReadUInt16();
+                        ushort length = _inputFile.ReadUInt16();
+                        _ = _inputFile.ReadUInt16(); // FlagWord
+                        _ = _inputFile.ReadUInt16(); // ResourceID
+                        _ = _inputFile.ReadUInt32(); // Reserved
+
+                        // Get the location of the value
+                        int value = (offset << align) + (length << align);
+                        if (value > afterOffset)
+                            afterOffset = value;
+                    }
+                }
+
+                _currentFormat.ExecutableOffset = afterOffset;
                 return dataBase;
             }
 
