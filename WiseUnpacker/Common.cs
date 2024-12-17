@@ -88,19 +88,23 @@ namespace WiseUnpacker
                 uint zipSize = 0;
                 if (pkzip)
                 {
+                    // Save only select values
                     _ = input.ReadUInt32(); // Signature
                     _ = input.ReadUInt16(); // Version
                     _ = input.ReadUInt16(); // Flags
-                    _ = input.ReadUInt16(); // Compression
+                    _ = input.ReadUInt16(); // Compression method
                     _ = input.ReadUInt16(); // Modification time
                     _ = input.ReadUInt16(); // Modification date
                     zipCrc = input.ReadUInt32();
-                    _ = input.ReadUInt32(); // Compressed size
-                    zipSize = input.ReadUInt32(); // Uncompressed size
+                    zipSize = input.ReadUInt32(); // Compressed size
+                    _ = input.ReadUInt32(); // Uncompressed size
                     ushort filenameLength = input.ReadUInt16();
                     ushort extraLength = input.ReadUInt16();
                     if (filenameLength + extraLength > 0)
                         _ = input.ReadBytes(filenameLength + extraLength);
+
+                    // Reset the file start position
+                    fileStart = input.Position;
                 }
 
                 // Inflate the data to a new file
