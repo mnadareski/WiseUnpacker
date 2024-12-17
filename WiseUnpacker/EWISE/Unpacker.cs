@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Serialization.Wrappers;
 using PE = SabreTools.Models.PortableExecutable;

@@ -12,6 +12,10 @@ namespace WiseUnpacker
         /// <returns>True if extraction was a success, false otherwise</returns>
         public static bool ExtractTo(string file, string outputPath)
         {
+            // // Use naive parsing code
+            // if (ExtractToNaive(file, outputPath))
+            //     return true;
+
             // Use E_WISE-derived code
             if (ExtractToEWISE(file, outputPath))
                 return true;
@@ -32,6 +36,10 @@ namespace WiseUnpacker
         /// <returns>True if extraction was a success, false otherwise</returns>
         public static bool ExtractTo(Stream stream, string outputPath)
         {
+            // // Use naive parsing code
+            // if (ExtractToNaive(stream, outputPath))
+            //     return true;
+
             // Use E_WISE-derived code
             if (ExtractToEWISE(stream, outputPath))
                 return true;
@@ -42,6 +50,30 @@ namespace WiseUnpacker
 
             // Everything failed
             return false;
+        }
+
+        /// <summary>
+        /// Attempt to extract a Wise installer using E_WISE
+        /// </summary>
+        /// <param name="file">Path to the possible Wise installer</param>
+        /// <param name="outputPath">Output directory for extracted files</param>
+        /// <returns>True if extraction was a success, false otherwise</returns>
+        public static bool ExtractToEWISE(string file, string outputPath)
+        {
+            var ewise = new EWISE.Unpacker(file);
+            return ewise.Run(outputPath);
+        }
+
+        /// <summary>
+        /// Attempt to extract a Wise installer using E_WISE
+        /// </summary>
+        /// <param name="stream">Stream representing the possible Wise installer</param>
+        /// <param name="outputPath">Output directory for extracted files</param>
+        /// <returns>True if extraction was a success, false otherwise</returns>
+        public static bool ExtractToEWISE(Stream stream, string outputPath)
+        {
+            var ewise = new EWISE.Unpacker(stream);
+            return ewise.Run(outputPath);
         }
 
         /// <summary>
@@ -71,27 +103,27 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Attempt to extract a Wise installer using E_WISE
+        /// Attempt to extract a Wise installer using naive strategies
         /// </summary>
         /// <param name="file">Path to the possible Wise installer</param>
         /// <param name="outputPath">Output directory for extracted files</param>
         /// <returns>True if extraction was a success, false otherwise</returns>
-        public static bool ExtractToEWISE(string file, string outputPath)
+        public static bool ExtractToNaive(string file, string outputPath)
         {
-            var ewise = new EWISE.Unpacker(file);
-            return ewise.Run(outputPath);
+            var naive = new NaiveUnpacker(file);
+            return naive.Run(outputPath);
         }
 
         /// <summary>
-        /// Attempt to extract a Wise installer using E_WISE
+        /// Attempt to extract a Wise installer using naive strategies
         /// </summary>
         /// <param name="stream">Stream representing the possible Wise installer</param>
         /// <param name="outputPath">Output directory for extracted files</param>
         /// <returns>True if extraction was a success, false otherwise</returns>
-        public static bool ExtractToEWISE(Stream stream, string outputPath)
+        public static bool ExtractToNaive(Stream stream, string outputPath)
         {
-            var ewise = new EWISE.Unpacker(stream);
-            return ewise.Run(outputPath);
+            var naive = new NaiveUnpacker(stream);
+            return naive.Run(outputPath);
         }
     }
 }
