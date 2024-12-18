@@ -159,25 +159,25 @@ namespace WiseUnpacker
             {
                 byte[] dllName = data.ReadBytes(DllNameLength);
                 DllName = Encoding.ASCII.GetString(dllName);
-                DllSize = data.ReadUInt32();
+                DllSize = data.ReadUInt32LittleEndian();
             }
 
-            Flags = (WiseOverlayHeaderFlags)data.ReadUInt32();
+            Flags = (WiseOverlayHeaderFlags)data.ReadUInt32LittleEndian();
             Unknown0 = data.ReadBytes(20);
-            WiseScriptUncompressedSize = data.ReadUInt32();
-            WiseScriptCompressedSize = data.ReadUInt32();
-            WiseDllCompressedSize = data.ReadUInt32();
-            Unknown1 = data.ReadUInt32();
-            Unknown2 = data.ReadUInt32();
-            Unknown3 = data.ReadUInt32();
-            ProgressDllCompressedSize = data.ReadUInt32();
-            Unknown6CompressedSize = data.ReadUInt32();
-            Unknown7CompressedSize = data.ReadUInt32();
+            WiseScriptUncompressedSize = data.ReadUInt32LittleEndian();
+            WiseScriptCompressedSize = data.ReadUInt32LittleEndian();
+            WiseDllCompressedSize = data.ReadUInt32LittleEndian();
+            Unknown1 = data.ReadUInt32LittleEndian();
+            Unknown2 = data.ReadUInt32LittleEndian();
+            Unknown3 = data.ReadUInt32LittleEndian();
+            ProgressDllCompressedSize = data.ReadUInt32LittleEndian();
+            Unknown6CompressedSize = data.ReadUInt32LittleEndian();
+            Unknown7CompressedSize = data.ReadUInt32LittleEndian();
             Unknown8 = data.ReadBytes(8);
-            FileDatCompressedSize = data.ReadUInt32();
-            FileDatUncompressedSize = data.ReadUInt32();
-            Eof = data.ReadUInt32();
-            DibCompressedSize = data.ReadUInt32();
+            FileDatCompressedSize = data.ReadUInt32LittleEndian();
+            FileDatUncompressedSize = data.ReadUInt32LittleEndian();
+            Eof = data.ReadUInt32LittleEndian();
+            DibCompressedSize = data.ReadUInt32LittleEndian();
 
             // Handle older overlay data
             if (DibCompressedSize > data.Length)
@@ -186,7 +186,7 @@ namespace WiseUnpacker
                 return;
             }
 
-            DibUncompressedSize = data.ReadUInt32();
+            DibUncompressedSize = data.ReadUInt32LittleEndian();
             Endianness = data.ReadBytes(2);
             InitTextLength = data.ReadByteValue();
             if (InitTextLength > 0)

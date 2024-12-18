@@ -89,17 +89,17 @@ namespace WiseUnpacker
                 if (pkzip)
                 {
                     // Save only select values
-                    _ = input.ReadUInt32(); // Signature
-                    _ = input.ReadUInt16(); // Version
-                    _ = input.ReadUInt16(); // Flags
-                    _ = input.ReadUInt16(); // Compression method
-                    _ = input.ReadUInt16(); // Modification time
-                    _ = input.ReadUInt16(); // Modification date
-                    zipCrc = input.ReadUInt32();
-                    zipSize = input.ReadUInt32(); // Compressed size
-                    _ = input.ReadUInt32(); // Uncompressed size
-                    ushort filenameLength = input.ReadUInt16();
-                    ushort extraLength = input.ReadUInt16();
+                    _ = input.ReadUInt32LittleEndian(); // Signature
+                    _ = input.ReadUInt16LittleEndian(); // Version
+                    _ = input.ReadUInt16LittleEndian(); // Flags
+                    _ = input.ReadUInt16LittleEndian(); // Compression method
+                    _ = input.ReadUInt16LittleEndian(); // Modification time
+                    _ = input.ReadUInt16LittleEndian(); // Modification date
+                    zipCrc = input.ReadUInt32LittleEndian();
+                    zipSize = input.ReadUInt32LittleEndian(); // Compressed size
+                    _ = input.ReadUInt32LittleEndian(); // Uncompressed size
+                    ushort filenameLength = input.ReadUInt16LittleEndian();
+                    ushort extraLength = input.ReadUInt16LittleEndian();
                     if (filenameLength + extraLength > 0)
                         _ = input.ReadBytes(filenameLength + extraLength);
 
@@ -124,11 +124,11 @@ namespace WiseUnpacker
                     fileEnd = fileStart + inflater.InputSize;
                     input.Seek(fileEnd, SeekOrigin.Begin);
 
-                    uint deflateCrc = input.ReadUInt32();
+                    uint deflateCrc = input.ReadUInt32LittleEndian();
                     if (inflater.CRC != deflateCrc)
                     {
                         input.Seek(-3, SeekOrigin.Current);
-                        deflateCrc = input.ReadUInt32();
+                        deflateCrc = input.ReadUInt32LittleEndian();
                         if (inflater.CRC != deflateCrc)
                             break;
                     }
@@ -320,7 +320,7 @@ namespace WiseUnpacker
             long length = dumpFile.Length;
             while (length > 0)
             {
-                uint offset = dumpFile.ReadUInt32();
+                uint offset = dumpFile.ReadUInt32LittleEndian();
                 offsets.Add(offset);
                 length -= 4;
             }
@@ -460,7 +460,7 @@ namespace WiseUnpacker
         private static ushort ReadWORD(Stream stream, long position)
         {
             stream.Seek(position, SeekOrigin.Begin);
-            return stream.ReadUInt16();
+            return stream.ReadWORDLittleEndian();
         }
 
         /// <summary>
@@ -469,7 +469,7 @@ namespace WiseUnpacker
         private static uint ReadDWORD(Stream stream, long position)
         {
             stream.Seek(position, SeekOrigin.Begin);
-            return stream.ReadUInt32();
+            return stream.ReadDWORDLittleEndian();
         }
 
         #endregion

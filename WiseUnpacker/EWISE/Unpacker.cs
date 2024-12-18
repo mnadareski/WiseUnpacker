@@ -136,23 +136,23 @@ namespace WiseUnpacker.EWISE
                 long afterOffset = _inputFile.Position;
                 
                 // Get the offset immediately following the resource table
-                ushort align = _inputFile.ReadUInt16();
+                ushort align = _inputFile.ReadUInt16LittleEndian();
                 for (int i = 0; i < ne.Model.Header.ResourceEntriesCount; i++)
                 {
                     // Parse the resource type header
-                    _ = _inputFile.ReadUInt16(); // TypeID
-                    ushort resourceCount = _inputFile.ReadUInt16();
-                    _ = _inputFile.ReadUInt32(); // Reserved
+                    _ = _inputFile.ReadUInt16LittleEndian(); // TypeID
+                    ushort resourceCount = _inputFile.ReadUInt16LittleEndian();
+                    _ = _inputFile.ReadUInt32LittleEndian(); // Reserved
 
                     // Parse the resource type entries
                     for (int j = 0; j < resourceCount; j++)
                     {
                         // Parse the resource entry header
-                        ushort offset = _inputFile.ReadUInt16();
-                        ushort length = _inputFile.ReadUInt16();
-                        _ = _inputFile.ReadUInt16(); // FlagWord
-                        _ = _inputFile.ReadUInt16(); // ResourceID
-                        _ = _inputFile.ReadUInt32(); // Reserved
+                        ushort offset = _inputFile.ReadUInt16LittleEndian();
+                        ushort length = _inputFile.ReadUInt16LittleEndian();
+                        _ = _inputFile.ReadUInt16LittleEndian(); // FlagWord
+                        _ = _inputFile.ReadUInt16LittleEndian(); // ResourceID
+                        _ = _inputFile.ReadUInt32LittleEndian(); // Reserved
 
                         // Get the location of the value
                         int value = (offset << align) + (length << align);

@@ -268,7 +268,7 @@ namespace WiseUnpacker.HWUN
                 {
                     input.Seek(approxOffset + pos, SeekOrigin.Begin);
                     inflated = inflater.Inflate(input, Path.Combine(outputPath, "WISE0001"));
-                    newcrc = input.ReadUInt32();
+                    newcrc = input.ReadUInt32LittleEndian();
                     realOffset = approxOffset + pos;
                     pos++;
                 } while ((!inflated || newcrc == 0x00000000) && pos != 0x100);
@@ -281,7 +281,7 @@ namespace WiseUnpacker.HWUN
                     {
                         input.Seek(approxOffset + pos, SeekOrigin.Begin);
                         inflated = inflater.Inflate(input, Path.Combine(outputPath, "WISE0001"));
-                        newcrc = input.ReadUInt32();
+                        newcrc = input.ReadUInt32LittleEndian();
                         realOffset = approxOffset + pos;
                         pos--;
                     } while ((!inflated || newcrc == 0x00000000) && pos != -0x100);
