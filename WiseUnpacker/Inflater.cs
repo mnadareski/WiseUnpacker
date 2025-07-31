@@ -66,8 +66,8 @@ namespace WiseUnpacker
                 output?.Close();
             }
 
+            crc.Terminate();
             byte[] hashBytes = crc.CurrentHashBytes!;
-            Array.Reverse(hashBytes);
             CRC = BitConverter.ToUInt32(hashBytes, 0);
             return true;
         }
