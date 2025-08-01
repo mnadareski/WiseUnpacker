@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 
@@ -89,19 +90,8 @@ namespace WiseUnpacker
                 if (pkzip)
                 {
                     // Save only select values
-                    _ = input.ReadUInt32LittleEndian(); // Signature
-                    _ = input.ReadUInt16LittleEndian(); // Version
-                    _ = input.ReadUInt16LittleEndian(); // Flags
-                    _ = input.ReadUInt16LittleEndian(); // Compression method
-                    _ = input.ReadUInt16LittleEndian(); // Modification time
-                    _ = input.ReadUInt16LittleEndian(); // Modification date
-                    zipCrc = input.ReadUInt32LittleEndian();
-                    zipSize = input.ReadUInt32LittleEndian(); // Compressed size
-                    _ = input.ReadUInt32LittleEndian(); // Uncompressed size
-                    ushort filenameLength = input.ReadUInt16LittleEndian();
-                    ushort extraLength = input.ReadUInt16LittleEndian();
-                    if (filenameLength + extraLength > 0)
-                        _ = input.ReadBytes(filenameLength + extraLength);
+                    if (!ReadPKZIPHeader(input, out zipCrc, out zipSize, out _))
+                        break;
 
                     // Reset the file start position
                     fileStart = input.Position;
@@ -149,6 +139,45 @@ namespace WiseUnpacker
             dumpFile.Close();
 
             return extracted;
+        }
+
+        /// <summary>
+        /// Get CRC and Size from the PKZIP header
+        /// </summary>
+        internal static bool ReadPKZIPHeader(Stream input, out uint crc, out uint size, out string? filename)
+        {
+            filename = null;
+
+            try
+            {
+                _ = input.ReadUInt32LittleEndian(); // Signature
+                _ = input.ReadUInt16LittleEndian(); // Version
+                _ = input.ReadUInt16LittleEndian(); // Flags
+                _ = input.ReadUInt16LittleEndian(); // Compression method
+                _ = input.ReadUInt16LittleEndian(); // Modification time
+                _ = input.ReadUInt16LittleEndian(); // Modification date
+                crc = input.ReadUInt32LittleEndian();
+                size = input.ReadUInt32LittleEndian(); // Compressed size
+                _ = input.ReadUInt32LittleEndian(); // Uncompressed size
+                ushort filenameLength = input.ReadUInt16LittleEndian();
+                ushort extraLength = input.ReadUInt16LittleEndian();
+
+                if (filenameLength > 0)
+                {
+                    byte[] filenameBytes = input.ReadBytes(filenameLength);
+                    filename = Encoding.ASCII.GetString(filenameBytes);
+                }
+                if (extraLength > 0)
+                    _ = input.ReadBytes(extraLength);
+
+                return true;
+            }
+            catch
+            {
+                crc = 0;
+                size = 0;
+                return false;
+            }
         }
 
         /// <summary>

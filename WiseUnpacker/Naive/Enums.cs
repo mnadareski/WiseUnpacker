@@ -11,10 +11,10 @@ namespace SabreTools.Models.WiseInstaller
     }
 
     /// <summary>
-    /// 
+    /// Opcodes for the state machine
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public enum OperationCodes : byte
+    public enum OperationCode : byte
     {
         /// <summary>
         /// Custom deflate file header

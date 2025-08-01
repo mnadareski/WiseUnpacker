@@ -12,9 +12,9 @@ namespace WiseUnpacker
         /// <returns>True if extraction was a success, false otherwise</returns>
         public static bool ExtractTo(string file, string outputPath)
         {
-            // // Use naive parsing code
-            // if (ExtractToNaive(file, outputPath))
-            //     return true;
+            // Use naive parsing code
+            if (ExtractToNaive(file, outputPath))
+                return true;
 
             // Use E_WISE-derived code
             if (ExtractToEWISE(file, outputPath))
@@ -36,9 +36,9 @@ namespace WiseUnpacker
         /// <returns>True if extraction was a success, false otherwise</returns>
         public static bool ExtractTo(Stream stream, string outputPath)
         {
-            // // Use naive parsing code
-            // if (ExtractToNaive(stream, outputPath))
-            //     return true;
+            // Use naive parsing code
+            if (ExtractToNaive(stream, outputPath))
+                return true;
 
             // Use E_WISE-derived code
             if (ExtractToEWISE(stream, outputPath))
