@@ -104,7 +104,85 @@ namespace WiseUnpacker
             _inputFile?.Close();
         }
 
-        #region Helpers
+        #region Extraction
+
+        /// <summary>
+        /// Attempt to extract a file defined by a filename
+        /// </summary>
+        /// TODO: Add CRC and size verification
+        private bool ExtractFile(string? filename, string outputPath)
+        {
+            // Get an inflater to use
+            var inflater = new Inflater();
+
+            // Skip the PKZIP header, if it exists
+            string? zipName = null;
+            if (_isPkZip)
+                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
+
+            // Set the name from the zip header if missing
+            filename ??= zipName ?? Guid.NewGuid().ToString();
+
+            // Ensure directory separators are consistent
+            if (Path.DirectorySeparatorChar == '\\')
+                filename = filename.Replace('/', '\\');
+            else if (Path.DirectorySeparatorChar == '/')
+                filename = filename.Replace('\\', '/');
+
+            // Ensure the full output directory exists
+            filename = Path.Combine(outputPath, filename);
+            var directoryName = Path.GetDirectoryName(filename);
+            if (directoryName != null && !Directory.Exists(directoryName))
+                Directory.CreateDirectory(directoryName);
+
+            // Extract the file
+            if (!inflater.Inflate(_inputFile, filename))
+            {
+                Console.Error.WriteLine($"Could not extract {filename}");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        private bool ExtractFile(ScriptDeflateInfo obj, int count, string outputPath)
+        {
+            // Perform path replacements
+            string filename = $"WISE_0x06_{count:X4}";
+            _inputFile.Seek(_dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(filename, outputPath);
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        private bool ExtractFile(ScriptFileHeader obj, int count, string? tempPath, string outputPath)
+        {
+            // Perform path replacements
+            obj.DestFile ??= $"WISE{count:X4}";
+            if (tempPath != null)
+                obj.DestFile = obj.DestFile.Replace($"%{tempPath}%", "tempfile");
+
+            _inputFile.Seek(_dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(obj.DestFile, outputPath);
+        }
+
+         /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        private bool ExtractFile(ScriptUnknown0x14 obj, int count, string? tempPath, string outputPath)
+        {
+            // Perform path replacements
+            obj.Name ??= $"WISE_0x14_{count:X4}";
+            if (tempPath != null)
+                obj.Name = obj.Name.Replace($"%{tempPath}%", "tempfile");
+
+            _inputFile.Seek(_dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(obj.Name, outputPath);
+        }
 
         /// <summary>
         /// Extract the predefined, static files defined in the header
@@ -161,43 +239,47 @@ namespace WiseUnpacker
         }
 
         /// <summary>
-        /// Attempt to extract WiseColors.dib
+        /// Get CRC and Size from the PKZIP header
         /// </summary>
-        /// TODO: Add CRC and size verification
-        private bool ExtractFile(string? filename, string outputPath)
+        private static bool ReadPKZIPHeader(Stream input, out uint crc, out uint size, out string? filename)
         {
-            // Get an inflater to use
-            var inflater = new Inflater();
+            filename = null;
 
-            // Skip the PKZIP header, if it exists
-            string? zipName = null;
-            if (_isPkZip)
-                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
-
-            // Set the name from the zip header if missing
-            filename ??= zipName ?? Guid.NewGuid().ToString();
-
-            // Ensure directory separators are consistent
-            if (Path.DirectorySeparatorChar == '\\')
-                filename = filename.Replace('/', '\\');
-            else if (Path.DirectorySeparatorChar == '/')
-                filename = filename.Replace('\\', '/');
-
-            // Ensure the full output directory exists
-            filename = Path.Combine(outputPath, filename);
-            var directoryName = Path.GetDirectoryName(filename);
-            if (directoryName != null && !Directory.Exists(directoryName))
-                Directory.CreateDirectory(directoryName);
-
-            // Extract the file
-            if (!inflater.Inflate(_inputFile, filename))
+            try
             {
-                Console.Error.WriteLine($"Could not extract {filename}");
+                _ = input.ReadUInt32LittleEndian(); // Signature
+                _ = input.ReadUInt16LittleEndian(); // Version
+                _ = input.ReadUInt16LittleEndian(); // Flags
+                _ = input.ReadUInt16LittleEndian(); // Compression method
+                _ = input.ReadUInt16LittleEndian(); // Modification time
+                _ = input.ReadUInt16LittleEndian(); // Modification date
+                crc = input.ReadUInt32LittleEndian();
+                size = input.ReadUInt32LittleEndian(); // Compressed size
+                _ = input.ReadUInt32LittleEndian(); // Uncompressed size
+                ushort filenameLength = input.ReadUInt16LittleEndian();
+                ushort extraLength = input.ReadUInt16LittleEndian();
+
+                if (filenameLength > 0)
+                {
+                    byte[] filenameBytes = input.ReadBytes(filenameLength);
+                    filename = Encoding.ASCII.GetString(filenameBytes);
+                }
+                if (extraLength > 0)
+                    _ = input.ReadBytes(extraLength);
+
+                return true;
+            }
+            catch
+            {
+                crc = 0;
+                size = 0;
                 return false;
             }
-
-            return true;
         }
+
+        #endregion
+
+        #region Helpers
 
         /// <summary>
         /// Get the overlay offset for the input file
@@ -270,7 +352,7 @@ namespace WiseUnpacker
         private bool ProcessStateMachine(string outputPath)
         {
             // If the state machine is invalid
-            if (_scriptFile?.States  == null || _scriptFile.States.Length == 0)
+            if (_scriptFile?.States == null || _scriptFile.States.Length == 0)
                 return false;
 
             // Initialize important loop information
@@ -285,19 +367,12 @@ namespace WiseUnpacker
                 switch (state.Op)
                 {
                     case OperationCode.CustomDeflateFileHeader:
-                        normalFileCount++;
                         if (state.Data is not ScriptFileHeader fileHeader)
                             return false;
 
-                        // Perform path replacements
-                        string destFile = fileHeader.DestFile ?? $"WISE{normalFileCount:X4}";
-                        if (tempPath != null)
-                            destFile = destFile.Replace($"%{tempPath}%", "tempfile");
-
-                        destFile = destFile.Replace("%", string.Empty);
-                        _inputFile.Seek(_dataStart + fileHeader.DeflateStart, SeekOrigin.Begin);
-                        if (!ExtractFile(destFile, outputPath))
-                            break;
+                        // Write to the output directory, logging on error
+                        if (!ExtractFile(fileHeader, ++normalFileCount, tempPath, outputPath))
+                            Console.Error.WriteLine($"{fileHeader.DestFile} failed to write!");
 
                         break;
 
@@ -339,18 +414,13 @@ namespace WiseUnpacker
                         if (u06.DeflateInfo?.Info == null)
                             break;
 
+                        // Write to the output directory, logging on error
                         foreach (var info in u06.DeflateInfo.Info)
                         {
-                            unknown0x06FileCount++;
-
-                            // Perform path replacements
-                            string u06Name = $"WISE_0x06_{unknown0x06FileCount:X4}";
-                            _inputFile.Seek(_dataStart + info.DeflateStart, SeekOrigin.Begin);
-                            if (!ExtractFile(u06Name, outputPath))
-                                break;
+                            if (!ExtractFile(info, ++unknown0x06FileCount, outputPath))
+                                Console.Error.WriteLine($"WISE_0x06_{unknown0x06FileCount} failed to write!");
                         }
 
-                        // TODO: Do something with this? It doesn't extract properly?
                         break;
 
                     case OperationCode.UnknownDeflatedFile0x14:
@@ -358,15 +428,9 @@ namespace WiseUnpacker
                         if (state.Data is not ScriptUnknown0x14 u14)
                             return false;
 
-                        // Perform path replacements
-                        string u14Name = u14.Name ?? $"WISE_0x14_{unknown0x14FileCount:X4}";
-                        if (tempPath != null)
-                            u14Name = u14Name.Replace($"%{tempPath}%", "tempfile");
-
-                        u14Name = u14Name.Replace("%", string.Empty);
-                        _inputFile.Seek(_dataStart + u14.DeflateStart, SeekOrigin.Begin);
-                        if (!ExtractFile(u14Name, outputPath))
-                            break;
+                        // Write to the output directory, logging on error
+                        if (!ExtractFile(u14, ++normalFileCount, tempPath, outputPath))
+                            Console.Error.WriteLine($"{u14.Name} failed to write!");
 
                         break;
 
@@ -384,45 +448,6 @@ namespace WiseUnpacker
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Get CRC and Size from the PKZIP header
-        /// </summary>
-        private static bool ReadPKZIPHeader(Stream input, out uint crc, out uint size, out string? filename)
-        {
-            filename = null;
-
-            try
-            {
-                _ = input.ReadUInt32LittleEndian(); // Signature
-                _ = input.ReadUInt16LittleEndian(); // Version
-                _ = input.ReadUInt16LittleEndian(); // Flags
-                _ = input.ReadUInt16LittleEndian(); // Compression method
-                _ = input.ReadUInt16LittleEndian(); // Modification time
-                _ = input.ReadUInt16LittleEndian(); // Modification date
-                crc = input.ReadUInt32LittleEndian();
-                size = input.ReadUInt32LittleEndian(); // Compressed size
-                _ = input.ReadUInt32LittleEndian(); // Uncompressed size
-                ushort filenameLength = input.ReadUInt16LittleEndian();
-                ushort extraLength = input.ReadUInt16LittleEndian();
-
-                if (filenameLength > 0)
-                {
-                    byte[] filenameBytes = input.ReadBytes(filenameLength);
-                    filename = Encoding.ASCII.GetString(filenameBytes);
-                }
-                if (extraLength > 0)
-                    _ = input.ReadBytes(extraLength);
-
-                return true;
-            }
-            catch
-            {
-                crc = 0;
-                size = 0;
-                return false;
-            }
         }
 
         /// <summary>
