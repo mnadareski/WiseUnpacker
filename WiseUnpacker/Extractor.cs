@@ -110,7 +110,7 @@ namespace WiseUnpacker
         /// <returns>True if extraction was a success, false otherwise</returns>
         public static bool ExtractToNaive(string file, string outputPath)
         {
-            var naive = new NaiveUnpacker(file);
+            var naive = new Naive.Unpacker(file);
             return naive.Run(outputPath);
         }
 
@@ -122,7 +122,7 @@ namespace WiseUnpacker
         /// <returns>True if extraction was a success, false otherwise</returns>
         public static bool ExtractToNaive(Stream stream, string outputPath)
         {
-            var naive = new NaiveUnpacker(stream);
+            var naive = new Naive.Unpacker(stream);
             return naive.Run(outputPath);
         }
     }
