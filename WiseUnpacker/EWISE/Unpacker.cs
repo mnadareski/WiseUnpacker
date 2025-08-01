@@ -78,7 +78,10 @@ namespace WiseUnpacker.EWISE
                 return false;
 
             // Get the overlay header and confirm values
-            var overlayHeader = Naive.Unpacker.DeserializeOverlayHeader(_inputFile);
+            var overlayDeserializer = new SabreTools.Serialization.Deserializers.WiseOverlayHeader();
+            var overlayHeader = overlayDeserializer.Deserialize(_inputFile);
+            if (overlayHeader == null)
+                return false;
 
             // Check the archive end
             if (_currentFormat.ArchiveEnd > 0)
@@ -135,7 +138,7 @@ namespace WiseUnpacker.EWISE
 
                 // Create an offset to set after
                 long afterOffset = _inputFile.Position;
-                
+
                 // Get the offset immediately following the resource table
                 ushort align = _inputFile.ReadUInt16LittleEndian();
                 for (int i = 0; i < ne.Model.Header.ResourceEntriesCount; i++)

@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// TempFileName
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x16
+    public class ScriptUnknown0x16 : MachineStateData
     {
         /// <summary>
         /// Name

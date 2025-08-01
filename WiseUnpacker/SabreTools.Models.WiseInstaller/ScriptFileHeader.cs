@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// Header for a Wise script file
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptFileHeader
+    public class ScriptFileHeader : MachineStateData
     {
         /// <summary>
         /// Values of 0x8000, 0x8100, 0x0000, 0x9800 0xA100 have been observed

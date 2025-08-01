@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// Something with the .ini file, write .ini file?
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x05
+    public class ScriptUnknown0x05 : MachineStateData
     {
         /// <summary>
         /// Open for writing in append mode

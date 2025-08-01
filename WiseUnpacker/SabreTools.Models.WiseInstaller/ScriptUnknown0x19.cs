@@ -1,27 +1,26 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x06
+    public class ScriptUnknown0x19 : MachineStateData
     {
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>2 bytes</remarks>
-        public byte[]? Unknown_2 { get; set; }
+        public byte Unknown_1 { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
-        public uint Unknown { get; set; }
+        public string? UnknownString_1 { get; set; }
 
         /// <summary>
-        /// Deflate information
+        /// Unknown
         /// </summary>
-        public ScriptDeflateInfoContainer? DeflateInfo { get; set; }
+        public string? UnknownString_2 { get; set; }
 
         /// <summary>
-        /// Terminator?
+        /// Unknown
         /// </summary>
-        public byte Terminator { get; set; }
+        public string? UnknownString_3 { get; set; }
     }
 }

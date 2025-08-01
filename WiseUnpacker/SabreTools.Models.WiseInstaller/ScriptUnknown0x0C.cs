@@ -36,7 +36,7 @@ namespace SabreTools.Models.WiseInstaller
     ///   0x0C 00 'COMPONENTS' 'A'
     /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x0C
+    public class ScriptUnknown0x0C : MachineStateData
     {
         /// <summary>
         /// Unknown, operator?

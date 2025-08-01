@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// Wise script file?
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x14
+    public class ScriptUnknown0x14 : MachineStateData
     {
         /// <summary>
         /// Start of the deflated data

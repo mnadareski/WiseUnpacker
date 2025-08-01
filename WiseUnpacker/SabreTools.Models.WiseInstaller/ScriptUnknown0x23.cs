@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// 'else if' struct, same as the 0x0C struct, but handled differently
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x23
+    public class ScriptUnknown0x23 : MachineStateData
     {
         /// <summary>
         /// Unknown, operator?

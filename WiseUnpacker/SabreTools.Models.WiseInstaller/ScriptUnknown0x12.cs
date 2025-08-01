@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// File on install medium
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x12
+    public class ScriptUnknown0x12 : MachineStateData
     {
         /// <summary>
         /// Unknown, 0x0C

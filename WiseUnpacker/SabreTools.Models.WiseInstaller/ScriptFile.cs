@@ -1,19 +1,19 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// Form data?
+    /// Wise script file
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x04
+    public class ScriptFile
     {
         /// <summary>
-        /// Read this struct again until 'no' == 0 ?
+        /// Script header
         /// </summary>
-        public byte No { get; set; }
+        public ScriptHeader? Header { get; set; }
 
         /// <summary>
-        /// One string per language
+        /// States representing the state machine in order
         /// </summary>
-        public string[]? LangStrings { get; set; }
+        public MachineState[]? States { get; set; }
     }
 }

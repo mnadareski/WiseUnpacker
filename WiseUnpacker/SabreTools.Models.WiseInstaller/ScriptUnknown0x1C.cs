@@ -10,7 +10,7 @@ namespace SabreTools.Models.WiseInstaller
     ///   0x1C 'RegDB Root: 1
     /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x1C
+    public class ScriptUnknown0x1C : MachineStateData
     {
         /// <summary>
         /// Unknown
