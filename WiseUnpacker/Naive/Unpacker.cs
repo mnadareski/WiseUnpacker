@@ -60,211 +60,91 @@ namespace WiseUnpacker.Naive
             if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
                 return false;
 
-            // New Executable (NE)
-            if (wrapper is NewExecutable nex)
+            // Get the overlay offset
+            int overlayOffset = wrapper switch
             {
-                // TODO: Implement NE processing
+                NewExecutable nex => -1,
+                PortableExecutable pex => pex.OverlayAddress,
+                _ => -1,
+            };
+
+            // Validate the overlay offset
+            if (overlayOffset < 0 || overlayOffset >= _inputFile.Length)
+            {
                 Close();
                 return false;
             }
 
-            // Portable Executable (PE)
-            else if (wrapper is PortableExecutable pex)
+            // Seek to the overlay
+            _inputFile.Seek(overlayOffset, SeekOrigin.Begin);
+
+            // Attempt to parse the overlay data as a header
+            OverlayHeader header;
+            try
             {
-                // Get the overlay offset
-                int overlayOffset = pex.OverlayAddress;
-                if (overlayOffset < 0 || overlayOffset >= _inputFile.Length)
+                header = DeserializeOverlayHeader(_inputFile);
+                if (header.Endianness != Endianness.LittleEndian && header.Endianness != Endianness.BigEndian)
                     return false;
+            }
+            catch
+            {
+                return false;
+            }
 
-                // Seek to the overlay
-                _inputFile.Seek(overlayOffset, SeekOrigin.Begin);
-
-                // Attempt to parse the overlay data as a header
-                OverlayHeader header;
-                try
-                {
-                    header = DeserializeOverlayHeader(_inputFile);
-                    if (header.Endianness != Endianness.LittleEndian && header.Endianness != Endianness.BigEndian)
-                        return false;
-                }
-                catch
-                {
-                    return false;
-                }
-
-                // Get if the format is PKZIP packed or not
+            // Get if the format is PKZIP packed or not
 #if NET20 || NET35
                 bool pkzip = (header.Flags & OverlayHeaderFlags.WISE_FLAG_PK_ZIP) != 0;
 #else
-                bool pkzip = header.Flags.HasFlag(OverlayHeaderFlags.WISE_FLAG_PK_ZIP);
+            bool pkzip = header.Flags.HasFlag(OverlayHeaderFlags.WISE_FLAG_PK_ZIP);
 #endif
 
-                // Extract WiseColors.dib
-                long offset = _inputFile.Position;
-                if (header.DibDeflatedSize > 0 && !ExtractFile("WiseColors.dib", outputPath, pkzip))
-                    return false;
+            // Extract WiseColors.dib
+            long offset = _inputFile.Position;
+            if (header.DibDeflatedSize > 0 && !ExtractFile("WiseColors.dib", outputPath, pkzip))
+                return false;
 
-                // Extract WiseScript.bin
-                _inputFile.Seek(offset + header.DibDeflatedSize, SeekOrigin.Begin);
-                offset = _inputFile.Position;
-                if (header.WiseScriptDeflatedSize > 0 && !ExtractFile("WiseScript.bin", outputPath, pkzip))
-                    return false;
+            // Extract WiseScript.bin
+            _inputFile.Seek(offset + header.DibDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (header.WiseScriptDeflatedSize > 0 && !ExtractFile("WiseScript.bin", outputPath, pkzip))
+                return false;
 
-                // Extract WISE0001.DLL, if it exists
-                _inputFile.Seek(offset + header.WiseScriptDeflatedSize, SeekOrigin.Begin);
-                offset = _inputFile.Position;
-                if (header.WiseDllDeflatedSize > 0 && !ExtractFile("WISE0001.DLL", outputPath, pkzip))
-                    return false;
+            // Extract WISE0001.DLL, if it exists
+            _inputFile.Seek(offset + header.WiseScriptDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (header.WiseDllDeflatedSize > 0 && !ExtractFile("WISE0001.DLL", outputPath, pkzip))
+                return false;
 
-                // Extract PROGRESS.DLL, if it exists
-                _inputFile.Seek(offset + header.WiseDllDeflatedSize, SeekOrigin.Begin);
-                offset = _inputFile.Position;
-                if (header.ProgressDllDeflatedSize > 0 && !ExtractFile("PROGRESS.DLL", outputPath, pkzip))
-                    return false;
+            // Extract PROGRESS.DLL, if it exists
+            _inputFile.Seek(offset + header.WiseDllDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (header.ProgressDllDeflatedSize > 0 && !ExtractFile("PROGRESS.DLL", outputPath, pkzip))
+                return false;
 
-                // Extract FILE000X.DLL, if it exists
-                _inputFile.Seek(offset + header.ProgressDllDeflatedSize, SeekOrigin.Begin);
-                offset = _inputFile.Position;
-                if (header.SomeData5DeflatedSize > 0 && !ExtractFile(null, outputPath, pkzip))
-                    return false;
+            // Extract FILE000X.DLL, if it exists
+            _inputFile.Seek(offset + header.ProgressDllDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (header.SomeData5DeflatedSize > 0 && !ExtractFile(null, outputPath, pkzip))
+                return false;
 
-                // Open WiseScript.bin for parsing
-                var scriptStream = File.OpenRead(Path.Combine(outputPath, "WiseScript.bin"));
-                var scriptHeader = DeserializeScriptHeader(scriptStream);
-                long dataStart = offset + header.SomeData5DeflatedSize;
+            // Open WiseScript.bin for parsing
+            var scriptStream = File.OpenRead(Path.Combine(outputPath, "WiseScript.bin"));
+            var scriptHeader = DeserializeScriptHeader(scriptStream);
+            long dataStart = offset + header.SomeData5DeflatedSize;
 
-                // Process the state machine for easier parsing
-                var stateMachine = ProcessStateMachine(scriptStream, scriptHeader.LanguageCount);
-                long farthestFileEnd = GetFarthestFileEnd(stateMachine);
+            // Process the state machine
+            var stateMachine = ReadStateMachine(scriptStream, scriptHeader.LanguageCount);
+            bool success = ProcessStateMachine(outputPath, pkzip, dataStart, stateMachine);
 
-                // Initialize important loop information
-                int fileCount = 0;
-                string? tempPath = null;
-
-                // Loop through the state machine and process
-                foreach (var state in stateMachine)
-                {
-                    switch (state.Op)
-                    {
-                        case OperationCode.CustomDeflateFileHeader:
-                            fileCount++;
-                            if (state.Data is not ScriptFileHeader fileHeader)
-                                return false;
-
-                            // Perform path replacements
-                            string destFile = fileHeader.DestFile ?? $"WISE{fileCount:X4}";
-                            if (tempPath != null)
-                                destFile = destFile.Replace($"%{tempPath}%", "tempfile");
-
-                            destFile = destFile.Replace("%", string.Empty);
-                            _inputFile.Seek(dataStart + fileHeader.DeflateStart, SeekOrigin.Begin);
-                            if (!ExtractFile(destFile, outputPath, pkzip))
-                                break;
-
-                            _inputFile.Seek(dataStart + fileHeader.DeflateStart + fileHeader.DeflateEnd, SeekOrigin.Begin);
-                            break;
-
-                        case OperationCode.IniFile:
-                            if (state.Data is not ScriptUnknown0x05 unknown0x05Data)
-                                return false;
-
-                            // Ensure directory separators are consistent
-                            string iniFilePath = unknown0x05Data.File ?? $"WISE{fileCount:X4}.ini";
-                            if (Path.DirectorySeparatorChar == '\\')
-                                iniFilePath = iniFilePath.Replace('/', '\\');
-                            else if (Path.DirectorySeparatorChar == '/')
-                                iniFilePath = iniFilePath.Replace('\\', '/');
-
-                            // Perform path replacements
-                            if (tempPath != null)
-                                iniFilePath = iniFilePath.Replace($"%{tempPath}%", "tempfile");
-
-                            iniFilePath = iniFilePath.Replace("%", string.Empty);
-
-                            // Ensure the full output directory exists
-                            iniFilePath = Path.Combine(outputPath, iniFilePath);
-                            var directoryName = Path.GetDirectoryName(iniFilePath);
-                            if (directoryName != null && !Directory.Exists(directoryName))
-                                Directory.CreateDirectory(directoryName);
-
-                            using (var iniFile = File.Open(iniFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-                            {
-                                iniFile.Write(Encoding.ASCII.GetBytes($"[{unknown0x05Data.Section}]\n"));
-                                iniFile.Write(Encoding.ASCII.GetBytes($"{unknown0x05Data.Values ?? string.Empty}\n"));
-                                iniFile.Flush();
-                            }
-
-                            break;
-
-                        case OperationCode.UnknownDeflatedFile0x06:
-                            // TODO: Do something with this? It doesn't extract properly?
-                            break;
-
-                        case OperationCode.UnknownDeflatedFile0x14:
-                            // TODO: Do something with this? It doesn't extract properly?
-                            break;
-
-                        case OperationCode.TempFilename:
-                            if (state.Data is not ScriptUnknown0x16 unknown0x16Data)
-                                return false;
-
-                            tempPath = unknown0x16Data.Name;
-                            break;
-
-                        default:
-                            //Console.WriteLine($"Skipped opcode {state.Op}");
-                            break;
-                    }
-                }
-
-                // Close and return
-                Close();
-                return true;
-            }
-
-            // This should never happen
+            // Close and return
             Close();
-            return false;
+            return true;
         }
 
         /// <summary>
-        /// Get the farthest deflated file end from the state machine
+        /// Read the state machine from WiseScript.bin
         /// </summary>
-        private static long GetFarthestFileEnd(List<WiseState> stateMachine)
-        {
-            long largestFileEnd = -1;
-            foreach (var state in stateMachine)
-            {
-                if (state.Op == OperationCode.CustomDeflateFileHeader)
-                {
-                    if (state.Data is ScriptFileHeader obj && obj.DeflateEnd > largestFileEnd)
-                        largestFileEnd = obj.DeflateEnd;
-                }
-                else if (state.Op == OperationCode.UnknownDeflatedFile0x06)
-                {
-                    if (state.Data is ScriptUnknown0x06 obj && obj.DeflateInfo?.Info != null)
-                    {
-                        foreach (var info in obj.DeflateInfo.Info)
-                        {
-                            if (info.DeflateEnd > largestFileEnd)
-                                largestFileEnd = info.DeflateEnd;
-                        }
-                    }
-                }
-                else if (state.Op == OperationCode.UnknownDeflatedFile0x14)
-                {
-                    if (state.Data is ScriptUnknown0x14 obj && obj.DeflateEnd > largestFileEnd)
-                        largestFileEnd = obj.DeflateEnd;
-                }
-            }
-
-            return largestFileEnd;
-        }
-
-        /// <summary>
-        /// Process the state machine from WiseScript.bin
-        /// </summary>
-        private static List<WiseState> ProcessStateMachine(Stream stream, byte languageCount)
+        private static List<WiseState> ReadStateMachine(Stream stream, byte languageCount)
         {
             // Initialize important loop information
             int op0x18skip = -1;
@@ -286,28 +166,28 @@ namespace WiseUnpacker.Naive
                     OperationCode.EndBranch => DeserializeUnknown0x08(stream),
                     OperationCode.FunctionCall => DeserializeUnknown0x09(stream, languageCount),
                     OperationCode.Unknown0x0A => DeserializeUnknown0x0A(stream),
-                    OperationCode.Unknown0x0B => null, // TODO: Implement
+                    OperationCode.Unknown0x0B => DeserializeUnknown0x0B(stream),
                     OperationCode.IfStatement => DeserializeUnknown0x0C(stream),
                     OperationCode.ElseStatement => null, // No-op
                     OperationCode.StartFormData => null, // No-op
                     OperationCode.EndFormData => null, // No-op
                     OperationCode.Unknown0x11 => DeserializeUnknown0x11(stream),
-                    OperationCode.FileOnInstallMedium => null, // TODO: Implement
+                    OperationCode.FileOnInstallMedium => DeserializeUnknown0x12(stream, languageCount),
                     OperationCode.UnknownDeflatedFile0x14 => DeserializeUnknown0x14(stream),
                     OperationCode.Unknown0x15 => DeserializeUnknown0x15(stream),
                     OperationCode.TempFilename => DeserializeUnknown0x16(stream),
-                    OperationCode.Unknown0x17 => null, // TODO: Implement
+                    OperationCode.Unknown0x17 => DeserializeUnknown0x17(stream),
                     OperationCode.Skip0x18 => null, // No-op, handled below
-                    OperationCode.Unknown0x19 => null, // TODO: Implement
-                    OperationCode.Unknown0x1A => null, // TODO: Implement
+                    OperationCode.Unknown0x19 => DeserializeUnknown0x19(stream),
+                    OperationCode.Unknown0x1A => DeserializeUnknown0x1A(stream),
                     OperationCode.Skip0x1B => null, // No-op
-                    OperationCode.Unknown0x1C => null, // TODO: Implement
-                    OperationCode.Unknown0x1D => null, // TODO: Implement
+                    OperationCode.Unknown0x1C => DeserializeUnknown0x1C(stream),
+                    OperationCode.Unknown0x1D => DeserializeUnknown0x1D(stream),
                     OperationCode.Unknown0x1E => DeserializeUnknown0x1E(stream),
-                    OperationCode.ElseIfStatement => null, // TODO: Implement
-                    OperationCode.Skip0x24 => null, // TODO: Implement
-                    OperationCode.Skip0x25 => null, // TODO: Implement
-                    OperationCode.ReadByteAndStrings => null, // TODO: Implement
+                    OperationCode.ElseIfStatement => DeserializeUnknown0x23(stream),
+                    OperationCode.Skip0x24 => null, // No-op
+                    OperationCode.Skip0x25 => null, // No-op
+                    OperationCode.ReadByteAndStrings => DeserializeUnknown0x30(stream),
 
                     _ => throw new IndexOutOfRangeException(nameof(op)),
                 };
@@ -315,14 +195,6 @@ namespace WiseUnpacker.Naive
                 // Special handling
                 if (op == OperationCode.Skip0x18)
                     op0x18skip = DeserializeUnknown0x18(stream, op0x18skip);
-
-                if (data == null
-                        && op != OperationCode.ElseStatement
-                        && op != OperationCode.StartFormData
-                        && op != OperationCode.EndFormData
-                        && op != OperationCode.Skip0x18
-                        && op != OperationCode.Skip0x1B)
-                        Console.WriteLine($"{op} had a null value???");
 
                 var state = new WiseState
                 {
@@ -334,6 +206,173 @@ namespace WiseUnpacker.Naive
 
             return states;
         }
+
+        /// <summary>
+        /// Process the state machine and perform all required actions
+        /// </summary>
+        private bool ProcessStateMachine(string outputPath, bool pkzip, long dataStart, List<WiseState> stateMachine)
+        {
+            // Initialize important loop information
+            int normalFileCount = 0;
+            int unknown0x06FileCount = 0;
+            int unknown0x14FileCount = 0;
+            string? tempPath = null;
+
+            // Loop through the state machine and process
+            foreach (var state in stateMachine)
+            {
+                switch (state.Op)
+                {
+                    case OperationCode.CustomDeflateFileHeader:
+                        normalFileCount++;
+                        if (state.Data is not ScriptFileHeader fileHeader)
+                            return false;
+
+                        // Perform path replacements
+                        string destFile = fileHeader.DestFile ?? $"WISE{normalFileCount:X4}";
+                        if (tempPath != null)
+                            destFile = destFile.Replace($"%{tempPath}%", "tempfile");
+
+                        destFile = destFile.Replace("%", string.Empty);
+                        _inputFile.Seek(dataStart + fileHeader.DeflateStart, SeekOrigin.Begin);
+                        if (!ExtractFile(destFile, outputPath, pkzip))
+                            break;
+
+                        break;
+
+                    case OperationCode.IniFile:
+                        if (state.Data is not ScriptUnknown0x05 unknown0x05Data)
+                            return false;
+
+                        // Ensure directory separators are consistent
+                        string iniFilePath = unknown0x05Data.File ?? $"WISE{normalFileCount:X4}.ini";
+                        if (Path.DirectorySeparatorChar == '\\')
+                            iniFilePath = iniFilePath.Replace('/', '\\');
+                        else if (Path.DirectorySeparatorChar == '/')
+                            iniFilePath = iniFilePath.Replace('\\', '/');
+
+                        // Perform path replacements
+                        if (tempPath != null)
+                            iniFilePath = iniFilePath.Replace($"%{tempPath}%", "tempfile");
+
+                        iniFilePath = iniFilePath.Replace("%", string.Empty);
+
+                        // Ensure the full output directory exists
+                        iniFilePath = Path.Combine(outputPath, iniFilePath);
+                        var directoryName = Path.GetDirectoryName(iniFilePath);
+                        if (directoryName != null && !Directory.Exists(directoryName))
+                            Directory.CreateDirectory(directoryName);
+
+                        using (var iniFile = File.Open(iniFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                        {
+                            iniFile.Write(Encoding.ASCII.GetBytes($"[{unknown0x05Data.Section}]\n"));
+                            iniFile.Write(Encoding.ASCII.GetBytes($"{unknown0x05Data.Values ?? string.Empty}\n"));
+                            iniFile.Flush();
+                        }
+
+                        break;
+
+                    case OperationCode.UnknownDeflatedFile0x06:
+                        if (state.Data is not ScriptUnknown0x06 u06)
+                            return false;
+                        if (u06.DeflateInfo?.Info == null)
+                            break;
+
+                        foreach (var info in u06.DeflateInfo.Info)
+                        {
+                            unknown0x06FileCount++;
+
+                            // Perform path replacements
+                            string u06Name = $"WISE_0x06_{unknown0x06FileCount:X4}";
+                            _inputFile.Seek(dataStart + info.DeflateStart, SeekOrigin.Begin);
+                            if (!ExtractFile(u06Name, outputPath, pkzip))
+                                break;
+                        }
+
+                        // TODO: Do something with this? It doesn't extract properly?
+                        break;
+
+                    case OperationCode.UnknownDeflatedFile0x14:
+                        unknown0x14FileCount++;
+                        if (state.Data is not ScriptUnknown0x14 u14)
+                            return false;
+
+                        // Perform path replacements
+                        string u14Name = u14.Name ?? $"WISE_0x14_{unknown0x14FileCount:X4}";
+                        if (tempPath != null)
+                            u14Name = u14Name.Replace($"%{tempPath}%", "tempfile");
+
+                        u14Name = u14Name.Replace("%", string.Empty);
+                        _inputFile.Seek(dataStart + u14.DeflateStart, SeekOrigin.Begin);
+                        if (!ExtractFile(u14Name, outputPath, pkzip))
+                            break;
+
+                        break;
+
+                    case OperationCode.TempFilename:
+                        if (state.Data is not ScriptUnknown0x16 unknown0x16Data)
+                            return false;
+
+                        tempPath = unknown0x16Data.Name;
+                        break;
+
+                    default:
+                        //Console.WriteLine($"Skipped opcode {state.Op}");
+                        break;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to extract WiseColors.dib
+        /// </summary>
+        /// TODO: Add CRC and size verification
+        private bool ExtractFile(string? filename, string outputPath, bool pkzip)
+        {
+            // Get an inflater to use
+            var inflater = new Inflater();
+
+            // Skip the PKZIP header, if it exists
+            string? zipName = null;
+            if (pkzip)
+                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
+
+            // Set the name from the zip header if missing
+            filename ??= zipName ?? Guid.NewGuid().ToString();
+
+            // Ensure directory separators are consistent
+            if (Path.DirectorySeparatorChar == '\\')
+                filename = filename.Replace('/', '\\');
+            else if (Path.DirectorySeparatorChar == '/')
+                filename = filename.Replace('\\', '/');
+
+            // Ensure the full output directory exists
+            filename = Path.Combine(outputPath, filename);
+            var directoryName = Path.GetDirectoryName(filename);
+            if (directoryName != null && !Directory.Exists(directoryName))
+                Directory.CreateDirectory(directoryName);
+
+            // Extract the file
+            if (!inflater.Inflate(_inputFile, filename))
+            {
+                Console.Error.WriteLine($"Could not extract {filename}");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Close the possible Wise installer
+        /// </summary>
+        private void Close()
+        {
+            _inputFile?.Close();
+        }
+
+        #region Serialization -- Move to Serialization once Models is updated
 
         /// <summary>
         /// Deserialize the overlay header
@@ -613,6 +652,19 @@ namespace WiseUnpacker.Naive
         }
 
         /// <summary>
+        /// Deserialize ScriptUnknown0x0B data
+        /// </summary>
+        internal static ScriptUnknown0x0B DeserializeUnknown0x0B(Stream data)
+        {
+            var obj = new ScriptUnknown0x0B();
+
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
         /// Deserialize ScriptUnknown0x0C data
         /// </summary>
         internal static ScriptUnknown0x0C DeserializeUnknown0x0C(Stream data)
@@ -634,6 +686,29 @@ namespace WiseUnpacker.Naive
             var obj = new ScriptUnknown0x11();
 
             obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Deserialize ScriptUnknown0x12 data
+        /// </summary>
+        internal static ScriptUnknown0x12 DeserializeUnknown0x12(Stream data, int languageCount)
+        {
+            var obj = new ScriptUnknown0x12();
+
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.Unknown_41 = data.ReadBytes(41);
+            obj.SourceFile = data.ReadNullTerminatedAnsiString();
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+
+            obj.UnknownStrings = new string[languageCount];
+            for (int i = 0; i < obj.UnknownStrings.Length; i++)
+            {
+                obj.UnknownStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+            }
+
+            obj.DestFile = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -680,6 +755,20 @@ namespace WiseUnpacker.Naive
         }
 
         /// <summary>
+        /// Deserialize ScriptUnknown0x17 data
+        /// </summary>
+        internal static ScriptUnknown0x17 DeserializeUnknown0x17(Stream data)
+        {
+            var obj = new ScriptUnknown0x17();
+
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.Unknown_4 = data.ReadBytes(4);
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
         /// Deserialize ScriptUnknown0x18 data
         /// </summary>
         internal static int DeserializeUnknown0x18(Stream data, int op0x18skip)
@@ -701,6 +790,60 @@ namespace WiseUnpacker.Naive
         }
 
         /// <summary>
+        /// Deserialize ScriptUnknown0x19 data
+        /// </summary>
+        internal static ScriptUnknown0x19 DeserializeUnknown0x19(Stream data)
+        {
+            var obj = new ScriptUnknown0x19();
+
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+            obj.UnknownString_3 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Deserialize ScriptUnknown0x1A data
+        /// </summary>
+        internal static ScriptUnknown0x1A DeserializeUnknown0x1A(Stream data)
+        {
+            var obj = new ScriptUnknown0x1A();
+
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Deserialize ScriptUnknown0x1C data
+        /// </summary>
+        internal static ScriptUnknown0x1C DeserializeUnknown0x1C(Stream data)
+        {
+            var obj = new ScriptUnknown0x1C();
+
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        //// <summary>
+        /// Deserialize ScriptUnknown0x1D data
+        /// </summary>
+        internal static ScriptUnknown0x1D DeserializeUnknown0x1D(Stream data)
+        {
+            var obj = new ScriptUnknown0x1D();
+
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
         /// Deserialize ScriptUnknown0x1E data
         /// </summary>
         internal static ScriptUnknown0x1E DeserializeUnknown0x1E(Stream data)
@@ -714,50 +857,33 @@ namespace WiseUnpacker.Naive
         }
 
         /// <summary>
-        /// Attempt to extract WiseColors.dib
+        /// Deserialize ScriptUnknown0x23 data
         /// </summary>
-        /// TODO: Add CRC and size verification
-        private bool ExtractFile(string? filename, string outputPath, bool pkzip)
+        internal static ScriptUnknown0x23 DeserializeUnknown0x23(Stream data)
         {
-            // Get an inflater to use
-            var inflater = new Inflater();
+            var obj = new ScriptUnknown0x23();
 
-            // Skip the PKZIP header, if it exists
-            string? zipName = null;
-            if (pkzip)
-                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.VarName = data.ReadNullTerminatedAnsiString();
+            obj.VarValue = data.ReadNullTerminatedAnsiString();
 
-            // Set the name from the zip header if missing
-            filename ??= zipName ?? Guid.NewGuid().ToString();
-
-            // Ensure directory separators are consistent
-            if (Path.DirectorySeparatorChar == '\\')
-                filename = filename.Replace('/', '\\');
-            else if (Path.DirectorySeparatorChar == '/')
-                filename = filename.Replace('\\', '/');
-
-            // Ensure the full output directory exists
-            filename = Path.Combine(outputPath, filename);
-            var directoryName = Path.GetDirectoryName(filename);
-            if (directoryName != null && !Directory.Exists(directoryName))
-                Directory.CreateDirectory(directoryName);
-
-            // Extract the file
-            if (!inflater.Inflate(_inputFile, filename))
-            {
-                Console.Error.WriteLine($"Could not extract {filename}");
-                return false;
-            }
-
-            return true;
+            return obj;
         }
 
         /// <summary>
-        /// Close the possible Wise installer
+        /// Deserialize ScriptUnknown0x30 data
         /// </summary>
-        private void Close()
+        internal static ScriptUnknown0x30 DeserializeUnknown0x30(Stream data)
         {
-            _inputFile?.Close();
+            var obj = new ScriptUnknown0x30();
+
+            obj.Unknown_1 = data.ReadByteValue();
+            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+
+            return obj;
         }
+
+        #endregion
     }
 }
