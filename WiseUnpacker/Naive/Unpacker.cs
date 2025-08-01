@@ -6,7 +6,6 @@ using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Serialization.Wrappers;
-using static SabreTools.Models.PKZIP.Constants;
 using static WiseUnpacker.Common;
 
 namespace WiseUnpacker.Naive
@@ -63,7 +62,7 @@ namespace WiseUnpacker.Naive
             // Get the overlay offset
             int overlayOffset = wrapper switch
             {
-                NewExecutable nex => -1,
+                NewExecutable nex => GetOverlayAddress(nex),
                 PortableExecutable pex => pex.OverlayAddress,
                 _ => -1,
             };
@@ -373,6 +372,57 @@ namespace WiseUnpacker.Naive
         }
 
         #region Serialization -- Move to Serialization once Models is updated
+
+        /// <summary>
+        /// Address of the overlay, if it exists
+        /// </summary>
+        /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/exefile.c"/>
+        internal static int GetOverlayAddress(NewExecutable nex)
+        {
+            // Get the end of the file, if possible
+            int endOfFile = nex.GetEndOfFile();
+            if (endOfFile == -1)
+                return -1;
+
+            // If a required property is missing
+            if (nex.Model.Header == null || nex.Model.SegmentTable == null || nex.Model.ResourceTable?.ResourceTypes == null)
+                return -1;
+
+            // Search through the segments table to find the furthest
+            int endOfSectionData = -1;
+            foreach (var entry in nex.Model.SegmentTable)
+            {
+                int offset = (entry.Offset << nex.Model.Header.SegmentAlignmentShiftCount) + entry.Length;
+                if (offset > endOfSectionData)
+                    endOfSectionData = offset;
+            }
+
+            // Search through the resources table to find the furthest
+            foreach (var entry in nex.Model.ResourceTable.ResourceTypes)
+            {
+                // Skip invalid entries
+                if (entry.ResourceCount == 0 || entry.Resources == null || entry.Resources.Length == 0)
+                    continue;
+
+                foreach (var resource in entry.Resources)
+                {
+                    int offset = (resource.Offset << nex.Model.ResourceTable.AlignmentShiftCount) + resource.Length;
+                    if (offset > endOfSectionData)
+                        endOfSectionData = offset;
+                }
+            }
+
+            // If we didn't find the end of section data
+            if (endOfSectionData <= 0)
+                endOfSectionData = -1;
+
+            // Adjust the position of the data by 705 bytes
+            // TODO: Investigate what the byte data is
+            endOfSectionData += 705;
+
+            // Cache and return the position
+            return endOfSectionData;
+        }
 
         /// <summary>
         /// Deserialize the overlay header
