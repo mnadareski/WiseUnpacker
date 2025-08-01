@@ -28,8 +28,11 @@ namespace Test
             if (args.Length > 1)
                 outdir = Path.GetFullPath(args[1]);
 
+            // Create a new unpacker
+            var naive = new Unpacker(input);
+
             // Attempt to extract the file
-            if (Extractor.ExtractTo(input, outdir!))
+            if (naive.Run(outdir))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");

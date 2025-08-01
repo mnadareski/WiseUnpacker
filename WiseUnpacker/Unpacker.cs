@@ -5,13 +5,12 @@ using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Serialization.Wrappers;
-using static WiseUnpacker.Common;
 using WiseOverlayHeader = SabreTools.Serialization.Deserializers.WiseOverlayHeader;
 using WiseScript = SabreTools.Serialization.Deserializers.WiseScript;
 
-namespace WiseUnpacker.Naive
+namespace WiseUnpacker
 {
-    internal class Unpacker : IWiseUnpacker
+    public class Unpacker
     {
         #region Instance Variables
 
@@ -42,11 +41,18 @@ namespace WiseUnpacker.Naive
             _inputFile = new ReadOnlyCompositeStream(stream);
         }
 
-        /// <inheritdoc/>
-        public bool Run(string outputPath)
+        /// <summary>
+        /// Attempt to parse, extract, and rename all files from a WISE installer
+        /// </summary>
+        /// <param name="outputPath">Output directory for extracted files</param>
+        /// <returns>True if extraction was a success, false otherwise</returns>
+        public bool Run(string? outputPath)
         {
+            // Ensure the output path
+            outputPath ??= string.Empty;
+
             // Attempt to deserialize the file as either NE or PE
-            var wrapper = WrapperFactory.CreateExecutableWrapper(_inputFile);
+                var wrapper = WrapperFactory.CreateExecutableWrapper(_inputFile);
             if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
                 return false;
 
@@ -144,6 +150,99 @@ namespace WiseUnpacker.Naive
 
             // Close and return
             Close();
+            return true;
+        }
+
+        /// <summary>
+        /// Close the possible Wise installer
+        /// </summary>
+        private void Close()
+        {
+            _inputFile?.Close();
+        }
+
+        #region Helpers
+
+        /// <summary>
+        /// Attempt to extract WiseColors.dib
+        /// </summary>
+        /// TODO: Add CRC and size verification
+        private bool ExtractFile(string? filename, string outputPath, bool pkzip)
+        {
+            // Get an inflater to use
+            var inflater = new Inflater();
+
+            // Skip the PKZIP header, if it exists
+            string? zipName = null;
+            if (pkzip)
+                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
+
+            // Set the name from the zip header if missing
+            filename ??= zipName ?? Guid.NewGuid().ToString();
+
+            // Ensure directory separators are consistent
+            if (Path.DirectorySeparatorChar == '\\')
+                filename = filename.Replace('/', '\\');
+            else if (Path.DirectorySeparatorChar == '/')
+                filename = filename.Replace('\\', '/');
+
+            // Ensure the full output directory exists
+            filename = Path.Combine(outputPath, filename);
+            var directoryName = Path.GetDirectoryName(filename);
+            if (directoryName != null && !Directory.Exists(directoryName))
+                Directory.CreateDirectory(directoryName);
+
+            // Extract the file
+            if (!inflater.Inflate(_inputFile, filename))
+            {
+                Console.Error.WriteLine($"Could not extract {filename}");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Open a potential WISE installer file and any additional files
+        /// </summary>
+        /// <returns>True if the file could be opened, false otherwise</returns>
+        private static bool OpenFile(string name, out ReadOnlyCompositeStream? stream)
+        {
+            // If the file exists as-is
+            if (File.Exists(name))
+            {
+                var fileStream = File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+
+                // Strip the extension
+                name = Path.GetFileNameWithoutExtension(name);
+            }
+
+            // If the base name was provided, try to open the associated exe
+            else if (File.Exists($"{name}.exe"))
+            {
+                var fileStream = File.Open($"{name}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+            }
+
+            // Otherwise, the file cannot be opened
+            else
+            {
+                stream = null;
+                return false;
+            }
+
+            // Loop through and try to read all additional files
+            byte fileno = 2;
+            string extraPath = $"{name}.w{fileno:X}";
+            while (File.Exists(extraPath))
+            {
+                var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream.AddStream(fileStream);
+                fileno++;
+                extraPath = $"{name}.w{fileno:X}";
+            }
+
             return true;
         }
 
@@ -270,51 +369,45 @@ namespace WiseUnpacker.Naive
         }
 
         /// <summary>
-        /// Attempt to extract WiseColors.dib
+        /// Get CRC and Size from the PKZIP header
         /// </summary>
-        /// TODO: Add CRC and size verification
-        private bool ExtractFile(string? filename, string outputPath, bool pkzip)
+        private static bool ReadPKZIPHeader(Stream input, out uint crc, out uint size, out string? filename)
         {
-            // Get an inflater to use
-            var inflater = new Inflater();
+            filename = null;
 
-            // Skip the PKZIP header, if it exists
-            string? zipName = null;
-            if (pkzip)
-                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
-
-            // Set the name from the zip header if missing
-            filename ??= zipName ?? Guid.NewGuid().ToString();
-
-            // Ensure directory separators are consistent
-            if (Path.DirectorySeparatorChar == '\\')
-                filename = filename.Replace('/', '\\');
-            else if (Path.DirectorySeparatorChar == '/')
-                filename = filename.Replace('\\', '/');
-
-            // Ensure the full output directory exists
-            filename = Path.Combine(outputPath, filename);
-            var directoryName = Path.GetDirectoryName(filename);
-            if (directoryName != null && !Directory.Exists(directoryName))
-                Directory.CreateDirectory(directoryName);
-
-            // Extract the file
-            if (!inflater.Inflate(_inputFile, filename))
+            try
             {
-                Console.Error.WriteLine($"Could not extract {filename}");
+                _ = input.ReadUInt32LittleEndian(); // Signature
+                _ = input.ReadUInt16LittleEndian(); // Version
+                _ = input.ReadUInt16LittleEndian(); // Flags
+                _ = input.ReadUInt16LittleEndian(); // Compression method
+                _ = input.ReadUInt16LittleEndian(); // Modification time
+                _ = input.ReadUInt16LittleEndian(); // Modification date
+                crc = input.ReadUInt32LittleEndian();
+                size = input.ReadUInt32LittleEndian(); // Compressed size
+                _ = input.ReadUInt32LittleEndian(); // Uncompressed size
+                ushort filenameLength = input.ReadUInt16LittleEndian();
+                ushort extraLength = input.ReadUInt16LittleEndian();
+
+                if (filenameLength > 0)
+                {
+                    byte[] filenameBytes = input.ReadBytes(filenameLength);
+                    filename = Encoding.ASCII.GetString(filenameBytes);
+                }
+                if (extraLength > 0)
+                    _ = input.ReadBytes(extraLength);
+
+                return true;
+            }
+            catch
+            {
+                crc = 0;
+                size = 0;
                 return false;
             }
-
-            return true;
         }
 
-        /// <summary>
-        /// Close the possible Wise installer
-        /// </summary>
-        private void Close()
-        {
-            _inputFile?.Close();
-        }
+        #endregion
 
         #region Serialization -- Move to Serialization once Models is updated
 
