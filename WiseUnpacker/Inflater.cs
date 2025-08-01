@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using SabreTools.Compression.Deflate;
+using SabreTools.IO.Compression.Deflate;
 using SabreTools.Hashing;
 
 namespace WiseUnpacker
