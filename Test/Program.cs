@@ -29,10 +29,10 @@ namespace Test
                 outdir = Path.GetFullPath(args[1]);
 
             // Create a new unpacker
-            var naive = new Unpacker(input);
+            var unpacker = new Unpacker(input);
 
             // Attempt to extract the file
-            if (naive.Run(outdir))
+            if (unpacker.Run(outdir))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");
