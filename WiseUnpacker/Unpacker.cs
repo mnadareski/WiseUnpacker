@@ -15,9 +15,29 @@ namespace WiseUnpacker
         #region Instance Variables
 
         /// <summary>
+        /// Indicates the start of the deflated data
+        /// </summary>
+        private long _dataStart;
+
+        /// <summary>
         /// Input file to read and extract
         /// </summary>
         private readonly ReadOnlyCompositeStream _inputFile;
+
+        /// <summary>
+        /// Indicates if the file uses PKZIP
+        /// </summary>
+        private bool _isPkZip;
+
+        /// <summary>
+        /// Overlay header information
+        /// </summary>
+        private OverlayHeader? _overlayHeader;
+
+        /// <summary>
+        /// Script file information
+        /// </summary>
+        private ScriptFile? _scriptFile;
 
         #endregion
 
@@ -30,6 +50,7 @@ namespace WiseUnpacker
                 throw new FileNotFoundException(nameof(file));
 
             _inputFile = stream;
+            SetOverlayHeader();
         }
 
         /// <summary>
@@ -37,8 +58,8 @@ namespace WiseUnpacker
         /// </summary>
         public Unpacker(Stream stream)
         {
-            // Default options
             _inputFile = new ReadOnlyCompositeStream(stream);
+            SetOverlayHeader();
         }
 
         /// <summary>
@@ -51,106 +72,28 @@ namespace WiseUnpacker
             // Ensure the output path
             outputPath ??= string.Empty;
 
-            // Attempt to deserialize the file as either NE or PE
-                var wrapper = WrapperFactory.CreateExecutableWrapper(_inputFile);
-            if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
-                return false;
-
-            // Get the overlay offset
-            int overlayOffset = wrapper switch
-            {
-                NewExecutable nex => GetOverlayAddress(nex),
-                PortableExecutable pex => pex.OverlayAddress,
-                _ => -1,
-            };
-
-            // Validate the overlay offset
-            if (overlayOffset < 0 || overlayOffset >= _inputFile.Length)
-            {
-                Close();
-                return false;
-            }
-
-            // Seek to the overlay
-            _inputFile.Seek(overlayOffset, SeekOrigin.Begin);
-
-            // Attempt to parse the overlay data as a header
-            var overlayDeserializer = new WiseOverlayHeader();
-            var header = overlayDeserializer.Deserialize(_inputFile);
-            if (header == null)
-            {
-                Close();
-                return false;
-            }
-
-            // Get if the format is PKZIP packed or not
-#if NET20 || NET35
-            bool pkzip = (header.Flags & OverlayHeaderFlags.WISE_FLAG_PK_ZIP) != 0;
-#else
-            bool pkzip = header.Flags.HasFlag(OverlayHeaderFlags.WISE_FLAG_PK_ZIP);
-#endif
-
-            // Extract WiseColors.dib
-            long offset = _inputFile.Position;
-            if (header.DibDeflatedSize > 0 && !ExtractFile("WiseColors.dib", outputPath, pkzip))
-            {
-                Close();
-                return false;
-            }
-
-            // Extract WiseScript.bin
-            _inputFile.Seek(offset + header.DibDeflatedSize, SeekOrigin.Begin);
-            offset = _inputFile.Position;
-            if (header.WiseScriptDeflatedSize > 0 && !ExtractFile("WiseScript.bin", outputPath, pkzip))
-            {
-                Close();
-                return false;
-            }
-
-            // Extract WISE0001.DLL, if it exists
-            _inputFile.Seek(offset + header.WiseScriptDeflatedSize, SeekOrigin.Begin);
-            offset = _inputFile.Position;
-            if (header.WiseDllDeflatedSize > 0 && !ExtractFile("WISE0001.DLL", outputPath, pkzip))
-            {
-                Close();
-                return false;
-            }
-
-            // Extract PROGRESS.DLL, if it exists
-            _inputFile.Seek(offset + header.WiseDllDeflatedSize, SeekOrigin.Begin);
-            offset = _inputFile.Position;
-            if (header.ProgressDllDeflatedSize > 0 && !ExtractFile("PROGRESS.DLL", outputPath, pkzip))
-            {
-                Close();
-                return false;
-            }
-
-            // Extract FILE000X.DLL, if it exists
-            _inputFile.Seek(offset + header.ProgressDllDeflatedSize, SeekOrigin.Begin);
-            offset = _inputFile.Position;
-            if (header.SomeData5DeflatedSize > 0 && !ExtractFile(null, outputPath, pkzip))
+            // Extract the header-defined files
+            bool extracted = ExtractHeaderDefinedFiles(outputPath);
+            if (!extracted)
             {
                 Close();
                 return false;
             }
 
             // Open WiseScript.bin for parsing
-            var scriptStream = File.OpenRead(Path.Combine(outputPath, "WiseScript.bin"));
-            var scriptDeserializer = new WiseScript();
-            var scriptFile = scriptDeserializer.Deserialize(scriptStream);
-            if (scriptFile == null)
+            SetScriptFile(outputPath);
+            if (_scriptFile == null)
             {
                 Close();
                 return false;
             }
 
             // Process the state machine
-            long dataStart = offset + header.SomeData5DeflatedSize;
-            bool success = ProcessStateMachine(outputPath, pkzip, dataStart, scriptFile.States);
+            bool success = ProcessStateMachine(outputPath);
 
             // Close and return
             Close();
-            return true;
+            return success;
         }
 
         /// <summary>
@@ -164,17 +107,71 @@ namespace WiseUnpacker
         #region Helpers
 
         /// <summary>
+        /// Extract the predefined, static files defined in the header
+        /// </summary>
+        private bool ExtractHeaderDefinedFiles(string outputPath)
+        {
+            // Validate the overlay header
+            if (_overlayHeader == null)
+                return false;
+
+            // Extract WiseColors.dib
+            long offset = _inputFile.Position;
+            if (_overlayHeader.DibDeflatedSize > 0 && !ExtractFile("WiseColors.dib", outputPath))
+            {
+                return false;
+            }
+
+            // Extract WiseScript.bin
+            _inputFile.Seek(offset + _overlayHeader.DibDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (_overlayHeader.WiseScriptDeflatedSize > 0 && !ExtractFile("WiseScript.bin", outputPath))
+            {
+                return false;
+            }
+
+            // Extract WISE0001.DLL, if it exists
+            _inputFile.Seek(offset + _overlayHeader.WiseScriptDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (_overlayHeader.WiseDllDeflatedSize > 0 && !ExtractFile("WISE0001.DLL", outputPath))
+            {
+                return false;
+            }
+
+            // Extract PROGRESS.DLL, if it exists
+            _inputFile.Seek(offset + _overlayHeader.WiseDllDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (_overlayHeader.ProgressDllDeflatedSize > 0 && !ExtractFile("PROGRESS.DLL", outputPath))
+            {
+                return false;
+            }
+
+            // Extract FILE000X.DLL, if it exists
+            _inputFile.Seek(offset + _overlayHeader.ProgressDllDeflatedSize, SeekOrigin.Begin);
+            offset = _inputFile.Position;
+            if (_overlayHeader.SomeData5DeflatedSize > 0 && !ExtractFile(null, outputPath))
+            {
+                return false;
+            }
+
+            // Set the data start
+            _dataStart = offset + _overlayHeader.SomeData5DeflatedSize;
+
+            return true;
+        }
+
+        /// <summary>
         /// Attempt to extract WiseColors.dib
         /// </summary>
         /// TODO: Add CRC and size verification
-        private bool ExtractFile(string? filename, string outputPath, bool pkzip)
+        private bool ExtractFile(string? filename, string outputPath)
         {
             // Get an inflater to use
             var inflater = new Inflater();
 
             // Skip the PKZIP header, if it exists
             string? zipName = null;
-            if (pkzip)
+            if (_isPkZip)
                 ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
 
             // Set the name from the zip header if missing
@@ -200,6 +197,27 @@ namespace WiseUnpacker
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Get the overlay offset for the input file
+        /// </summary>
+        private int GetOverlayOffset()
+        {
+            // Attempt to deserialize the file as either NE or PE
+            var wrapper = WrapperFactory.CreateExecutableWrapper(_inputFile);
+            if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
+            {
+                return -1;
+            }
+
+            // Get the overlay offset
+            return wrapper switch
+            {
+                NewExecutable nex => GetOverlayAddress(nex),
+                PortableExecutable pex => pex.OverlayAddress,
+                _ => -1,
+            };
         }
 
         /// <summary>
@@ -234,13 +252,13 @@ namespace WiseUnpacker
 
             // Loop through and try to read all additional files
             byte fileno = 2;
-            string extraPath = $"{name}.w{fileno:X}";
+            string extraPath = $"{name}.W{fileno:X}";
             while (File.Exists(extraPath))
             {
                 var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream.AddStream(fileStream);
                 fileno++;
-                extraPath = $"{name}.w{fileno:X}";
+                extraPath = $"{name}.W{fileno:X}";
             }
 
             return true;
@@ -249,10 +267,10 @@ namespace WiseUnpacker
         /// <summary>
         /// Process the state machine and perform all required actions
         /// </summary>
-        private bool ProcessStateMachine(string outputPath, bool pkzip, long dataStart, MachineState[]? stateMachine)
+        private bool ProcessStateMachine(string outputPath)
         {
             // If the state machine is invalid
-            if (stateMachine == null || stateMachine.Length == 0)
+            if (_scriptFile?.States  == null || _scriptFile.States.Length == 0)
                 return false;
 
             // Initialize important loop information
@@ -262,7 +280,7 @@ namespace WiseUnpacker
             string? tempPath = null;
 
             // Loop through the state machine and process
-            foreach (var state in stateMachine)
+            foreach (var state in _scriptFile.States)
             {
                 switch (state.Op)
                 {
@@ -277,8 +295,8 @@ namespace WiseUnpacker
                             destFile = destFile.Replace($"%{tempPath}%", "tempfile");
 
                         destFile = destFile.Replace("%", string.Empty);
-                        _inputFile.Seek(dataStart + fileHeader.DeflateStart, SeekOrigin.Begin);
-                        if (!ExtractFile(destFile, outputPath, pkzip))
+                        _inputFile.Seek(_dataStart + fileHeader.DeflateStart, SeekOrigin.Begin);
+                        if (!ExtractFile(destFile, outputPath))
                             break;
 
                         break;
@@ -327,8 +345,8 @@ namespace WiseUnpacker
 
                             // Perform path replacements
                             string u06Name = $"WISE_0x06_{unknown0x06FileCount:X4}";
-                            _inputFile.Seek(dataStart + info.DeflateStart, SeekOrigin.Begin);
-                            if (!ExtractFile(u06Name, outputPath, pkzip))
+                            _inputFile.Seek(_dataStart + info.DeflateStart, SeekOrigin.Begin);
+                            if (!ExtractFile(u06Name, outputPath))
                                 break;
                         }
 
@@ -346,8 +364,8 @@ namespace WiseUnpacker
                             u14Name = u14Name.Replace($"%{tempPath}%", "tempfile");
 
                         u14Name = u14Name.Replace("%", string.Empty);
-                        _inputFile.Seek(dataStart + u14.DeflateStart, SeekOrigin.Begin);
-                        if (!ExtractFile(u14Name, outputPath, pkzip))
+                        _inputFile.Seek(_dataStart + u14.DeflateStart, SeekOrigin.Begin);
+                        if (!ExtractFile(u14Name, outputPath))
                             break;
 
                         break;
@@ -405,6 +423,46 @@ namespace WiseUnpacker
                 size = 0;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Set the overlay header from the input file
+        /// </summary>
+        private void SetOverlayHeader()
+        {
+            // Validate the overlay offset
+            int overlayOffset = GetOverlayOffset();
+            if (overlayOffset < 0 || overlayOffset >= _inputFile.Length)
+            {
+                _overlayHeader = null;
+                return;
+            }
+
+            // Seek to the overlay
+            _inputFile.Seek(overlayOffset, SeekOrigin.Begin);
+
+            // Attempt to parse the overlay data as a header
+            var overlayDeserializer = new WiseOverlayHeader();
+            _overlayHeader = overlayDeserializer.Deserialize(_inputFile);
+            if (_overlayHeader == null)
+                return;
+
+            // Set if the format is PKZIP packed or not
+#if NET20 || NET35
+            _isPkZip = (_overlayHeader.Flags & OverlayHeaderFlags.WISE_FLAG_PK_ZIP) != 0;
+#else
+            _isPkZip = _overlayHeader.Flags.HasFlag(OverlayHeaderFlags.WISE_FLAG_PK_ZIP);
+#endif
+        }
+
+        /// <summary>
+        /// Set the script file from the input file
+        /// </summary>
+        private void SetScriptFile(string outputPath)
+        {
+            var scriptStream = File.OpenRead(Path.Combine(outputPath, "WiseScript.bin"));
+            var scriptDeserializer = new WiseScript();
+            _scriptFile = scriptDeserializer.Deserialize(scriptStream);
         }
 
         #endregion
