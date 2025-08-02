@@ -28,7 +28,7 @@ namespace Test
             }
 
             // Attempt to extract the file
-            var unpacker = new Unpacker(input);
+            using var unpacker = new Unpacker(input);
             if (unpacker.Run(outdir!))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else

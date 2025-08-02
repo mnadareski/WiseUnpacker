@@ -10,7 +10,7 @@ using PKZIP = SabreTools.Serialization.Deserializers.PKZIP;
 
 namespace WiseUnpacker
 {
-    public class Unpacker
+    public class Unpacker : IDisposable
     {
         #region Instance Variables
 
@@ -67,31 +67,19 @@ namespace WiseUnpacker
             // Extract the header-defined files
             bool extracted = ExtractHeaderDefinedFiles(outputPath);
             if (!extracted)
-            {
-                Close();
                 return false;
-            }
 
             // Open WiseScript.bin for parsing
             SetScriptFile(outputPath);
             if (_scriptFile == null)
-            {
-                Close();
                 return false;
-            }
 
             // Process the state machine
-            bool success = ProcessStateMachine(outputPath);
-
-            // Close and return
-            Close();
-            return success;
+            return ProcessStateMachine(outputPath);
         }
 
-        /// <summary>
-        /// Close the possible Wise installer
-        /// </summary>
-        private void Close()
+        /// <inheritdoc/>
+        public void Dispose()
         {
             _inputFile?.Close();
         }
