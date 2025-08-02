@@ -609,8 +609,8 @@ namespace SabreTools.Serialization.Wrappers
                 data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract WiseScript.bin
-                if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug, out bytesRead, out _, out _))
-                    return false;
+            if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
             if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && WiseScriptDeflatedSize != bytesRead)
                 data.Seek(-bytesRead, SeekOrigin.Current);
 
@@ -622,6 +622,9 @@ namespace SabreTools.Serialization.Wrappers
 
             // Extract CTL3D32.DLL, if it exists
             // Has size but shouldn't be read for:
+            // - 4_2_19228_Vfw95-98.EXE
+            // - DTV39data.EXE
+            // - hcwsubid_setup.EXE
             // - InstallAlabamaSmithEscapePompeii.exe
             // - Wintv2K.EXE
             if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && !ExtractFile(data, "CTL3D32.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
@@ -649,8 +652,10 @@ namespace SabreTools.Serialization.Wrappers
 
             // Extract Ocxreg32.EXE, if it exists
             // Has size but shouldn't be read for:
-            // - Wintv2K.EXE
+            // - 4_2_19228_Vfw95-98.EXE
             // - DSETUP.EXE
+            // - DTV39data.EXE
+            // - Wintv2K.EXE
             if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && !ExtractFile(data, "Ocxreg32.EXE", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && RegToolDeflatedSize != bytesRead)
