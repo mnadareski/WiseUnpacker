@@ -606,19 +606,19 @@ namespace SabreTools.Serialization.Wrappers
             if (DibDeflatedSize > 0 && DibDeflatedSize < data.Length && !ExtractFile(data, "WiseColors.dib", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (DibDeflatedSize > 0 && DibDeflatedSize < data.Length && DibDeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {DibDeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract WiseScript.bin
-            if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug, out bytesRead, out _, out _))
-                return false;
+                if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                    return false;
             if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && WiseScriptDeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {WiseScriptDeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract WISE0001.DLL, if it exists
             if (WiseDllDeflatedSize > 0 && WiseDllDeflatedSize < data.Length && !ExtractFile(data, "WISE0001.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (WiseDllDeflatedSize > 0 && WiseDllDeflatedSize < data.Length && WiseDllDeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {WiseDllDeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract CTL3D32.DLL, if it exists
             // Has size but shouldn't be read for:
@@ -627,57 +627,58 @@ namespace SabreTools.Serialization.Wrappers
             if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && !ExtractFile(data, "CTL3D32.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && Ctl3d32DeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {Ctl3d32DeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract seventh file, if it exists
             if (SomeData7DeflatedSize > 0 && SomeData7DeflatedSize < data.Length && !ExtractFile(data, "FILE0007", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (SomeData7DeflatedSize > 0 && SomeData7DeflatedSize < data.Length && SomeData7DeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {SomeData7DeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract eighth file, if it exists
             if (SomeData8DeflatedSize > 0 && SomeData8DeflatedSize < data.Length && !ExtractFile(data, "FILE0008", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (SomeData8DeflatedSize > 0 && SomeData8DeflatedSize < data.Length && SomeData8DeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {SomeData8DeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract nineth file, if it exists
             if (SomeData9DeflatedSize > 0 && SomeData9DeflatedSize < data.Length && !ExtractFile(data, "FILE0009", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (SomeData9DeflatedSize > 0 && SomeData9DeflatedSize < data.Length && SomeData9DeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {SomeData9DeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract Ocxreg32.EXE, if it exists
             // Has size but shouldn't be read for:
+            // - Wintv2K.EXE
             // - DSETUP.EXE
             if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && !ExtractFile(data, "Ocxreg32.EXE", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && RegToolDeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {RegToolDeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract PROGRESS.DLL, if it exists
             if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && !ExtractFile(data, "PROGRESS.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && ProgressDllDeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {ProgressDllDeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract FILE000{n}.DLL, if it exists
             if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && !ExtractFile(data, "FILE00XX.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && SomeData6DeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {SomeData6DeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract install script, if it exists
             if (InstallScriptDeflatedSize > 0 && InstallScriptDeflatedSize < data.Length && !ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (InstallScriptDeflatedSize > 0 && InstallScriptDeflatedSize < data.Length && InstallScriptDeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {InstallScriptDeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract FILE000{n}.DAT, if it exists
             if (SomeData5DeflatedSize > 0 && SomeData5DeflatedSize < data.Length && !ExtractFile(data, "FILE00XX.DAT", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (SomeData5DeflatedSize > 0 && SomeData5DeflatedSize < data.Length && SomeData5DeflatedSize != bytesRead)
-                Console.WriteLine($"Mismatched read: {SomeData5DeflatedSize}, {bytesRead}");
+                data.Seek(-bytesRead, SeekOrigin.Current);
 
             dataStart = data.Position;
             return true;
