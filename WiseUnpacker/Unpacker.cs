@@ -3,10 +3,10 @@ using System.IO;
 using System.Text;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
+using SabreTools.Models.PKZIP;
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Serialization.Wrappers;
-using WiseOverlayHeader = SabreTools.Serialization.Deserializers.WiseOverlayHeader;
-using WiseScript = SabreTools.Serialization.Deserializers.WiseScript;
+using PKZIP = SabreTools.Serialization.Deserializers.PKZIP;
 
 namespace WiseUnpacker
 {
@@ -25,19 +25,14 @@ namespace WiseUnpacker
         private readonly ReadOnlyCompositeStream _inputFile;
 
         /// <summary>
-        /// Indicates if the file uses PKZIP
-        /// </summary>
-        private bool _isPkZip;
-
-        /// <summary>
         /// Overlay header information
         /// </summary>
-        private OverlayHeader? _overlayHeader;
+        private WiseOverlayHeader? _overlayHeader;
 
         /// <summary>
         /// Script file information
         /// </summary>
-        private ScriptFile? _scriptFile;
+        private WiseScript? _scriptFile;
 
         #endregion
 
@@ -109,16 +104,23 @@ namespace WiseUnpacker
         /// TODO: Add CRC and size verification
         private bool ExtractFile(string? filename, string outputPath)
         {
+            // Ignore invalid overlay headers
+            if (_overlayHeader == null)
+            {
+                Console.Error.WriteLine("Invalid overlay");
+                return false;
+            }
+
             // Get an inflater to use
             var inflater = new Inflater();
 
             // Skip the PKZIP header, if it exists
-            string? zipName = null;
-            if (_isPkZip)
-                ReadPKZIPHeader(_inputFile, out _, out _, out zipName);
+            LocalFileHeader? zipHeader = null;
+            if (_overlayHeader.IsPKZIP)
+                zipHeader = PKZIP.ParseLocalFileHeader(_inputFile);
 
             // Set the name from the zip header if missing
-            filename ??= zipName ?? Guid.NewGuid().ToString();
+            filename ??= zipHeader?.FileName ?? Guid.NewGuid().ToString();
 
             // Ensure directory separators are consistent
             if (Path.DirectorySeparatorChar == '\\')
@@ -193,85 +195,36 @@ namespace WiseUnpacker
             // Extract WiseColors.dib
             long offset = _inputFile.Position;
             if (_overlayHeader.DibDeflatedSize > 0 && !ExtractFile("WiseColors.dib", outputPath))
-            {
                 return false;
-            }
 
             // Extract WiseScript.bin
             _inputFile.Seek(offset + _overlayHeader.DibDeflatedSize, SeekOrigin.Begin);
             offset = _inputFile.Position;
             if (_overlayHeader.WiseScriptDeflatedSize > 0 && !ExtractFile("WiseScript.bin", outputPath))
-            {
                 return false;
-            }
 
             // Extract WISE0001.DLL, if it exists
             _inputFile.Seek(offset + _overlayHeader.WiseScriptDeflatedSize, SeekOrigin.Begin);
             offset = _inputFile.Position;
             if (_overlayHeader.WiseDllDeflatedSize > 0 && !ExtractFile("WISE0001.DLL", outputPath))
-            {
                 return false;
-            }
 
             // Extract PROGRESS.DLL, if it exists
             _inputFile.Seek(offset + _overlayHeader.WiseDllDeflatedSize, SeekOrigin.Begin);
             offset = _inputFile.Position;
             if (_overlayHeader.ProgressDllDeflatedSize > 0 && !ExtractFile("PROGRESS.DLL", outputPath))
-            {
                 return false;
-            }
 
             // Extract FILE000X.DLL, if it exists
             _inputFile.Seek(offset + _overlayHeader.ProgressDllDeflatedSize, SeekOrigin.Begin);
             offset = _inputFile.Position;
             if (_overlayHeader.SomeData5DeflatedSize > 0 && !ExtractFile(null, outputPath))
-            {
                 return false;
-            }
 
             // Set the data start
             _dataStart = offset + _overlayHeader.SomeData5DeflatedSize;
 
             return true;
-        }
-
-        /// <summary>
-        /// Get CRC and Size from the PKZIP header
-        /// </summary>
-        private static bool ReadPKZIPHeader(Stream input, out uint crc, out uint size, out string? filename)
-        {
-            filename = null;
-
-            try
-            {
-                _ = input.ReadUInt32LittleEndian(); // Signature
-                _ = input.ReadUInt16LittleEndian(); // Version
-                _ = input.ReadUInt16LittleEndian(); // Flags
-                _ = input.ReadUInt16LittleEndian(); // Compression method
-                _ = input.ReadUInt16LittleEndian(); // Modification time
-                _ = input.ReadUInt16LittleEndian(); // Modification date
-                crc = input.ReadUInt32LittleEndian();
-                size = input.ReadUInt32LittleEndian(); // Compressed size
-                _ = input.ReadUInt32LittleEndian(); // Uncompressed size
-                ushort filenameLength = input.ReadUInt16LittleEndian();
-                ushort extraLength = input.ReadUInt16LittleEndian();
-
-                if (filenameLength > 0)
-                {
-                    byte[] filenameBytes = input.ReadBytes(filenameLength);
-                    filename = Encoding.ASCII.GetString(filenameBytes);
-                }
-                if (extraLength > 0)
-                    _ = input.ReadBytes(extraLength);
-
-                return true;
-            }
-            catch
-            {
-                crc = 0;
-                size = 0;
-                return false;
-            }
         }
 
         #endregion
@@ -464,17 +417,7 @@ namespace WiseUnpacker
             _inputFile.Seek(overlayOffset, SeekOrigin.Begin);
 
             // Attempt to parse the overlay data as a header
-            var overlayDeserializer = new WiseOverlayHeader();
-            _overlayHeader = overlayDeserializer.Deserialize(_inputFile);
-            if (_overlayHeader == null)
-                return;
-
-            // Set if the format is PKZIP packed or not
-#if NET20 || NET35
-            _isPkZip = (_overlayHeader.Flags & OverlayHeaderFlags.WISE_FLAG_PK_ZIP) != 0;
-#else
-            _isPkZip = _overlayHeader.Flags.HasFlag(OverlayHeaderFlags.WISE_FLAG_PK_ZIP);
-#endif
+            _overlayHeader = WiseOverlayHeader.Create(_inputFile);
         }
 
         /// <summary>
@@ -483,8 +426,7 @@ namespace WiseUnpacker
         private void SetScriptFile(string outputPath)
         {
             var scriptStream = File.OpenRead(Path.Combine(outputPath, "WiseScript.bin"));
-            var scriptDeserializer = new WiseScript();
-            _scriptFile = scriptDeserializer.Deserialize(scriptStream);
+            _scriptFile = WiseScript.Create(scriptStream);
         }
 
         #endregion
