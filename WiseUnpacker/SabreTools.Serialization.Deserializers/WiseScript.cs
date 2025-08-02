@@ -116,6 +116,12 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled ScriptHeader on success, null on error</returns>
         private static ScriptHeader ParseScriptHeader(Stream data)
         {
+            // TODO: Investigate Shockwave_Installer.exe
+            // It seems to have too few bytes in the header.
+            // Before the Font, which is the first recognizable
+            // bit of data, there are 20 bytes of data. It
+            // is almost impossible to tell what they map to.
+
             var header = new ScriptHeader();
 
             header.Unknown_5 = data.ReadBytes(5);
@@ -357,7 +363,11 @@ namespace SabreTools.Serialization.Deserializers
             var obj = new ScriptUnknown0x0A();
 
             obj.Unknown_2 = data.ReadUInt16LittleEndian();
+
             obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            if (obj.UnknownString_1 == string.Empty)
+                obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+
             obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
             obj.UnknownString_3 = data.ReadNullTerminatedAnsiString();
 
@@ -511,7 +521,7 @@ namespace SabreTools.Serialization.Deserializers
                 byte nextByte = data.ReadByteValue();
                 data.Seek(-1, SeekOrigin.Current);
 
-                op0x18skip = nextByte != 0 ? 0 : 6;
+                op0x18skip = nextByte == 0 || nextByte == 0xFF ? 6 : 0;
             }
 
             // Skip additional bytes

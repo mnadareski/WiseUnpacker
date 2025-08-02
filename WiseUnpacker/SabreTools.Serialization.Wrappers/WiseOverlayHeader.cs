@@ -5,7 +5,9 @@ using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
+using SabreTools.Matching;
 using SabreTools.Models.WiseInstaller;
+using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
 {
@@ -19,6 +21,9 @@ namespace SabreTools.Serialization.Wrappers
         #endregion
 
         #region Extension Properties
+
+        /// <inheritdoc cref="OverlayHeader.Ctl3d32DeflatedSize"/>
+        public uint Ctl3d32DeflatedSize => Model.Ctl3d32DeflatedSize;
 
         /// <inheritdoc cref="OverlayHeader.DibDeflatedSize"/>
         public uint DibDeflatedSize => Model.DibDeflatedSize;
@@ -44,11 +49,29 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="OverlayHeader.ProgressDllDeflatedSize"/>
         public uint ProgressDllDeflatedSize => Model.ProgressDllDeflatedSize;
 
-        /// <inheritdoc cref="OverlayHeader.WiseDllDeflatedSize"/>
-        public uint WiseDllDeflatedSize => Model.WiseDllDeflatedSize;
-
         /// <inheritdoc cref="OverlayHeader.SomeData5DeflatedSize"/>
         public uint SomeData5DeflatedSize => Model.SomeData5DeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.SomeData6DeflatedSize"/>
+        public uint SomeData6DeflatedSize => Model.SomeData6DeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.SomeData7DeflatedSize"/>
+        public uint SomeData7DeflatedSize => Model.SomeData7DeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.InstallScriptDeflatedSize"/>
+        public uint InstallScriptDeflatedSize => Model.InstallScriptDeflatedSize ?? 0;
+
+        /// <inheritdoc cref="OverlayHeader.SomeData8DeflatedSize"/>
+        public uint SomeData8DeflatedSize => Model.SomeData8DeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.SomeData9DeflatedSize"/>
+        public uint SomeData9DeflatedSize => Model.SomeData9DeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.RegToolDeflatedSize"/>
+        public uint RegToolDeflatedSize => Model.RegToolDeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.WiseDllDeflatedSize"/>
+        public uint WiseDllDeflatedSize => Model.WiseDllDeflatedSize;
 
         /// <inheritdoc cref="OverlayHeader.WiseScriptDeflatedSize"/>
         public uint WiseScriptDeflatedSize => Model.WiseScriptDeflatedSize;
@@ -154,28 +177,15 @@ namespace SabreTools.Serialization.Wrappers
             if (data == null || !data.CanRead)
                 return false;
 
-            // Attempt to get the overlay offset
-            int overlayOffset = GetOverlayOffset(data, includeDebug);
-            if (overlayOffset < 0 || overlayOffset >= data.Length)
-            {
-                if (includeDebug) Console.Error.WriteLine($"Invalid overlay offset: {overlayOffset}");
-                return false;
-            }
-
             // Attempt to get the overlay header
-            data.Seek(overlayOffset, SeekOrigin.Begin);
-            var header = Create(data);
-            if (header == null)
+            if (!FindOverlayHeader(data, includeDebug, out var header) || header == null)
             {
                 if (includeDebug) Console.Error.WriteLine("Could not parse the overlay header");
                 return false;
             }
 
-            // Get the deflated data start
-            long dataStart = header.GetDataStart(data);
-
             // Extract the header-defined files
-            bool extracted = header.ExtractHeaderDefinedFiles(data, outputDirectory, includeDebug);
+            bool extracted = header.ExtractHeaderDefinedFiles(data, outputDirectory, includeDebug, out long dataStart);
             if (!extracted)
             {
                 if (includeDebug) Console.Error.WriteLine("Could not extract header-defined files");
@@ -240,45 +250,217 @@ namespace SabreTools.Serialization.Wrappers
         }
 
         /// <summary>
-        /// Get the overlay offset for the input file
+        /// Find the overlay header from the Wise installer, if possible
         /// </summary>
         /// <param name="data">Stream representing the Wise installer</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>Overlay offset within the file on success, -1 otherwise</returns>
-        private static int GetOverlayOffset(Stream data, bool includeDebug)
+        /// <param name="header">The found overlay header on success, null otherwise</param>
+        /// <returns>True if the header was found and valid, false otherwise</returns>
+        private static bool FindOverlayHeader(Stream data, bool includeDebug, out WiseOverlayHeader? header)
         {
+            // Set the default header value
+            header = null;
+
             // Attempt to deserialize the file as either NE or PE
-            var wrapper = WrapperFactory.CreateExecutableWrapper(data);
+            var wrapper = CreateExecutableWrapper(data);
             if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
             {
                 if (includeDebug) Console.Error.WriteLine("Only NE and PE executables are supported");
-                return -1;
+                return false;
             }
 
             // Get the overlay offset
-            return wrapper switch
+            long overlayOffset = wrapper switch
             {
-                NewExecutable nex => GetOverlayAddress(nex),
-                PortableExecutable pex => pex.OverlayAddress,
+                NewExecutable ne => GetOverlayAddress(ne),
+                PortableExecutable pe => pe.OverlayData != null && pe.OverlayData.Length > 0 ? pe.OverlayAddress : -1,
                 _ => -1,
             };
+
+            // Attempt to get the overlay header
+            if (overlayOffset >= 0 && overlayOffset < data.Length)
+            {
+                data.Seek(overlayOffset, SeekOrigin.Begin);
+                header = Create(data);
+                if (header != null)
+                    return true;
+            }
+
+            // If the file wasn't a PE, don't search for the header further
+            if (wrapper is not PortableExecutable pex)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not parse the overlay header");
+                return false;
+            }
+
+            // If there are no resources
+            if (pex.Model.OptionalHeader?.ResourceTable == null || pex.ResourceData == null)
+                return false;
+
+            // Get the resources that have an executable signature
+            bool exeResources = false;
+            foreach (var kvp in pex.ResourceData)
+            {
+                if (kvp.Value == null || kvp.Value is not byte[] ba)
+                    continue;
+                if (!ba.StartsWith(Models.MSDOS.Constants.SignatureBytes))
+                    continue;
+
+                exeResources = true;
+                break;
+            }
+
+            // If there are no executable resources
+            if (!exeResources)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not find the overlay header");
+                return false;
+            }
+
+            // Get the raw resource table offset
+            long resourceTableOffset = pex.Model.OptionalHeader.ResourceTable.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+            if (resourceTableOffset <= 0)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not find the overlay header");
+                return false;
+            }
+
+            // Search the resource table data for the offset
+            long resourceOffset = -1;
+            data.Seek(resourceTableOffset, SeekOrigin.Begin);
+            while (data.Position < resourceTableOffset + pex.Model.OptionalHeader.ResourceTable.Size && data.Position < data.Length)
+            {
+                ushort possibleSignature = data.ReadUInt16();
+                if (possibleSignature == Models.MSDOS.Constants.SignatureUInt16)
+                {
+                    resourceOffset = data.Position - 2;
+                    break;
+                }
+
+                data.Seek(-1, SeekOrigin.Current);
+            }
+
+            // If there was no valid offset, somehow
+            if (resourceOffset == -1)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not find the overlay header");
+                return false;
+            }
+
+            // Parse the executable and recurse
+            data.Seek(resourceOffset, SeekOrigin.Begin);
+            var resourceExe = CreateExecutableWrapper(data);
+            if (resourceExe is not PortableExecutable resourcePex)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not find the overlay header");
+                return false;
+            }
+
+            // Get the end of the file, if possible
+            long endOfFile = resourcePex.GetEndOfFile();
+            if (endOfFile == -1)
+                return false;
+
+            // If the section table is missing
+            if (resourcePex.Model.SectionTable == null)
+                return false;
+
+            // If we have certificate data, use that as the end
+            if (resourcePex.Model.OptionalHeader?.CertificateTable != null)
+            {
+                int certificateTableAddress = (int)resourcePex.Model.OptionalHeader.CertificateTable.VirtualAddress.ConvertVirtualAddress(resourcePex.Model.SectionTable);
+                if (certificateTableAddress != 0 && resourceOffset + certificateTableAddress < endOfFile)
+                    endOfFile = resourceOffset + certificateTableAddress;
+            }
+
+            // Search through all sections and find the furthest a section goes
+            overlayOffset = -1;
+            foreach (var section in resourcePex.Model.SectionTable)
+            {
+                // If we have an invalid section
+                if (section == null)
+                    continue;
+
+                // If we have an invalid section address
+                int sectionAddress = (int)section.VirtualAddress.ConvertVirtualAddress(resourcePex.Model.SectionTable);
+                if (sectionAddress == 0)
+                    continue;
+
+                // If we have an invalid section size
+                if (section.SizeOfRawData == 0 && section.VirtualSize == 0)
+                    continue;
+
+                // Get the real section size
+                int sectionSize;
+                if (section.SizeOfRawData < section.VirtualSize)
+                    sectionSize = (int)section.VirtualSize;
+                else
+                    sectionSize = (int)section.SizeOfRawData;
+
+                // Compare and set the end of section data
+                if (resourceOffset + sectionAddress + sectionSize > overlayOffset)
+                    overlayOffset = resourceOffset + sectionAddress + sectionSize;
+            }
+
+            // If we didn't find the end of section data
+            if (overlayOffset < 0 || overlayOffset >= endOfFile)
+            {
+                if (includeDebug) Console.Error.WriteLine($"Invalid overlay offset: {overlayOffset}");
+                return false;
+            }
+
+            // Attempt to get the overlay header
+            data.Seek(overlayOffset, SeekOrigin.Begin);
+            header = Create(data);
+            return header != null;
         }
 
         /// <summary>
-        /// Get the start of the deflated data
+        /// Create an instance of a wrapper based on the executable type
         /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
-        /// <returns>Offset for the start of the deflated data</returns>
-        /// <remarks>Assumes that the current stream position is directly after the overlay header</remarks>
-        /// TODO: Find the data offset without requiring the header?
-        private long GetDataStart(Stream data)
+        /// <param name="stream">Stream data to parse</param>
+        /// <returns>IWrapper representing the executable, null on error</returns>
+        /// <remarks>Adapted from SabreTools.Serialization.Wrappers.WrapperFactory</remarks>
+        private static IWrapper? CreateExecutableWrapper(Stream stream)
         {
-            return data.Position
-                + DibDeflatedSize
-                + WiseScriptDeflatedSize
-                + WiseDllDeflatedSize
-                + ProgressDllDeflatedSize
-                + SomeData5DeflatedSize;
+            // Cache the current position
+            long current = stream.Position;
+
+            // Try to get an MS-DOS wrapper first
+            var wrapper = MSDOS.Create(stream);
+            if (wrapper == null || wrapper is not MSDOS msdos)
+                return null;
+
+            // Check for a valid new executable address
+            if (msdos.Model.Header?.NewExeHeaderAddr == null || current + msdos.Model.Header.NewExeHeaderAddr >= stream.Length)
+                return wrapper;
+
+            // Try to read the executable info
+            stream.Seek(current + msdos.Model.Header.NewExeHeaderAddr, SeekOrigin.Begin);
+            var magic = stream.ReadBytes(4);
+
+            // If we didn't get valid data at the offset
+            if (magic == null)
+            {
+                return wrapper;
+            }
+
+            // New Executable
+            else if (magic.StartsWith(Models.NewExecutable.Constants.SignatureBytes))
+            {
+                stream.Seek(current, SeekOrigin.Begin);
+                return NewExecutable.Create(stream);
+            }
+
+            // Portable Executable
+            else if (magic.StartsWith(Models.PortableExecutable.Constants.SignatureBytes))
+            {
+                stream.Seek(current, SeekOrigin.Begin);
+                return PortableExecutable.Create(stream);
+            }
+
+            // Everything else fails
+            return null;
         }
 
         /// <summary>
@@ -294,12 +476,22 @@ namespace SabreTools.Serialization.Wrappers
         private bool ExtractFile(Stream data,
             string? filename,
             string outputDirectory,
-            bool includeDebug)
+            bool includeDebug,
+            out long bytesRead,
+            out long bytesWritten,
+            out uint writtenCrc)
         {
+            // Cache the current offset
+            long current = data.Position;
+
             // Skip the PKZIP header, if it exists
             Models.PKZIP.LocalFileHeader? zipHeader = null;
+            long zipHeaderBytes = 0;
             if (IsPKZIP)
+            {
                 zipHeader = Deserializers.PKZIP.ParseLocalFileHeader(data);
+                zipHeaderBytes = data.Position - current;
+            }
 
             // Set the name from the zip header if missing
             filename ??= zipHeader?.FileName ?? Guid.NewGuid().ToString();
@@ -317,10 +509,25 @@ namespace SabreTools.Serialization.Wrappers
                 Directory.CreateDirectory(directoryName);
 
             // Extract the file
-            if (!Inflate(data, filename, out long inputSize, out long outputSize, out uint crc))
+            if (!Inflate(data, filename, out bytesRead, out bytesWritten, out writtenCrc))
             {
                 if (includeDebug) Console.Error.WriteLine($"Could not extract {filename}");
                 return false;
+            }
+
+            // If not PKZIP, read the checksum bytes
+            if (!IsPKZIP)
+            {
+                data.Seek(current + bytesRead, SeekOrigin.Begin);
+                _ = data.ReadUInt32LittleEndian();
+                bytesRead += 4;
+            }
+
+            // Otherwise, account for the header bytes read
+            else
+            {
+                bytesRead += zipHeaderBytes;
+                data.Seek(current + bytesRead, SeekOrigin.Begin);
             }
 
             return true;
@@ -341,12 +548,15 @@ namespace SabreTools.Serialization.Wrappers
             ScriptDeflateInfo obj,
             int index,
             string outputDirectory,
-            bool includeDebug)
+            bool includeDebug,
+            out long bytesRead,
+            out long bytesWritten,
+            out uint writtenCrc)
         {
             // Perform path replacements
             string filename = $"WISE_0x06_{index:X4}";
             data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return ExtractFile(data, filename, outputDirectory, includeDebug);
+            return ExtractFile(data, filename, outputDirectory, includeDebug, out bytesRead, out bytesWritten, out writtenCrc);
         }
 
         /// <summary>
@@ -356,7 +566,6 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="dataStart">Start of the deflated data</param>
         /// <param name="obj">Deflate information</param>
         /// <param name="index">File index for automatic naming</param>
-        /// <param name="tempPath">Temp path defined by the state machine</param>
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if the file extracted successfully, false otherwise</returns>
@@ -364,47 +573,17 @@ namespace SabreTools.Serialization.Wrappers
             long dataStart,
             ScriptFileHeader obj,
             int index,
-            string? tempPath,
             string outputDirectory,
-            bool includeDebug)
+            bool includeDebug,
+            out long bytesRead,
+            out long bytesWritten,
+            out uint writtenCrc)
         {
             // Perform path replacements
             string filename = obj.DestFile ?? $"WISE{index:X4}";
-            if (tempPath != null)
-                filename = filename.Replace($"%{tempPath}%", "tempfile");
-
             filename = filename.Replace("%", string.Empty);
             data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return ExtractFile(data, filename, outputDirectory, includeDebug);
-        }
-
-        /// <summary>
-        /// Attempt to extract a file defined by a file header
-        /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
-        /// <param name="dataStart">Start of the deflated data</param>
-        /// <param name="obj">Deflate information</param>
-        /// <param name="index">File index for automatic naming</param>
-        /// <param name="tempPath">Temp path defined by the state machine</param>
-        /// <param name="outputDirectory">Output directory to write to</param>
-        /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>True if the file extracted successfully, false otherwise</returns>
-        private bool ExtractFile(Stream data,
-            long dataStart,
-            ScriptUnknown0x14 obj,
-            int index,
-            string? tempPath,
-            string outputDirectory,
-            bool includeDebug)
-        {
-            // Perform path replacements
-            string filename = obj.Name ?? $"WISE_0x14_{index:X4}";
-            if (tempPath != null)
-                filename = filename.Replace($"%{tempPath}%", "tempfile");
-
-            filename = filename.Replace("%", string.Empty);
-            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return ExtractFile(data, filename, outputDirectory, includeDebug);
+            return ExtractFile(data, filename, outputDirectory, includeDebug, out bytesRead, out bytesWritten, out writtenCrc);
         }
 
         /// <summary>
@@ -416,36 +595,91 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>True if the files extracted successfully, false otherwise</returns>
         private bool ExtractHeaderDefinedFiles(Stream data,
             string outputDirectory,
-            bool includeDebug)
+            bool includeDebug,
+            out long dataStart)
         {
+            // Determine where the remaining compressed data starts
+            dataStart = data.Position;
+            long bytesRead = -1;
+
             // Extract WiseColors.dib, if it exists
-            long offset = data.Position;
-            if (DibDeflatedSize > 0 && !ExtractFile(data, "WiseColors.dib", outputDirectory, includeDebug))
+            if (DibDeflatedSize > 0 && DibDeflatedSize < data.Length && !ExtractFile(data, "WiseColors.dib", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
+            if (DibDeflatedSize > 0 && DibDeflatedSize < data.Length && DibDeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {DibDeflatedSize}, {bytesRead}");
 
             // Extract WiseScript.bin
-            data.Seek(offset + DibDeflatedSize, SeekOrigin.Begin);
-            offset = data.Position;
-            if (WiseScriptDeflatedSize > 0 && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug))
+            if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
+            if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && WiseScriptDeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {WiseScriptDeflatedSize}, {bytesRead}");
 
             // Extract WISE0001.DLL, if it exists
-            data.Seek(offset + WiseScriptDeflatedSize, SeekOrigin.Begin);
-            offset = data.Position;
-            if (WiseDllDeflatedSize > 0 && !ExtractFile(data, "WISE0001.DLL", outputDirectory, includeDebug))
+            if (WiseDllDeflatedSize > 0 && WiseDllDeflatedSize < data.Length && !ExtractFile(data, "WISE0001.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
+            if (WiseDllDeflatedSize > 0 && WiseDllDeflatedSize < data.Length && WiseDllDeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {WiseDllDeflatedSize}, {bytesRead}");
+
+            // Extract CTL3D32.DLL, if it exists
+            // Has size but shouldn't be read for:
+            // - InstallAlabamaSmithEscapePompeii.exe
+            // - Wintv2K.EXE
+            if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && !ExtractFile(data, "CTL3D32.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && Ctl3d32DeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {Ctl3d32DeflatedSize}, {bytesRead}");
+
+            // Extract seventh file, if it exists
+            if (SomeData7DeflatedSize > 0 && SomeData7DeflatedSize < data.Length && !ExtractFile(data, "FILE0007", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (SomeData7DeflatedSize > 0 && SomeData7DeflatedSize < data.Length && SomeData7DeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {SomeData7DeflatedSize}, {bytesRead}");
+
+            // Extract eighth file, if it exists
+            if (SomeData8DeflatedSize > 0 && SomeData8DeflatedSize < data.Length && !ExtractFile(data, "FILE0008", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (SomeData8DeflatedSize > 0 && SomeData8DeflatedSize < data.Length && SomeData8DeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {SomeData8DeflatedSize}, {bytesRead}");
+
+            // Extract nineth file, if it exists
+            if (SomeData9DeflatedSize > 0 && SomeData9DeflatedSize < data.Length && !ExtractFile(data, "FILE0009", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (SomeData9DeflatedSize > 0 && SomeData9DeflatedSize < data.Length && SomeData9DeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {SomeData9DeflatedSize}, {bytesRead}");
+
+            // Extract Ocxreg32.EXE, if it exists
+            // Has size but shouldn't be read for:
+            // - DSETUP.EXE
+            if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && !ExtractFile(data, "Ocxreg32.EXE", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && RegToolDeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {RegToolDeflatedSize}, {bytesRead}");
 
             // Extract PROGRESS.DLL, if it exists
-            data.Seek(offset + WiseDllDeflatedSize, SeekOrigin.Begin);
-            offset = data.Position;
-            if (ProgressDllDeflatedSize > 0 && !ExtractFile(data, "PROGRESS.DLL", outputDirectory, includeDebug))
+            if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && !ExtractFile(data, "PROGRESS.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
+            if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && ProgressDllDeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {ProgressDllDeflatedSize}, {bytesRead}");
 
-            // Extract FILE000X.DLL, if it exists
-            data.Seek(offset + ProgressDllDeflatedSize, SeekOrigin.Begin);
-            if (SomeData5DeflatedSize > 0 && !ExtractFile(data, null, outputDirectory, includeDebug))
+            // Extract FILE000{n}.DLL, if it exists
+            if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && !ExtractFile(data, "FILE00XX.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
+            if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && SomeData6DeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {SomeData6DeflatedSize}, {bytesRead}");
 
+            // Extract install script, if it exists
+            if (InstallScriptDeflatedSize > 0 && InstallScriptDeflatedSize < data.Length && !ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (InstallScriptDeflatedSize > 0 && InstallScriptDeflatedSize < data.Length && InstallScriptDeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {InstallScriptDeflatedSize}, {bytesRead}");
+
+            // Extract FILE000{n}.DAT, if it exists
+            if (SomeData5DeflatedSize > 0 && SomeData5DeflatedSize < data.Length && !ExtractFile(data, "FILE00XX.DAT", outputDirectory, includeDebug, out bytesRead, out _, out _))
+                return false;
+            if (SomeData5DeflatedSize > 0 && SomeData5DeflatedSize < data.Length && SomeData5DeflatedSize != bytesRead)
+                Console.WriteLine($"Mismatched read: {SomeData5DeflatedSize}, {bytesRead}");
+
+            dataStart = data.Position;
             return true;
         }
 
@@ -521,7 +755,6 @@ namespace SabreTools.Serialization.Wrappers
             // Initialize important loop information
             int normalFileCount = 0;
             int unknown0x06FileCount = 0;
-            int unknown0x14FileCount = 0;
             string? tempPath = null;
 
             // Loop through the state machine and process
@@ -534,7 +767,7 @@ namespace SabreTools.Serialization.Wrappers
                             return false;
 
                         // Write to the output directory, logging on error
-                        if (!ExtractFile(data, dataStart, fileHeader, ++normalFileCount, tempPath, outputDirectory, includeDebug))
+                        if (!ExtractFile(data, dataStart, fileHeader, ++normalFileCount, outputDirectory, includeDebug, out _, out _, out _))
                             Console.Error.WriteLine($"{fileHeader.DestFile} failed to write!");
 
                         break;
@@ -580,21 +813,14 @@ namespace SabreTools.Serialization.Wrappers
                         // Write to the output directory, logging on error
                         foreach (var info in u06.DeflateInfo.Info)
                         {
-                            if (!ExtractFile(data, dataStart, info, ++unknown0x06FileCount, outputDirectory, includeDebug))
+                            if (!ExtractFile(data, dataStart, info, ++unknown0x06FileCount, outputDirectory, includeDebug, out _, out _, out _))
                                 Console.Error.WriteLine($"WISE_0x06_{unknown0x06FileCount} failed to write!");
                         }
 
                         break;
 
                     case OperationCode.UnknownDeflatedFile0x14:
-                        unknown0x14FileCount++;
-                        if (state.Data is not ScriptUnknown0x14 u14)
-                            return false;
-
-                        // Write to the output directory, logging on error
-                        if (!ExtractFile(data, dataStart, u14, ++normalFileCount, tempPath, outputDirectory, includeDebug))
-                            Console.Error.WriteLine($"{u14.Name} failed to write!");
-
+                        // TODO: Figure out how to properly support these files
                         break;
 
                     case OperationCode.TempFilename:

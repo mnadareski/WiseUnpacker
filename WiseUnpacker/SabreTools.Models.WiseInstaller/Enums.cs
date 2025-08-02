@@ -171,6 +171,11 @@ namespace SabreTools.Models.WiseInstaller
         /// as 0x15? or maybe even 0x23?
         /// </summary>
         ReadByteAndStrings = 0x30,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x31 = 0x31,
     }
 
     /// <summary>
@@ -181,7 +186,10 @@ namespace SabreTools.Models.WiseInstaller
     {
         WISE_FLAG_UNKNOWN_1 = 0x00000001,
 
-        WISE_FLAG_UNKNOWN_2 = 0x00000002,
+        /// <summary>
+        /// Possibly indicates presence of PROGRESS.DLL
+        /// </summary>
+        WISE_FLAG_PROGRESS = 0x00000002,
 
         WISE_FLAG_UNKNOWN_3 = 0x00000004,
 
@@ -198,6 +206,9 @@ namespace SabreTools.Models.WiseInstaller
 
         WISE_FLAG_UNKNOWN_8 = 0x00000080,
 
+        /// <summary>
+        /// Indicates that PKZIP containers are used
+        /// </summary>
         WISE_FLAG_PK_ZIP = 0x00000100,
 
         WISE_FLAG_UNKNOWN_10 = 0x00000200,

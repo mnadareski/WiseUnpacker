@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     public class ScriptUnknown0x0A : MachineStateData
     {
         /// <summary>
-        /// 0x0200
+        /// 0x0001, 0x0002, 0x0302
         /// </summary>
         public ushort Unknown_2 { get; set; }
 

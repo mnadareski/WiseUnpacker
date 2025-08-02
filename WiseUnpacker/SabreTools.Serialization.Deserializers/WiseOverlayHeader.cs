@@ -55,13 +55,14 @@ namespace SabreTools.Serialization.Deserializers
             header.WiseScriptInflatedSize = data.ReadUInt32LittleEndian();
             header.WiseScriptDeflatedSize = data.ReadUInt32LittleEndian();
             header.WiseDllDeflatedSize = data.ReadUInt32LittleEndian();
-            header.UnknownU32_1 = data.ReadUInt32LittleEndian();
+            header.Ctl3d32DeflatedSize = data.ReadUInt32LittleEndian();
             header.UnknownU32_2 = data.ReadUInt32LittleEndian();
-            header.UnknownU32_3 = data.ReadUInt32LittleEndian();
+            header.RegToolDeflatedSize = data.ReadUInt32LittleEndian();
             header.ProgressDllDeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData6DeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData7DeflatedSize = data.ReadUInt32LittleEndian();
-            header.Unknown_8 = data.ReadBytes(8);
+            header.SomeData8DeflatedSize = data.ReadUInt32LittleEndian();
+            header.SomeData9DeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData5DeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData5InflatedSize = data.ReadUInt32LittleEndian();
             header.EOF = data.ReadUInt32LittleEndian();
@@ -77,6 +78,14 @@ namespace SabreTools.Serialization.Deserializers
 
             header.DibInflatedSize = data.ReadUInt32LittleEndian();
             header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
+            if (header.Endianness != Endianness.BigEndian && header.Endianness != Endianness.LittleEndian)
+            {
+                data.Seek(-2, SeekOrigin.Current);
+                header.InstallScriptDeflatedSize = data.ReadUInt32LittleEndian();
+                header.UnknownU32_4 = data.ReadUInt32LittleEndian();
+                header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
+            }
+
             header.InitTextLen = data.ReadByteValue();
             if (header.InitTextLen > 0)
             {

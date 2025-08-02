@@ -35,25 +35,22 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Inflated size of the Wise installer script
         /// </summary>
-        /// <remarks>Second file</remarks>
         public uint WiseScriptInflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of the Wise installer script
         /// </summary>
-        /// <remarks>Second file</remarks>
         public uint WiseScriptDeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of WISE0001.DLL
         /// </summary>
-        /// <remarks>Third file</remarks>
         public uint WiseDllDeflatedSize { get; set; }
 
         /// <summary>
-        /// Unknown
+        /// Deflated size of CTL3D32.DLL
         /// </summary>
-        public uint UnknownU32_1 { get; set; }
+        public uint Ctl3d32DeflatedSize { get; set; }
 
         /// <summary>
         /// Unknown
@@ -61,14 +58,13 @@ namespace SabreTools.Models.WiseInstaller
         public uint UnknownU32_2 { get; set; }
 
         /// <summary>
-        /// Unknown
+        /// Deflated size of Ocxreg32.EXE,
         /// </summary>
-        public uint UnknownU32_3 { get; set; }
+        public uint RegToolDeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of PROGRESS.DLL
         /// </summary>
-        /// <remarks>Fourth file</remarks>
         public uint ProgressDllDeflatedSize { get; set; }
 
         /// <summary>
@@ -82,21 +78,24 @@ namespace SabreTools.Models.WiseInstaller
         public uint SomeData7DeflatedSize { get; set; }
 
         /// <summary>
-        /// Unknown
+        /// Deflated size of unknown data
         /// </summary>
-        /// <remarks>8 bytes</remarks>
-        public byte[]? Unknown_8 { get; set; }
+        /// <remarks>Samples were MS-DOS executables</remarks>
+        public uint SomeData8DeflatedSize { get; set; }
+
+        /// <summary>
+        /// Deflated size of unknown data
+        /// </summary>
+        public uint SomeData9DeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of FILE000{n}.DAT
         /// </summary>
-        /// <remarks>Fifth file</remarks>
         public uint SomeData5DeflatedSize { get; set; }
 
         /// <summary>
         /// Inflated size of FILE000{n}.DAT
         /// </summary>
-        /// <remarks>Fifth file</remarks>
         public uint SomeData5InflatedSize { get; set; }
 
         /// <summary>
@@ -119,6 +118,18 @@ namespace SabreTools.Models.WiseInstaller
         /// </summary>
         /// <remarks>First file</remarks>
         public uint DibInflatedSize { get; set; }
+
+        /// <summary>
+        /// Deflated size of the install script
+        /// </summary>
+        /// <remarks>Only present in later versions</remarks>
+        public uint? InstallScriptDeflatedSize { get; set; }
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        /// <remarks>Only present in later versions</remarks>
+        public uint? UnknownU32_4 { get; set; }
 
         /// <summary>
         /// Endianness of the file(?)
