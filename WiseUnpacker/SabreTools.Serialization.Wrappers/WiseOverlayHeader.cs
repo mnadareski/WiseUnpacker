@@ -662,8 +662,8 @@ namespace SabreTools.Serialization.Wrappers
             if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && ProgressDllDeflatedSize != bytesRead)
                 data.Seek(-bytesRead, SeekOrigin.Current);
 
-            // Extract FILE000{n}.DLL, if it exists
-            if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && !ExtractFile(data, "FILE00XX.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            // Extract FILE0006, if it exists
+            if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && !ExtractFile(data, "FILE0006", outputDirectory, includeDebug, out bytesRead, out _, out _))
                 return false;
             if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && SomeData6DeflatedSize != bytesRead)
                 data.Seek(-bytesRead, SeekOrigin.Current);
