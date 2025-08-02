@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using SabreTools.IO.Extensions;
 using SabreTools.Serialization.Wrappers;
 
 namespace Test
@@ -8,79 +9,68 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            // Valide the arguments
-            if (args == null || args.Length == 0)
+            // Get the options from the arguments
+            var options = Options.ParseOptions(args);
+
+            // If we have an invalid state
+            if (options == null)
             {
-                DisplayHelp("One input file path required");
+                Options.DisplayHelp();
                 return;
             }
 
-            // Get the input path and optional output directory
-            string input = args[0];
-            string? outdir = args.Length > 1 ? args[1] : null;
-
-            // Generate an output directory
-            outdir = GenerateOutdir(input, outdir);
-            if (string.IsNullOrEmpty(outdir))
+            // Loop through the input paths
+            foreach (string inputPath in options.InputPaths)
             {
-                DisplayHelp("Could not determine output path");
-                return;
+                ExtractPath(inputPath, options.OutputPath, options.Debug);
             }
 
-            // Attempt to extract the file
-            if (WiseOverlayHeader.ExtractAll(input, outdir!, includeDebug: false))
-                Console.WriteLine($"Extracted {input} to {outdir}");
+            
+        }
+
+        /// <summary>
+        /// Wrapper to extract data for a single path
+        /// </summary>
+        /// <param name="path">File or directory path</param>
+        /// <param name="outputDirectory">Output directory path</param>
+        /// <param name="includeDebug">Enable including debug information</param>
+        private static void ExtractPath(string path, string outputDirectory, bool includeDebug)
+        {
+            // Normalize by getting the full path
+            path = Path.GetFullPath(path);
+            Console.WriteLine($"Checking possible path: {path}");
+
+            // Check if the file or directory exists
+            if (File.Exists(path))
+            {
+                ExtractFile(path, outputDirectory, includeDebug);
+            }
+            else if (Directory.Exists(path))
+            {
+                foreach (string file in IOExtensions.SafeEnumerateFiles(path, "*", SearchOption.AllDirectories))
+                {
+                    ExtractFile(file, outputDirectory, includeDebug);
+                }
+            }
             else
-                Console.WriteLine(value: $"Failed to extract {input}!");
+            {
+                Console.WriteLine($"{path} does not exist, skipping...");
+            }
         }
 
         /// <summary>
-        /// Display a basic help text
+        /// Wrapper to extract data for a single file
         /// </summary>
-        /// <param name="err">Additional error text to display, can be null to ignore</param>
-        private static void DisplayHelp(string? err = null)
+        /// <param name="file">File path</param>
+        /// <param name="outputDirectory">Output directory path</param>
+        /// <param name="includeDebug">Enable including debug information</param>
+        private static void ExtractFile(string file, string outputDirectory, bool includeDebug)
         {
-            if (!string.IsNullOrEmpty(err))
-                Console.WriteLine($"Error: {err}");
-
-            Console.WriteLine("Usage: Test <input> [output]");
-            Console.WriteLine();
-            Console.WriteLine("<input> is required and must be the path to the input file.");
-            Console.WriteLine("Only one path can be specified at a time.");
-            Console.WriteLine();
-            Console.WriteLine("[output] is optional and represents an output folder for extracted files.");
-            Console.WriteLine("If not specified, a folder will be generated next to the input file.");
-        }
-
-        /// <summary>
-        /// Generate the output directory path, if possible
-        /// </summary>
-        /// <param name="input">Input path to generate from</param>
-        /// <param name="outdir">User provided output directory</param>
-        /// <returns>Output directory path on success, null on error</returns>
-        private static string? GenerateOutdir(string input, string? outdir)
-        {
-            // If the file path is not valid
-            if (string.IsNullOrEmpty(input) || !File.Exists(input))
-                return null;
-
-            // Use the provided output directory, if possible
-            if (outdir != null)
-                return Path.GetFullPath(outdir);
-
-            // Get the full path for the input, if possible
-            input = Path.GetFullPath(input);
-
-            // Get the directory name and filename without extension for processing
-            string? directoryName = Path.GetDirectoryName(input);
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(input);
-
-            // Return an output path based on the two parts
-            outdir = fileNameWithoutExtension;
-            if (!string.IsNullOrEmpty(directoryName))
-                outdir = Path.Combine(directoryName, outdir);
-
-            return outdir;
+            // Attempt to extract the file
+            if (WiseOverlayHeader.ExtractAll(file, outputDirectory, includeDebug))
+                Console.WriteLine($"Extracted {file} to {outputDirectory}");
+            else
+                Console.WriteLine(value: $"Failed to extract {file}!");
         }
     }
 }
