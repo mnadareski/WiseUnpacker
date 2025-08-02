@@ -13,6 +13,42 @@ namespace SabreTools.Serialization.Wrappers
 {
     public class WiseOverlayHeader : WrapperBase<OverlayHeader>
     {
+        #region Enums
+
+        /// <summary>
+        /// Represents the status returned from extracting a file
+        /// </summary>
+        private enum ExtractStatus
+        {
+            /// <summary>
+            /// Extraction wasn't performed because the inputs were invalid
+            /// </summary>
+            INVALID,
+
+            /// <summary>
+            /// No issues with the extraction
+            /// </summary>
+            GOOD,
+
+            /// <summary>
+            /// File extracted but was the wrong size
+            /// </summary>
+            /// <remarks>Rewinds the stream and deletes the bad file</remarks>
+            WRONG_SIZE,
+
+            /// <summary>
+            /// File extracted but had the wrong CRC-32 value
+            /// </summary>
+            BAD_CRC,
+
+            /// <summary>
+            /// Extraction failed entirely
+            /// </summary>
+            FAIL,
+        }
+
+        #endregion
+
         #region Descriptive Properties
 
         /// <inheritdoc/>
@@ -469,18 +505,27 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="data">Stream representing the Wise installer</param>
         /// <param name="filename">Output filename, null to auto-generate</param>
         /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="expectedBytesRead">Expected number of bytes to read during inflation, -1 to ignore</param>
+        /// <param name="expectedBytesWritten">Expected number of bytes to written during inflation, -1 to ignore</param>
+        /// <param name="expectedCrc">Expected CRC-32 of the output file, 0 to ignore</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        /// <returns>Extraction status representing the final state</returns>
         /// <remarks>Assumes that the current stream position is where the compressed data lives</remarks>
-        /// TODO: Add CRC and size verification
-        private bool ExtractFile(Stream data,
+        private ExtractStatus ExtractFile(Stream data,
             string? filename,
             string outputDirectory,
-            bool includeDebug,
-            out long bytesRead,
-            out long bytesWritten,
-            out uint writtenCrc)
+            long expectedBytesRead,
+            long expectedBytesWritten,
+            uint expectedCrc,
+            bool includeDebug)
         {
+            // Check the validity of the inputs
+            if (expectedBytesRead == 0 || expectedBytesRead >= (data.Length - data.Position) || expectedBytesWritten == 0)
+            {
+                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, invalid inputs detected");
+                return ExtractStatus.INVALID;
+            }
+
             // Cache the current offset
             long current = data.Position;
 
@@ -509,10 +554,10 @@ namespace SabreTools.Serialization.Wrappers
                 Directory.CreateDirectory(directoryName);
 
             // Extract the file
-            if (!Inflate(data, filename, out bytesRead, out bytesWritten, out writtenCrc))
+            if (!Inflate(data, filename, out long bytesRead, out long bytesWritten, out uint writtenCrc))
             {
                 if (includeDebug) Console.Error.WriteLine($"Could not extract {filename}");
-                return false;
+                return ExtractStatus.FAIL;
             }
 
             // If not PKZIP, read the checksum bytes
@@ -530,7 +575,27 @@ namespace SabreTools.Serialization.Wrappers
                 data.Seek(current + bytesRead, SeekOrigin.Begin);
             }
 
-            return true;
+            // If there's a mismatch with bytes read
+            if (expectedBytesRead >= 0 && expectedBytesRead != bytesRead)
+            {
+                // TODO: Delete the output folder as well
+                if (includeDebug) Console.Error.WriteLine($"Mismatched read values for {filename}! Expected {expectedBytesRead}, got {bytesRead}");
+                data.Seek(current, SeekOrigin.Begin);
+                return ExtractStatus.WRONG_SIZE;
+            }
+
+            // If there's a mismatch with bytes written
+            if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
+            {
+                // TODO: Delete the output folder as well
+                if (includeDebug) Console.Error.WriteLine($"Mismatched write values for {filename}! Expected {expectedBytesWritten}, got {bytesWritten}");
+                data.Seek(current, SeekOrigin.Begin);
+                return ExtractStatus.WRONG_SIZE;
+            }
+
+            // TODO: Check CRC of file
+
+            return ExtractStatus.GOOD;
         }
 
         /// <summary>
@@ -543,47 +608,23 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if the file extracted successfully, false otherwise</returns>
-        private bool ExtractFile(Stream data,
-            long dataStart,
-            ScriptDeflateInfo obj,
-            int index,
-            string outputDirectory,
-            bool includeDebug,
-            out long bytesRead,
-            out long bytesWritten,
-            out uint writtenCrc)
-        {
-            // Perform path replacements
-            string filename = $"WISE_0x06_{index:X4}";
-            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return ExtractFile(data, filename, outputDirectory, includeDebug, out bytesRead, out bytesWritten, out writtenCrc);
-        }
-
-        /// <summary>
-        /// Attempt to extract a file defined by a file header
-        /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
-        /// <param name="dataStart">Start of the deflated data</param>
-        /// <param name="obj">Deflate information</param>
-        /// <param name="index">File index for automatic naming</param>
-        /// <param name="outputDirectory">Output directory to write to</param>
-        /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>True if the file extracted successfully, false otherwise</returns>
-        private bool ExtractFile(Stream data,
+        private ExtractStatus ExtractFile(Stream data,
             long dataStart,
             ScriptFileHeader obj,
             int index,
             string outputDirectory,
-            bool includeDebug,
-            out long bytesRead,
-            out long bytesWritten,
-            out uint writtenCrc)
+            bool includeDebug)
         {
+            // Get expected values
+            long expectedBytesRead = obj.DeflateEnd - obj.DeflateStart;
+            long expectedBytesWritten = obj.InflatedSize;
+            uint expectedCrc = obj.Crc32;
+
             // Perform path replacements
             string filename = obj.DestFile ?? $"WISE{index:X4}";
             filename = filename.Replace("%", string.Empty);
             data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return ExtractFile(data, filename, outputDirectory, includeDebug, out bytesRead, out bytesWritten, out writtenCrc);
+            return ExtractFile(data, filename, outputDirectory, expectedBytesRead, expectedBytesWritten, expectedCrc, includeDebug);
         }
 
         /// <summary>
@@ -593,32 +634,22 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if the files extracted successfully, false otherwise</returns>
-        private bool ExtractHeaderDefinedFiles(Stream data,
-            string outputDirectory,
-            bool includeDebug,
-            out long dataStart)
+        private bool ExtractHeaderDefinedFiles(Stream data, string outputDirectory, bool includeDebug, out long dataStart)
         {
             // Determine where the remaining compressed data starts
             dataStart = data.Position;
-            long bytesRead = -1;
 
             // Extract WiseColors.dib, if it exists
-            if (DibDeflatedSize > 0 && DibDeflatedSize < data.Length && !ExtractFile(data, "WiseColors.dib", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "WiseColors.dib", outputDirectory, DibDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (DibDeflatedSize > 0 && DibDeflatedSize < data.Length && DibDeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract WiseScript.bin
-            if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "WiseScript.bin", outputDirectory, WiseScriptDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (WiseScriptDeflatedSize > 0 && WiseScriptDeflatedSize < data.Length && WiseScriptDeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract WISE0001.DLL, if it exists
-            if (WiseDllDeflatedSize > 0 && WiseDllDeflatedSize < data.Length && !ExtractFile(data, "WISE0001.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "WISE0001.DLL", outputDirectory, WiseDllDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (WiseDllDeflatedSize > 0 && WiseDllDeflatedSize < data.Length && WiseDllDeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract CTL3D32.DLL, if it exists
             // Has size but shouldn't be read for:
@@ -627,28 +658,20 @@ namespace SabreTools.Serialization.Wrappers
             // - hcwsubid_setup.EXE
             // - InstallAlabamaSmithEscapePompeii.exe
             // - Wintv2K.EXE
-            if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && !ExtractFile(data, "CTL3D32.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "CTL3D32.DLL", outputDirectory, Ctl3d32DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (Ctl3d32DeflatedSize > 0 && Ctl3d32DeflatedSize < data.Length && Ctl3d32DeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract seventh file, if it exists
-            if (SomeData7DeflatedSize > 0 && SomeData7DeflatedSize < data.Length && !ExtractFile(data, "FILE0007", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (SomeData7DeflatedSize > 0 && SomeData7DeflatedSize < data.Length && SomeData7DeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract eighth file, if it exists
-            if (SomeData8DeflatedSize > 0 && SomeData8DeflatedSize < data.Length && !ExtractFile(data, "FILE0008", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (SomeData8DeflatedSize > 0 && SomeData8DeflatedSize < data.Length && SomeData8DeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract nineth file, if it exists
-            if (SomeData9DeflatedSize > 0 && SomeData9DeflatedSize < data.Length && !ExtractFile(data, "FILE0009", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (SomeData9DeflatedSize > 0 && SomeData9DeflatedSize < data.Length && SomeData9DeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract Ocxreg32.EXE, if it exists
             // Has size but shouldn't be read for:
@@ -656,34 +679,24 @@ namespace SabreTools.Serialization.Wrappers
             // - DSETUP.EXE
             // - DTV39data.EXE
             // - Wintv2K.EXE
-            if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && !ExtractFile(data, "Ocxreg32.EXE", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "Ocxreg32.EXE", outputDirectory, RegToolDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (RegToolDeflatedSize > 0 && RegToolDeflatedSize < data.Length && RegToolDeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract PROGRESS.DLL, if it exists
-            if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && !ExtractFile(data, "PROGRESS.DLL", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "PROGRESS.DLL", outputDirectory, ProgressDllDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (ProgressDllDeflatedSize > 0 && ProgressDllDeflatedSize < data.Length && ProgressDllDeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract FILE0006, if it exists
-            if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && !ExtractFile(data, "FILE0006", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "FILE0006", outputDirectory, SomeData6DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (SomeData6DeflatedSize > 0 && SomeData6DeflatedSize < data.Length && SomeData6DeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract install script, if it exists
-            if (InstallScriptDeflatedSize > 0 && InstallScriptDeflatedSize < data.Length && !ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, InstallScriptDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (InstallScriptDeflatedSize > 0 && InstallScriptDeflatedSize < data.Length && InstallScriptDeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             // Extract FILE000{n}.DAT, if it exists
-            if (SomeData5DeflatedSize > 0 && SomeData5DeflatedSize < data.Length && !ExtractFile(data, "FILE00XX.DAT", outputDirectory, includeDebug, out bytesRead, out _, out _))
+            if (ExtractFile(data, "FILE00XX.DAT", outputDirectory, SomeData5DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
-            if (SomeData5DeflatedSize > 0 && SomeData5DeflatedSize < data.Length && SomeData5DeflatedSize != bytesRead)
-                data.Seek(-bytesRead, SeekOrigin.Current);
 
             dataStart = data.Position;
             return true;
@@ -760,7 +773,6 @@ namespace SabreTools.Serialization.Wrappers
 
             // Initialize important loop information
             int normalFileCount = 0;
-            int unknown0x06FileCount = 0;
             string? tempPath = null;
 
             // Loop through the state machine and process
@@ -772,10 +784,8 @@ namespace SabreTools.Serialization.Wrappers
                         if (state.Data is not ScriptFileHeader fileHeader)
                             return false;
 
-                        // Write to the output directory, logging on error
-                        if (!ExtractFile(data, dataStart, fileHeader, ++normalFileCount, outputDirectory, includeDebug, out _, out _, out _))
-                            Console.Error.WriteLine($"{fileHeader.DestFile} failed to write!");
-
+                        // Try to extract to the output directory
+                        ExtractFile(data, dataStart, fileHeader, ++normalFileCount, outputDirectory, includeDebug);
                         break;
 
                     case OperationCode.IniFile:
@@ -811,18 +821,8 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.UnknownDeflatedFile0x06:
-                        if (state.Data is not ScriptUnknown0x06 u06)
-                            return false;
-                        if (u06.DeflateInfo?.Info == null)
-                            break;
-
-                        // Write to the output directory, logging on error
-                        foreach (var info in u06.DeflateInfo.Info)
-                        {
-                            if (!ExtractFile(data, dataStart, info, ++unknown0x06FileCount, outputDirectory, includeDebug, out _, out _, out _))
-                                Console.Error.WriteLine($"WISE_0x06_{unknown0x06FileCount} failed to write!");
-                        }
-
+                        // TODO: Figure out how to properly support these files
+                        // Multiple entries can go to the same file, but with different messages
                         break;
 
                     case OperationCode.UnknownDeflatedFile0x14:
