@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using WiseUnpacker;
+using SabreTools.Serialization.Wrappers;
 
 namespace Test
 {
@@ -28,8 +28,7 @@ namespace Test
             }
 
             // Attempt to extract the file
-            using var unpacker = new Unpacker(input);
-            if (unpacker.Run(outdir!))
+            if (WiseOverlayHeader.ExtractAll(input, outdir!, includeDebug: false))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");

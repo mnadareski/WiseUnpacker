@@ -1,4 +1,10 @@
+using System;
 using System.IO;
+using System.Text;
+using SabreTools.Hashing;
+using SabreTools.IO.Compression.Deflate;
+using SabreTools.IO.Extensions;
+using SabreTools.IO.Streams;
 using SabreTools.Models.WiseInstaller;
 
 namespace SabreTools.Serialization.Wrappers
@@ -68,7 +74,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Create a Wise installer overlay header from a byte array and offset
         /// </summary>
-        /// <param name="data">Byte array representing the archive</param>
+        /// <param name="data">Byte array representing the header</param>
         /// <param name="offset">Offset within the array to parse</param>
         /// <returns>A Wise installer overlay header wrapper on success, null on failure</returns>
         public static WiseOverlayHeader? Create(byte[]? data, int offset)
@@ -89,7 +95,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Create a Wise installer overlay header from a Stream
         /// </summary>
-        /// <param name="data">Stream representing the archive</param>
+        /// <param name="data">Stream representing the header</param>
         /// <returns>A Wise installer overlay header wrapper on success, null on failure</returns>
         public static WiseOverlayHeader? Create(Stream? data)
         {
@@ -109,6 +115,557 @@ namespace SabreTools.Serialization.Wrappers
             {
                 return null;
             }
+        }
+
+        #endregion
+
+        #region Extraction
+
+        /// <summary>
+        /// Extract all files from a Wise installer to an output directory
+        /// </summary>
+        /// <param name="filename">Input filename to read from</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if all files extracted, false otherwise</returns>
+        public static bool ExtractAll(string? filename, string outputDirectory, bool includeDebug)
+        {
+            // If the filename is invalid
+            if (filename == null)
+                return false;
+
+            // If the file could not be opened
+            if (!OpenFile(filename, out var stream))
+                return false;
+
+            return ExtractAll(stream, outputDirectory, includeDebug);
+        }
+
+        /// <summary>
+        /// Extract all files from a Wise installer to an output directory
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if all files extracted, false otherwise</returns>
+        public static bool ExtractAll(Stream? data, string outputDirectory, bool includeDebug)
+        {
+            // If the data is invalid
+            if (data == null || !data.CanRead)
+                return false;
+
+            // Attempt to get the overlay offset
+            int overlayOffset = GetOverlayOffset(data, includeDebug);
+            if (overlayOffset < 0 || overlayOffset >= data.Length)
+            {
+                if (includeDebug) Console.Error.WriteLine($"Invalid overlay offset: {overlayOffset}");
+                return false;
+            }
+
+            // Attempt to get the overlay header
+            data.Seek(overlayOffset, SeekOrigin.Begin);
+            var header = Create(data);
+            if (header == null)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not parse the overlay header");
+                return false;
+            }
+
+            // Get the deflated data start
+            long dataStart = header.GetDataStart(data);
+
+            // Extract the header-defined files
+            bool extracted = header.ExtractHeaderDefinedFiles(data, outputDirectory, includeDebug);
+            if (!extracted)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not extract header-defined files");
+                return false;
+            }
+
+            // Open the script file from the output directory
+            var scriptStream = File.OpenRead(Path.Combine(outputDirectory, "WiseScript.bin"));
+            var script = WiseScript.Create(scriptStream);
+            if (script == null)
+            {
+                if (includeDebug) Console.Error.WriteLine("Could not parse WiseScript.bin");
+                return false;
+            }
+
+            // Process the state machine
+            return header.ProcessStateMachine(data, script, dataStart, outputDirectory, includeDebug);
+        }
+
+        /// <summary>
+        /// Open a potential WISE installer file and any additional files
+        /// </summary>
+        /// <returns>True if the file could be opened, false otherwise</returns>
+        private static bool OpenFile(string name, out ReadOnlyCompositeStream? stream)
+        {
+            // If the file exists as-is
+            if (File.Exists(name))
+            {
+                var fileStream = File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+
+                // Strip the extension
+                name = Path.GetFileNameWithoutExtension(name);
+            }
+
+            // If the base name was provided, try to open the associated exe
+            else if (File.Exists($"{name}.exe"))
+            {
+                var fileStream = File.Open($"{name}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+            }
+
+            // Otherwise, the file cannot be opened
+            else
+            {
+                stream = null;
+                return false;
+            }
+
+            // Loop through and try to read all additional files
+            byte fileno = 2;
+            string extraPath = $"{name}.W{fileno:X}";
+            while (File.Exists(extraPath))
+            {
+                var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream.AddStream(fileStream);
+                fileno++;
+                extraPath = $"{name}.W{fileno:X}";
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Get the overlay offset for the input file
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>Overlay offset within the file on success, -1 otherwise</returns>
+        private static int GetOverlayOffset(Stream data, bool includeDebug)
+        {
+            // Attempt to deserialize the file as either NE or PE
+            var wrapper = WrapperFactory.CreateExecutableWrapper(data);
+            if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
+            {
+                if (includeDebug) Console.Error.WriteLine("Only NE and PE executables are supported");
+                return -1;
+            }
+
+            // Get the overlay offset
+            return wrapper switch
+            {
+                NewExecutable nex => GetOverlayAddress(nex),
+                PortableExecutable pex => pex.OverlayAddress,
+                _ => -1,
+            };
+        }
+
+        /// <summary>
+        /// Get the start of the deflated data
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <returns>Offset for the start of the deflated data</returns>
+        /// <remarks>Assumes that the current stream position is directly after the overlay header</remarks>
+        /// TODO: Find the data offset without requiring the header?
+        private long GetDataStart(Stream data)
+        {
+            return data.Position
+                + DibDeflatedSize
+                + WiseScriptDeflatedSize
+                + WiseDllDeflatedSize
+                + ProgressDllDeflatedSize
+                + SomeData5DeflatedSize;
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a filename
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="filename">Output filename, null to auto-generate</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        /// <remarks>Assumes that the current stream position is where the compressed data lives</remarks>
+        /// TODO: Add CRC and size verification
+        private bool ExtractFile(Stream data,
+            string? filename,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Skip the PKZIP header, if it exists
+            Models.PKZIP.LocalFileHeader? zipHeader = null;
+            if (IsPKZIP)
+                zipHeader = Deserializers.PKZIP.ParseLocalFileHeader(data);
+
+            // Set the name from the zip header if missing
+            filename ??= zipHeader?.FileName ?? Guid.NewGuid().ToString();
+
+            // Ensure directory separators are consistent
+            if (Path.DirectorySeparatorChar == '\\')
+                filename = filename.Replace('/', '\\');
+            else if (Path.DirectorySeparatorChar == '/')
+                filename = filename.Replace('\\', '/');
+
+            // Ensure the full output directory exists
+            filename = Path.Combine(outputDirectory, filename);
+            var directoryName = Path.GetDirectoryName(filename);
+            if (directoryName != null && !Directory.Exists(directoryName))
+                Directory.CreateDirectory(directoryName);
+
+            // Extract the file
+            if (!Inflate(data, filename, out long inputSize, out long outputSize, out uint crc))
+            {
+                if (includeDebug) Console.Error.WriteLine($"Could not extract {filename}");
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="dataStart">Start of the deflated data</param>
+        /// <param name="obj">Deflate information</param>
+        /// <param name="index">File index for automatic naming</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        private bool ExtractFile(Stream data,
+            long dataStart,
+            ScriptDeflateInfo obj,
+            int index,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Perform path replacements
+            string filename = $"WISE_0x06_{index:X4}";
+            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(data, filename, outputDirectory, includeDebug);
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="dataStart">Start of the deflated data</param>
+        /// <param name="obj">Deflate information</param>
+        /// <param name="index">File index for automatic naming</param>
+        /// <param name="tempPath">Temp path defined by the state machine</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        private bool ExtractFile(Stream data,
+            long dataStart,
+            ScriptFileHeader obj,
+            int index,
+            string? tempPath,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Perform path replacements
+            string filename = obj.DestFile ?? $"WISE{index:X4}";
+            if (tempPath != null)
+                filename = filename.Replace($"%{tempPath}%", "tempfile");
+
+            filename = filename.Replace("%", string.Empty);
+            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(data, filename, outputDirectory, includeDebug);
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="dataStart">Start of the deflated data</param>
+        /// <param name="obj">Deflate information</param>
+        /// <param name="index">File index for automatic naming</param>
+        /// <param name="tempPath">Temp path defined by the state machine</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        private bool ExtractFile(Stream data,
+            long dataStart,
+            ScriptUnknown0x14 obj,
+            int index,
+            string? tempPath,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Perform path replacements
+            string filename = obj.Name ?? $"WISE_0x14_{index:X4}";
+            if (tempPath != null)
+                filename = filename.Replace($"%{tempPath}%", "tempfile");
+
+            filename = filename.Replace("%", string.Empty);
+            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(data, filename, outputDirectory, includeDebug);
+        }
+
+        /// <summary>
+        /// Extract the predefined, static files defined in the header
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the files extracted successfully, false otherwise</returns>
+        private bool ExtractHeaderDefinedFiles(Stream data,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Extract WiseColors.dib, if it exists
+            long offset = data.Position;
+            if (DibDeflatedSize > 0 && !ExtractFile(data, "WiseColors.dib", outputDirectory, includeDebug))
+                return false;
+
+            // Extract WiseScript.bin
+            data.Seek(offset + DibDeflatedSize, SeekOrigin.Begin);
+            offset = data.Position;
+            if (WiseScriptDeflatedSize > 0 && !ExtractFile(data, "WiseScript.bin", outputDirectory, includeDebug))
+                return false;
+
+            // Extract WISE0001.DLL, if it exists
+            data.Seek(offset + WiseScriptDeflatedSize, SeekOrigin.Begin);
+            offset = data.Position;
+            if (WiseDllDeflatedSize > 0 && !ExtractFile(data, "WISE0001.DLL", outputDirectory, includeDebug))
+                return false;
+
+            // Extract PROGRESS.DLL, if it exists
+            data.Seek(offset + WiseDllDeflatedSize, SeekOrigin.Begin);
+            offset = data.Position;
+            if (ProgressDllDeflatedSize > 0 && !ExtractFile(data, "PROGRESS.DLL", outputDirectory, includeDebug))
+                return false;
+
+            // Extract FILE000X.DLL, if it exists
+            data.Seek(offset + ProgressDllDeflatedSize, SeekOrigin.Begin);
+            if (SomeData5DeflatedSize > 0 && !ExtractFile(data, null, outputDirectory, includeDebug))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Inflate an input stream to an output file path
+        /// </summary>
+        private static bool Inflate(Stream input,
+            string outputPath,
+            out long inputSize,
+            out long outputSize,
+            out uint crc)
+        {
+            var output = File.Open(outputPath, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            inputSize = 0;
+            outputSize = 0;
+            crc = 0;
+
+            var hasher = new HashWrapper(HashType.CRC32);
+            try
+            {
+                long start = input.Position;
+                var ds = new DeflateStream(input, CompressionMode.Decompress, leaveOpen: true);
+                while (true)
+                {
+                    byte[] buf = new byte[1024];
+                    int read = ds.Read(buf, 0, buf.Length);
+                    if (read == 0)
+                        break;
+
+                    hasher.Process(buf, 0, read);
+                    output.Write(buf, 0, read);
+                }
+
+                // Save the deflate values
+                inputSize = ds.TotalIn;
+                outputSize = ds.TotalOut;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                output?.Close();
+            }
+
+            hasher.Terminate();
+            byte[] hashBytes = hasher.CurrentHashBytes!;
+            crc = BitConverter.ToUInt32(hashBytes, 0);
+            return true;
+        }
+
+        /// <summary>
+        /// Process the state machine and perform all required actions
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="script">Parsed script to retrieve information from</param>
+        /// <param name="dataStart">Start of the deflated data</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if there were no errors during processing, false otherwise</returns>
+        private bool ProcessStateMachine(Stream data,
+            WiseScript script,
+            long dataStart,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // If the state machine is invalid
+            if (script?.States == null || script.States.Length == 0)
+                return false;
+
+            // Initialize important loop information
+            int normalFileCount = 0;
+            int unknown0x06FileCount = 0;
+            int unknown0x14FileCount = 0;
+            string? tempPath = null;
+
+            // Loop through the state machine and process
+            foreach (var state in script.States)
+            {
+                switch (state.Op)
+                {
+                    case OperationCode.CustomDeflateFileHeader:
+                        if (state.Data is not ScriptFileHeader fileHeader)
+                            return false;
+
+                        // Write to the output directory, logging on error
+                        if (!ExtractFile(data, dataStart, fileHeader, ++normalFileCount, tempPath, outputDirectory, includeDebug))
+                            Console.Error.WriteLine($"{fileHeader.DestFile} failed to write!");
+
+                        break;
+
+                    case OperationCode.IniFile:
+                        if (state.Data is not ScriptUnknown0x05 unknown0x05Data)
+                            return false;
+
+                        // Ensure directory separators are consistent
+                        string iniFilePath = unknown0x05Data.File ?? $"WISE{normalFileCount:X4}.ini";
+                        if (Path.DirectorySeparatorChar == '\\')
+                            iniFilePath = iniFilePath.Replace('/', '\\');
+                        else if (Path.DirectorySeparatorChar == '/')
+                            iniFilePath = iniFilePath.Replace('\\', '/');
+
+                        // Perform path replacements
+                        if (tempPath != null)
+                            iniFilePath = iniFilePath.Replace($"%{tempPath}%", "tempfile");
+
+                        iniFilePath = iniFilePath.Replace("%", string.Empty);
+
+                        // Ensure the full output directory exists
+                        iniFilePath = Path.Combine(outputDirectory, iniFilePath);
+                        var directoryName = Path.GetDirectoryName(iniFilePath);
+                        if (directoryName != null && !Directory.Exists(directoryName))
+                            Directory.CreateDirectory(directoryName);
+
+                        using (var iniFile = File.Open(iniFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                        {
+                            iniFile.Write(Encoding.ASCII.GetBytes($"[{unknown0x05Data.Section}]\n"));
+                            iniFile.Write(Encoding.ASCII.GetBytes($"{unknown0x05Data.Values ?? string.Empty}\n"));
+                            iniFile.Flush();
+                        }
+
+                        break;
+
+                    case OperationCode.UnknownDeflatedFile0x06:
+                        if (state.Data is not ScriptUnknown0x06 u06)
+                            return false;
+                        if (u06.DeflateInfo?.Info == null)
+                            break;
+
+                        // Write to the output directory, logging on error
+                        foreach (var info in u06.DeflateInfo.Info)
+                        {
+                            if (!ExtractFile(data, dataStart, info, ++unknown0x06FileCount, outputDirectory, includeDebug))
+                                Console.Error.WriteLine($"WISE_0x06_{unknown0x06FileCount} failed to write!");
+                        }
+
+                        break;
+
+                    case OperationCode.UnknownDeflatedFile0x14:
+                        unknown0x14FileCount++;
+                        if (state.Data is not ScriptUnknown0x14 u14)
+                            return false;
+
+                        // Write to the output directory, logging on error
+                        if (!ExtractFile(data, dataStart, u14, ++normalFileCount, tempPath, outputDirectory, includeDebug))
+                            Console.Error.WriteLine($"{u14.Name} failed to write!");
+
+                        break;
+
+                    case OperationCode.TempFilename:
+                        if (state.Data is not ScriptUnknown0x16 unknown0x16Data)
+                            return false;
+
+                        tempPath = unknown0x16Data.Name;
+                        break;
+
+                    default:
+                        //Console.WriteLine($"Skipped opcode {state.Op}");
+                        break;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
+
+        #region Serialization -- Move to Serialization once Models is updated
+
+        /// <summary>
+        /// Address of the overlay, if it exists
+        /// </summary>
+        /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/exefile.c"/>
+        private static int GetOverlayAddress(NewExecutable nex)
+        {
+            // Get the end of the file, if possible
+            int endOfFile = nex.GetEndOfFile();
+            if (endOfFile == -1)
+                return -1;
+
+            // If a required property is missing
+            if (nex.Model.Header == null || nex.Model.SegmentTable == null || nex.Model.ResourceTable?.ResourceTypes == null)
+                return -1;
+
+            // Search through the segments table to find the furthest
+            int endOfSectionData = -1;
+            foreach (var entry in nex.Model.SegmentTable)
+            {
+                int offset = (entry.Offset << nex.Model.Header.SegmentAlignmentShiftCount) + entry.Length;
+                if (offset > endOfSectionData)
+                    endOfSectionData = offset;
+            }
+
+            // Search through the resources table to find the furthest
+            foreach (var entry in nex.Model.ResourceTable.ResourceTypes)
+            {
+                // Skip invalid entries
+                if (entry.ResourceCount == 0 || entry.Resources == null || entry.Resources.Length == 0)
+                    continue;
+
+                foreach (var resource in entry.Resources)
+                {
+                    int offset = (resource.Offset << nex.Model.ResourceTable.AlignmentShiftCount) + resource.Length;
+                    if (offset > endOfSectionData)
+                        endOfSectionData = offset;
+                }
+            }
+
+            // If we didn't find the end of section data
+            if (endOfSectionData <= 0)
+                return -1;
+
+            // Adjust the position of the data by 705 bytes
+            // TODO: Investigate what the byte data is
+            endOfSectionData += 705;
+
+            // Cache and return the position
+            return endOfSectionData;
         }
 
         #endregion

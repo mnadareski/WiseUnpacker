@@ -38,7 +38,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Create a Wise installer script file from a byte array and offset
         /// </summary>
-        /// <param name="data">Byte array representing the archive</param>
+        /// <param name="data">Byte array representing the script</param>
         /// <param name="offset">Offset within the array to parse</param>
         /// <returns>A Wise installer script file wrapper on success, null on failure</returns>
         public static WiseScript? Create(byte[]? data, int offset)
@@ -59,7 +59,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Create a Wise installer script file from a Stream
         /// </summary>
-        /// <param name="data">Stream representing the archive</param>
+        /// <param name="data">Stream representing the script</param>
         /// <returns>A Wise installer script file wrapper on success, null on failure</returns>
         public static WiseScript? Create(Stream? data)
         {
