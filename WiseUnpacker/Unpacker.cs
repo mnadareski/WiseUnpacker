@@ -180,8 +180,16 @@ namespace WiseUnpacker
             if (_overlayHeader == null)
                 return false;
 
-            // Extract WiseColors.dib
+            // Set the data offset
             long offset = _inputFile.Position;
+            _dataStart = offset
+                + _overlayHeader.DibDeflatedSize
+                + _overlayHeader.WiseScriptDeflatedSize
+                + _overlayHeader.WiseDllDeflatedSize
+                + _overlayHeader.ProgressDllDeflatedSize
+                + _overlayHeader.SomeData5DeflatedSize;
+
+            // Extract WiseColors.dib, if it exists
             if (_overlayHeader.DibDeflatedSize > 0 && !ExtractFile("WiseColors.dib", outputPath))
                 return false;
 
@@ -205,12 +213,8 @@ namespace WiseUnpacker
 
             // Extract FILE000X.DLL, if it exists
             _inputFile.Seek(offset + _overlayHeader.ProgressDllDeflatedSize, SeekOrigin.Begin);
-            offset = _inputFile.Position;
             if (_overlayHeader.SomeData5DeflatedSize > 0 && !ExtractFile(null, outputPath))
                 return false;
-
-            // Set the data start
-            _dataStart = offset + _overlayHeader.SomeData5DeflatedSize;
 
             return true;
         }
