@@ -170,7 +170,7 @@ namespace WiseUnpacker
             return ExtractFile(obj.DestFile, outputPath);
         }
 
-         /// <summary>
+        /// <summary>
         /// Attempt to extract a file defined by a file header
         /// </summary>
         private bool ExtractFile(ScriptUnknown0x14 obj, int count, string? tempPath, string outputPath)
@@ -535,7 +535,7 @@ namespace WiseUnpacker
 
             // If we didn't find the end of section data
             if (endOfSectionData <= 0)
-                endOfSectionData = -1;
+                return -1;
 
             // Adjust the position of the data by 705 bytes
             // TODO: Investigate what the byte data is

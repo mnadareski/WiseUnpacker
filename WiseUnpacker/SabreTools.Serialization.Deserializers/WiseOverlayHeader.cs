@@ -17,6 +17,10 @@ namespace SabreTools.Serialization.Deserializers
             try
             {
                 var overlayHeader = ParseOverlayHeader(data);
+
+                // Valid for older overlay headers
+                if (overlayHeader.Endianness == 0x0000)
+                    return overlayHeader;
                 if (overlayHeader.Endianness != Endianness.LittleEndian && overlayHeader.Endianness != Endianness.BigEndian)
                     return null;
 
@@ -66,6 +70,7 @@ namespace SabreTools.Serialization.Deserializers
             // Handle older overlay data
             if (header.DibDeflatedSize > data.Length)
             {
+                header.DibDeflatedSize = 0;
                 data.Seek(-4, SeekOrigin.Current);
                 return header;
             }
