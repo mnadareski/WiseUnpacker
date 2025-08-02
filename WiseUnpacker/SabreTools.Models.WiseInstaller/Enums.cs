@@ -171,11 +171,6 @@ namespace SabreTools.Models.WiseInstaller
         /// as 0x15? or maybe even 0x23?
         /// </summary>
         ReadByteAndStrings = 0x30,
-
-        /// <summary>
-        /// Unknown
-        /// </summary>
-        Unknown0x31 = 0x31,
     }
 
     /// <summary>
