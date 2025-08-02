@@ -186,10 +186,7 @@ namespace SabreTools.Models.WiseInstaller
     {
         WISE_FLAG_UNKNOWN_1 = 0x00000001,
 
-        /// <summary>
-        /// Possibly indicates presence of PROGRESS.DLL
-        /// </summary>
-        WISE_FLAG_PROGRESS = 0x00000002,
+        WISE_FLAG_UNKNOWN_2 = 0x00000002,
 
         WISE_FLAG_UNKNOWN_3 = 0x00000004,
 
@@ -228,7 +225,7 @@ namespace SabreTools.Models.WiseInstaller
         WISE_FLAG_UNKNOWN_17 = 0x00010000,
 
         /// <remarks>
-        /// Only seen in Swat 3
+        /// May indicate either install script or a valid Ocxreg32.EXE
         /// </remarks>
         WISE_FLAG_UNKNOWN_18 = 0x00020000,
 
@@ -264,6 +261,9 @@ namespace SabreTools.Models.WiseInstaller
 
         WISE_FLAG_UNKNOWN_31 = 0x40000000,
 
+        /// <remarks>
+        /// May indicate either install script or a valid Ocxreg32.EXE
+        /// </remarks>
         WISE_FLAG_UNKNOWN_32 = 0x80000000,
 
     }
