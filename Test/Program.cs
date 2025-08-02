@@ -32,7 +32,7 @@ namespace Test
             var unpacker = new Unpacker(input);
 
             // Attempt to extract the file
-            if (unpacker.Run(outdir))
+            if (unpacker.Run(outdir!))
                 Console.WriteLine($"Extracted {input} to {outdir}");
             else
                 Console.WriteLine(value: $"Failed to extract {input}!");

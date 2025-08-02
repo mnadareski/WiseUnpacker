@@ -67,11 +67,8 @@ namespace WiseUnpacker
         /// </summary>
         /// <param name="outputPath">Output directory for extracted files</param>
         /// <returns>True if extraction was a success, false otherwise</returns>
-        public bool Run(string? outputPath)
+        public bool Run(string outputPath)
         {
-            // Ensure the output path
-            outputPath ??= string.Empty;
-
             // Extract the header-defined files
             bool extracted = ExtractHeaderDefinedFiles(outputPath);
             if (!extracted)
