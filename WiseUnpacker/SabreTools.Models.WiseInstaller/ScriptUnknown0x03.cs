@@ -6,7 +6,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown, maybe flags?
         /// </summary>
-        public byte Unknown_1 { get; set; }
+        public byte Operand_0 { get; set; }
 
         /// <summary>
         /// Error strings, two per language (1 title and 1 message)

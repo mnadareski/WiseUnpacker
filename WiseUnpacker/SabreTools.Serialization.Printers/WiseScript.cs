@@ -112,8 +112,8 @@ namespace SabreTools.Serialization.Printers
                 {
                     case ScriptFileHeader data: Print(builder, data); break;
                     case ScriptUnknown0x03 data: Print(builder, data); break;
-                    case ScriptUnknown0x04 data: Print(builder, data); break;
-                    case ScriptUnknown0x05 data: Print(builder, data); break;
+                    case ScriptFormData data: Print(builder, data); break;
+                    case ScriptIniFileWrite data: Print(builder, data); break;
                     case ScriptUnknown0x06 data: Print(builder, data); break;
                     case ScriptUnknown0x07 data: Print(builder, data); break;
                     case ScriptUnknown0x08 data: Print(builder, data); break;
@@ -174,7 +174,7 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, ScriptUnknown0x03 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x03");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
+            builder.AppendLine(data.Operand_0, $"      Unknown");
             builder.AppendLine($"      Language strings");
             builder.AppendLine("      -------------------------");
             if (data.LangStrings == null || data.LangStrings.Length == 0)
@@ -192,7 +192,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x04 data)
+        private static void Print(StringBuilder builder, ScriptFormData data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x04");
             builder.AppendLine(data.No, $"      No");
@@ -213,7 +213,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x05 data)
+        private static void Print(StringBuilder builder, ScriptIniFileWrite data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x05");
             builder.AppendLine(data.File, $"      File");

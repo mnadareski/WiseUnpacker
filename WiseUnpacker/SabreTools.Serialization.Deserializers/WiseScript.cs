@@ -116,11 +116,8 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled ScriptHeader on success, null on error</returns>
         private static ScriptHeader ParseScriptHeader(Stream data)
         {
-            // TODO: Investigate Shockwave_Installer.exe
-            // It seems to have too few bytes in the header.
-            // Before the Font, which is the first recognizable
-            // bit of data, there are 20 bytes of data. It
-            // is almost impossible to tell what they map to.
+            // Cache the current position in case of a trimmed header
+            long current = data.Position;
 
             var header = new ScriptHeader();
 
@@ -133,6 +130,21 @@ namespace SabreTools.Serialization.Deserializers
             header.Url = data.ReadNullTerminatedAnsiString();
             header.LogPath = data.ReadNullTerminatedAnsiString();
             header.Font = data.ReadNullTerminatedAnsiString();
+
+            // If the font string is empty, then the header is trimmed
+            if (header.Font != null && header.Font.Length == 0)
+            {
+                // Seek back to the original position
+                data.Seek(current, SeekOrigin.Begin);
+
+                // Recreate the header with minimal data
+                header = new ScriptHeader();
+
+                // TODO: Figure out if this maps to existing fields
+                header.Unknown_22 = data.ReadBytes(20);
+                header.Font = data.ReadNullTerminatedAnsiString();
+            }
+
             header.Unknown_6 = data.ReadBytes(6);
             header.LanguageCount = data.ReadByteValue();
 
@@ -179,8 +191,8 @@ namespace SabreTools.Serialization.Deserializers
                 {
                     OperationCode.CustomDeflateFileHeader => ParseScriptFileHeader(data, languageCount),
                     OperationCode.Unknown0x03 => ParseUnknown0x03(data, languageCount),
-                    OperationCode.FormData => ParseUnknown0x04(data, languageCount),
-                    OperationCode.IniFile => ParseUnknown0x05(data),
+                    OperationCode.FormData => ParseScriptFormData(data, languageCount),
+                    OperationCode.IniFile => ParseIniFileWrite(data),
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount),
                     OperationCode.Unknown0x07 => ParseUnknown0x07(data),
                     OperationCode.EndBranch => ParseUnknown0x08(data),
@@ -236,7 +248,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x03();
 
-            obj.Unknown_1 = data.ReadByteValue();
+            obj.Operand_0 = data.ReadByteValue();
             obj.LangStrings = new string[languageCount * 2];
             for (int i = 0; i < obj.LangStrings.Length; i++)
             {
@@ -247,13 +259,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x04
+        /// Parse a Stream into a ScriptFormData
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x04 on success, null on error</returns>
-        private static ScriptUnknown0x04 ParseUnknown0x04(Stream data, int languageCount)
+        /// <returns>Filled ScriptFormData on success, null on error</returns>
+        private static ScriptFormData ParseScriptFormData(Stream data, int languageCount)
         {
-            var obj = new ScriptUnknown0x04();
+            var obj = new ScriptFormData();
 
             obj.No = data.ReadByteValue();
             obj.LangStrings = new string[languageCount];
@@ -266,13 +278,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x05
+        /// Parse a Stream into a ScriptIniFileWrite
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x05 on success, null on error</returns>
-        private static ScriptUnknown0x05 ParseUnknown0x05(Stream data)
+        /// <returns>Filled ScriptIniFileWrite on success, null on error</returns>
+        private static ScriptIniFileWrite ParseIniFileWrite(Stream data)
         {
-            var obj = new ScriptUnknown0x05();
+            var obj = new ScriptIniFileWrite();
 
             obj.File = data.ReadNullTerminatedAnsiString();
             obj.Section = data.ReadNullTerminatedAnsiString();

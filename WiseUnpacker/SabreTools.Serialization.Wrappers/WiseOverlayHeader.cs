@@ -850,7 +850,7 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.IniFile:
-                        if (state.Data is not ScriptUnknown0x05 unknown0x05Data)
+                        if (state.Data is not ScriptIniFileWrite unknown0x05Data)
                             return false;
 
                         // Ensure directory separators are consistent

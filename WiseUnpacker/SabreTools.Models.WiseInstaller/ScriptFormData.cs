@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller
     /// Form data?
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x04 : MachineStateData
+    public class ScriptFormData : MachineStateData
     {
         /// <summary>
         /// Read this struct again until 'no' == 0 ?
