@@ -64,6 +64,9 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="OverlayHeader.DibDeflatedSize"/>
         public uint DibDeflatedSize => Model.DibDeflatedSize;
 
+        /// <inheritdoc cref="OverlayHeader.DibInflatedSize"/>
+        public uint DibInflatedSize => Model.DibInflatedSize;
+
         /// <inheritdoc cref="OverlayHeader.Flags"/>
         public OverlayHeaderFlags Flags => Model.Flags;
 
@@ -88,6 +91,9 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="OverlayHeader.SomeData5DeflatedSize"/>
         public uint SomeData5DeflatedSize => Model.SomeData5DeflatedSize;
 
+        /// <inheritdoc cref="OverlayHeader.SomeData5InflatedSize"/>
+        public uint SomeData5InflatedSize => Model.SomeData5InflatedSize;
+
         /// <inheritdoc cref="OverlayHeader.SomeData6DeflatedSize"/>
         public uint SomeData6DeflatedSize => Model.SomeData6DeflatedSize;
 
@@ -111,6 +117,9 @@ namespace SabreTools.Serialization.Wrappers
 
         /// <inheritdoc cref="OverlayHeader.WiseScriptDeflatedSize"/>
         public uint WiseScriptDeflatedSize => Model.WiseScriptDeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.WiseScriptInflatedSize"/>
+        public uint WiseScriptInflatedSize => Model.WiseScriptInflatedSize;
 
         #endregion
 
@@ -526,6 +535,9 @@ namespace SabreTools.Serialization.Wrappers
                 return ExtractStatus.INVALID;
             }
 
+            // Debug output
+            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: {outputDirectory}, Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc}");
+
             // Cache the current offset
             long current = data.Position;
 
@@ -536,6 +548,13 @@ namespace SabreTools.Serialization.Wrappers
             {
                 zipHeader = Deserializers.PKZIP.ParseLocalFileHeader(data);
                 zipHeaderBytes = data.Position - current;
+
+                // Always trust the PKZIP CRC-32 value over what is supplied
+                if (zipHeader != null)
+                    expectedCrc = zipHeader.CRC32;
+
+                // Debug output
+                if (includeDebug) Console.WriteLine($"PKZIP Filename: {zipHeader?.FileName}, PKZIP Expected Read: {zipHeader?.CompressedSize}, PKZIP Expected Write: {zipHeader?.UncompressedSize}, PKZIP Expected CRC-32: {zipHeader?.CRC32}");
             }
 
             // Set the name from the zip header if missing
@@ -564,8 +583,15 @@ namespace SabreTools.Serialization.Wrappers
             if (!IsPKZIP)
             {
                 data.Seek(current + bytesRead, SeekOrigin.Begin);
-                _ = data.ReadUInt32LittleEndian();
+                uint deflateCrc = data.ReadUInt32LittleEndian();
                 bytesRead += 4;
+
+                // If the CRC to check isn't set
+                if (expectedCrc == 0)
+                    expectedCrc = deflateCrc;
+
+                // Debug output
+                if (includeDebug) Console.WriteLine($"DeflateStream CRC-32: {deflateCrc}");
             }
 
             // Otherwise, account for the header bytes read
@@ -575,25 +601,60 @@ namespace SabreTools.Serialization.Wrappers
                 data.Seek(current + bytesRead, SeekOrigin.Begin);
             }
 
-            // If there's a mismatch with bytes read
+            // Debug output
+            if (includeDebug) Console.WriteLine($"Actual Read: {bytesRead}, Actual Write: {bytesWritten}, Actual CRC-32: {writtenCrc}");
+
+            // If there's a mismatch during both reading and writing
             if (expectedBytesRead >= 0 && expectedBytesRead != bytesRead)
             {
-                // TODO: Delete the output folder as well
-                if (includeDebug) Console.Error.WriteLine($"Mismatched read values for {filename}! Expected {expectedBytesRead}, got {bytesRead}");
-                data.Seek(current, SeekOrigin.Begin);
-                return ExtractStatus.WRONG_SIZE;
+                // This in/out check helps catch false positives, such as
+                // files that have an off-by-one mismatch for read values
+                // but properly match the output written values.
+
+                // If the written bytes not correct as well
+                if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
+                {
+                    // Delete the errored file
+                    File.Delete(filename);
+
+                    if (includeDebug) Console.Error.WriteLine($"Mismatched read/write values for {filename}!");
+                    data.Seek(current, SeekOrigin.Begin);
+                    return ExtractStatus.WRONG_SIZE;
+                }
+
+                // If the written bytes are not being verified
+                else if (expectedBytesWritten < 0)
+                {
+                    // Delete the errored file
+                    File.Delete(filename);
+
+                    if (includeDebug) Console.Error.WriteLine($"Mismatched read/write values for {filename}!");
+                    data.Seek(current, SeekOrigin.Begin);
+                    return ExtractStatus.WRONG_SIZE;
+                }
             }
 
-            // If there's a mismatch with bytes written
+            // If there's just a mismatch during writing
             if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
             {
-                // TODO: Delete the output folder as well
-                if (includeDebug) Console.Error.WriteLine($"Mismatched write values for {filename}! Expected {expectedBytesWritten}, got {bytesWritten}");
+                // Delete the errored file
+                File.Delete(filename);
+
+                if (includeDebug) Console.Error.WriteLine($"Mismatched write values for {filename}!");
                 data.Seek(current, SeekOrigin.Begin);
                 return ExtractStatus.WRONG_SIZE;
             }
 
-            // TODO: Check CRC of file
+            // If there's a mismatch with the CRC-32
+            if (expectedCrc != 0 && expectedCrc != writtenCrc)
+            {
+                // Delete the errored file
+                File.Delete(filename);
+
+                if (includeDebug) Console.Error.WriteLine($"Mismatched CRC-32 values for {filename}!");
+                data.Seek(current, SeekOrigin.Begin);
+                return ExtractStatus.BAD_CRC;
+            }
 
             return ExtractStatus.GOOD;
         }
@@ -640,11 +701,11 @@ namespace SabreTools.Serialization.Wrappers
             dataStart = data.Position;
 
             // Extract WiseColors.dib, if it exists
-            if (ExtractFile(data, "WiseColors.dib", outputDirectory, DibDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "WiseColors.dib", outputDirectory, DibDeflatedSize, DibInflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract WiseScript.bin
-            if (ExtractFile(data, "WiseScript.bin", outputDirectory, WiseScriptDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "WiseScript.bin", outputDirectory, WiseScriptDeflatedSize, WiseScriptInflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract WISE0001.DLL, if it exists
@@ -695,7 +756,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
 
             // Extract FILE000{n}.DAT, if it exists
-            if (ExtractFile(data, "FILE00XX.DAT", outputDirectory, SomeData5DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE00XX.DAT", outputDirectory, SomeData5DeflatedSize, SomeData5InflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             dataStart = data.Position;
