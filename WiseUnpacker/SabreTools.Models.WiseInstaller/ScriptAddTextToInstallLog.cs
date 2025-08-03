@@ -7,7 +7,7 @@ namespace SabreTools.Models.WiseInstaller
     public class ScriptAddTextToInstallLog : MachineStateData
     {
         /// <summary>
-        /// Unknown
+        /// Text
         /// </summary>
         public string? Text { get; set; }
     }
