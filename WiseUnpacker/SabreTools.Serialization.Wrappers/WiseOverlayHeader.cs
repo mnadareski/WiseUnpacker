@@ -528,15 +528,15 @@ namespace SabreTools.Serialization.Wrappers
             uint expectedCrc,
             bool includeDebug)
         {
+            // Debug output
+            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: {outputDirectory}, Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc}");
+
             // Check the validity of the inputs
             if (expectedBytesRead == 0 || expectedBytesRead >= (data.Length - data.Position) || expectedBytesWritten == 0)
             {
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, invalid inputs detected");
                 return ExtractStatus.INVALID;
             }
-
-            // Debug output
-            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: {outputDirectory}, Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc}");
 
             // Cache the current offset
             long current = data.Position;
