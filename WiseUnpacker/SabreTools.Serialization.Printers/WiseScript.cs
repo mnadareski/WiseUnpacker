@@ -39,8 +39,8 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(header.Unknown_22, "  Unknown");
             builder.AppendLine(header.Url, "  URL");
             builder.AppendLine(header.LogPath, "  Log path");
-            builder.AppendLine(header.Font, "  Font");
-            builder.AppendLine(header.Unknown_6, "  Unknown");
+            builder.AppendLine(header.MessageFont, "  Font");
+            builder.AppendLine(header.Unknown_2, "  Unknown");
             builder.AppendLine(header.LanguageCount, "  Language count");
             builder.AppendLine();
             builder.AppendLine("  Unknown strings");
@@ -113,25 +113,25 @@ namespace SabreTools.Serialization.Printers
                     case ScriptFileHeader data: Print(builder, data); break;
                     case ScriptUnknown0x03 data: Print(builder, data); break;
                     case ScriptFormData data: Print(builder, data); break;
-                    case ScriptIniFileWrite data: Print(builder, data); break;
+                    case ScriptEditIniFile data: Print(builder, data); break;
                     case ScriptUnknown0x06 data: Print(builder, data); break;
-                    case ScriptUnknown0x07 data: Print(builder, data); break;
-                    case ScriptUnknown0x08 data: Print(builder, data); break;
-                    case ScriptUnknown0x09 data: Print(builder, data); break;
-                    case ScriptUnknown0x0A data: Print(builder, data); break;
-                    case ScriptUnknown0x0B data: Print(builder, data); break;
-                    case ScriptUnknown0x0C data: Print(builder, data); break;
+                    case ScriptExecuteProgram data: Print(builder, data); break;
+                    case ScriptEndBlock data: Print(builder, data); break;
+                    case ScriptFunctionCall data: Print(builder, data); break;
+                    case ScriptEditRegistry data: Print(builder, data); break;
+                    case ScriptDeleteFile data: Print(builder, data); break;
+                    case ScriptIfWhileStatement data: Print(builder, data); break;
                     case ScriptUnknown0x11 data: Print(builder, data); break;
                     case ScriptUnknown0x12 data: Print(builder, data); break;
-                    case ScriptUnknown0x14 data: Print(builder, data); break;
-                    case ScriptUnknown0x15 data: Print(builder, data); break;
-                    case ScriptUnknown0x16 data: Print(builder, data); break;
+                    case ScriptCustomDialogSet data: Print(builder, data); break;
+                    case ScriptGetSystemInformation data: Print(builder, data); break;
+                    case ScriptGetTemporaryFilename data: Print(builder, data); break;
                     case ScriptUnknown0x17 data: Print(builder, data); break;
                     case ScriptUnknown0x19 data: Print(builder, data); break;
                     case ScriptUnknown0x1A data: Print(builder, data); break;
-                    case ScriptUnknown0x1C data: Print(builder, data); break;
+                    case ScriptAddTextToInstallLog data: Print(builder, data); break;
                     case ScriptUnknown0x1D data: Print(builder, data); break;
-                    case ScriptUnknown0x1E data: Print(builder, data); break;
+                    case ScriptCompilerVariableIf data: Print(builder, data); break;
                     case ScriptUnknown0x23 data: Print(builder, data); break;
                     case ScriptUnknown0x30 data: Print(builder, data); break;
 
@@ -144,13 +144,13 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, ScriptFileHeader data)
         {
             builder.AppendLine($"    Data: ScriptFileHeader");
-            builder.AppendLine(data.Unknown_2, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine(data.DeflateStart, $"      Deflate start");
             builder.AppendLine(data.DeflateEnd, $"      Deflate end");
             builder.AppendLine(data.Date, $"      Date");
             builder.AppendLine(data.Time, $"      Time");
             builder.AppendLine(data.InflatedSize, $"      Inflated size");
-            builder.AppendLine(data.Unknown_20, $"      Unknown");
+            builder.AppendLine(data.Operand_7, $"      Unknown");
             builder.AppendLine(data.Crc32, $"      CRC-32");
             builder.AppendLine(data.DestFile, $"      Destination file");
             builder.AppendLine($"      File texts");
@@ -167,7 +167,7 @@ namespace SabreTools.Serialization.Printers
                     builder.AppendLine($"      File Text {i}: {entry}");
                 }
             }
-            builder.AppendLine(data.UnknownString, $"      Unknown");
+            builder.AppendLine(data.Operand_11, $"      Unknown");
             builder.AppendLine();
         }
 
@@ -213,10 +213,10 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptIniFileWrite data)
+        private static void Print(StringBuilder builder, ScriptEditIniFile data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x05");
-            builder.AppendLine(data.File, $"      File");
+            builder.AppendLine(data.Pathname, $"      File");
             builder.AppendLine(data.Section, $"      Section");
             builder.AppendLine(data.Values, $"      Values");
             builder.AppendLine();
@@ -225,7 +225,7 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, ScriptUnknown0x06 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x06");
-            builder.AppendLine(data.Unknown_2, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
             Print(builder, data.DeflateInfo, 6);
             builder.AppendLine(data.Terminator, $"      Terminator");
             builder.AppendLine();
@@ -267,42 +267,42 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x07 data)
+        private static void Print(StringBuilder builder, ScriptExecuteProgram data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x07");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
-            builder.AppendLine(data.UnknownString_3, $"      Unknown");
+            builder.AppendLine(data.Flags, $"      Unknown");
+            builder.AppendLine(data.Pathname, $"      Unknown");
+            builder.AppendLine(data.CommandLine, $"      Unknown");
+            builder.AppendLine(data.DefaultDirectory, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x08 data)
+        private static void Print(StringBuilder builder, ScriptEndBlock data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x08");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x09 data)
+        private static void Print(StringBuilder builder, ScriptFunctionCall data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x09");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
-            builder.AppendLine(data.UnknownString_3, $"      Unknown");
-            builder.AppendLine(data.UnknownString_4, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.DllPath, $"      Unknown");
+            builder.AppendLine(data.FunctionName, $"      Unknown");
+            builder.AppendLine(data.Operand_4, $"      Unknown");
+            builder.AppendLine(data.ReturnVariable, $"      Unknown");
             builder.AppendLine($"      Unknown");
             builder.AppendLine("      -------------------------");
-            if (data.UnknownStrings == null || data.UnknownStrings.Length == 0)
+            if (data.Entries == null || data.Entries.Length == 0)
             {
                 builder.AppendLine("      No unknown strings");
             }
             else
             {
-                for (int i = 0; i < data.UnknownStrings.Length; i++)
+                for (int i = 0; i < data.Entries.Length; i++)
                 {
-                    var entry = data.UnknownStrings[i];
+                    var entry = data.Entries[i];
                     builder.AppendLine($"      Unknown String {i}: {entry}");
                 }
             }
@@ -310,58 +310,58 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x0A data)
+        private static void Print(StringBuilder builder, ScriptEditRegistry data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x0A");
-            builder.AppendLine(data.Unknown_2, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
-            builder.AppendLine(data.UnknownString_3, $"      Unknown");
+            builder.AppendLine(data.Root, $"      Unknown");
+            builder.AppendLine(data.Key, $"      Unknown");
+            builder.AppendLine(data.NewValue, $"      Unknown");
+            builder.AppendLine(data.ValueName, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x0B data)
+        private static void Print(StringBuilder builder, ScriptDeleteFile data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x0B");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
+            builder.AppendLine(data.Flags, $"      Unknown");
+            builder.AppendLine(data.Pathname, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x0C data)
+        private static void Print(StringBuilder builder, ScriptIfWhileStatement data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x0C");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.VarName, $"      Variable name");
-            builder.AppendLine(data.VarValue, $"      Variable value");
+            builder.AppendLine(data.Flags, $"      Unknown");
+            builder.AppendLine(data.Variable, $"      Variable name");
+            builder.AppendLine(data.Value, $"      Variable value");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x11 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x11");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x12 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x12");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.Unknown_41, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_2, $"      Unknown");
             builder.AppendLine(data.SourceFile, $"      Source file");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
+            builder.AppendLine(data.Operand_4, $"      Unknown");
             builder.AppendLine($"      Unknown");
             builder.AppendLine("      -------------------------");
-            if (data.UnknownStrings == null || data.UnknownStrings.Length == 0)
+            if (data.Operand_5 == null || data.Operand_5.Length == 0)
             {
                 builder.AppendLine("      No unknown strings");
             }
             else
             {
-                for (int i = 0; i < data.UnknownStrings.Length; i++)
+                for (int i = 0; i < data.Operand_5.Length; i++)
                 {
-                    var entry = data.UnknownStrings[i];
+                    var entry = data.Operand_5[i];
                     builder.AppendLine($"      Unknown String {i}: {entry}");
                 }
             }
@@ -370,87 +370,87 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x14 data)
+        private static void Print(StringBuilder builder, ScriptCustomDialogSet data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x14");
             builder.AppendLine(data.DeflateStart, $"      Deflate start");
             builder.AppendLine(data.DeflateEnd, $"      Deflate end");
             builder.AppendLine(data.InflatedSize, $"      Inflated size");
-            builder.AppendLine(data.Name, $"      Name");
-            builder.AppendLine(data.Message, $"      Message");
+            builder.AppendLine(data.DisplayVariable, $"      Name");
+            builder.AppendLine(data.Name, $"      Message");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x15 data)
+        private static void Print(StringBuilder builder, ScriptGetSystemInformation data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x15");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
+            builder.AppendLine(data.Variable, $"      Unknown");
+            builder.AppendLine(data.Operand_3, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x16 data)
+        private static void Print(StringBuilder builder, ScriptGetTemporaryFilename data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x16");
-            builder.AppendLine(data.Name, $"      Name");
+            builder.AppendLine(data.Variable, $"      Name");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x17 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x17");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.Unknown_4, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_2, $"      Unknown");
+            builder.AppendLine(data.Operand_3, $"      Unknown");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x19 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x19");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
-            builder.AppendLine(data.UnknownString_3, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_2, $"      Unknown");
+            builder.AppendLine(data.Operand_3, $"      Unknown");
+            builder.AppendLine(data.Operand_4, $"      Unknown");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x1A data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x1A");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_2, $"      Unknown");
+            builder.AppendLine(data.Operand_3, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x1C data)
+        private static void Print(StringBuilder builder, ScriptAddTextToInstallLog data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x1C");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
+            builder.AppendLine(data.Text, $"      Unknown");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x1D data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x1D");
-            builder.AppendLine(data.UnknownString_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_2, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_2, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x1E data)
+        private static void Print(StringBuilder builder, ScriptCompilerVariableIf data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x1E");
-            builder.AppendLine(data.Unknown, $"      Unknown");
-            builder.AppendLine(data.UnknownString, $"      Unknown");
+            builder.AppendLine(data.Flags, $"      Unknown");
+            builder.AppendLine(data.Variable, $"      Unknown");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, ScriptUnknown0x23 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x23");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine(data.VarName, $"      Variable name");
             builder.AppendLine(data.VarValue, $"      Variable value");
             builder.AppendLine();
@@ -459,9 +459,9 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, ScriptUnknown0x30 data)
         {
             builder.AppendLine($"    Data: ScriptUnknown0x30");
-            builder.AppendLine(data.Unknown_1, $"      Unknown");
-            builder.AppendLine(data.UnknownString_1, $"      Variable name");
-            builder.AppendLine(data.UnknownString_2, $"      Variable value");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_2, $"      Variable name");
+            builder.AppendLine(data.Operand_3, $"      Variable value");
             builder.AppendLine();
         }
     }

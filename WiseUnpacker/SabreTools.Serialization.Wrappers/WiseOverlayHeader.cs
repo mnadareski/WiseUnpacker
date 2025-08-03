@@ -841,7 +841,7 @@ namespace SabreTools.Serialization.Wrappers
             {
                 switch (state.Op)
                 {
-                    case OperationCode.CustomDeflateFileHeader:
+                    case OperationCode.InstallFile:
                         if (state.Data is not ScriptFileHeader fileHeader)
                             return false;
 
@@ -849,12 +849,12 @@ namespace SabreTools.Serialization.Wrappers
                         ExtractFile(data, dataStart, fileHeader, ++normalFileCount, outputDirectory, includeDebug);
                         break;
 
-                    case OperationCode.IniFile:
-                        if (state.Data is not ScriptIniFileWrite unknown0x05Data)
+                    case OperationCode.EditIniFile:
+                        if (state.Data is not ScriptEditIniFile unknown0x05Data)
                             return false;
 
                         // Ensure directory separators are consistent
-                        string iniFilePath = unknown0x05Data.File ?? $"WISE{normalFileCount:X4}.ini";
+                        string iniFilePath = unknown0x05Data.Pathname ?? $"WISE{normalFileCount:X4}.ini";
                         if (Path.DirectorySeparatorChar == '\\')
                             iniFilePath = iniFilePath.Replace('/', '\\');
                         else if (Path.DirectorySeparatorChar == '/')
@@ -886,15 +886,15 @@ namespace SabreTools.Serialization.Wrappers
                         // Multiple entries can go to the same file, but with different messages
                         break;
 
-                    case OperationCode.UnknownDeflatedFile0x14:
+                    case OperationCode.CustomDialogSet:
                         // TODO: Figure out how to properly support these files
                         break;
 
-                    case OperationCode.TempFilename:
-                        if (state.Data is not ScriptUnknown0x16 unknown0x16Data)
+                    case OperationCode.GetTemporaryFilename:
+                        if (state.Data is not ScriptGetTemporaryFilename unknown0x16Data)
                             return false;
 
-                        tempPath = unknown0x16Data.Name;
+                        tempPath = unknown0x16Data.Variable;
                         break;
 
                     default:

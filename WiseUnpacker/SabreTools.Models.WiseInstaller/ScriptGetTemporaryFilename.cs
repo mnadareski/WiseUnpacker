@@ -1,14 +1,14 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// 'end' op
+    /// TempFileName
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x08 : MachineStateData
+    public class ScriptGetTemporaryFilename : MachineStateData
     {
         /// <summary>
-        /// Unknown, maybe flags?
+        /// Name, labeled as "Variable" in scripts
         /// </summary>
-        public byte Unknown_1 { get; set; }
+        public string? Variable { get; set; }
     }
 }

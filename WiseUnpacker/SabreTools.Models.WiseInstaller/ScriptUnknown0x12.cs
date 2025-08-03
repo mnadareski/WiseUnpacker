@@ -9,13 +9,13 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown, 0x0C
         /// </summary>
-        public byte Unknown_1 { get; set; }
+        public byte Operand_1 { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
         /// <remarks>41 bytes</remarks>
-        public byte[]? Unknown_41 { get; set; }
+        public byte[]? Operand_2 { get; set; }
 
         /// <summary>
         /// Source file 
@@ -25,12 +25,12 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown
         /// </summary>
-        public string? UnknownString_1 { get; set; }
+        public string? Operand_4 { get; set; }
 
         /// <summary>
         /// Unknown string(s), one per language
         /// </summary>
-        public string[]? UnknownStrings { get; set; }
+        public string[]? Operand_5 { get; set; }
 
         /// <summary>
         /// Destination file

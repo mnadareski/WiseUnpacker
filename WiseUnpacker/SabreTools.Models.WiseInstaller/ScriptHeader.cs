@@ -57,13 +57,18 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// \0 terminated string
         /// </summary>
-        public string? Font { get; set; }
+        public string? MessageFont { get; set; }
+
+        /// <summary>
+        /// Font size for message fonts
+        /// </summary>
+        public uint FontSize { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>6 bytes</remarks>
-        public byte[]? Unknown_6 { get; set; }
+        /// <remarks>2 bytes</remarks>
+        public byte[]? Unknown_2 { get; set; }
 
         /// <summary>
         /// if languageCount > 1: the total string count is larger, there

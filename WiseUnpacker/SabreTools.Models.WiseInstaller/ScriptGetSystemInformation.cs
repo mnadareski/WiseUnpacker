@@ -1,24 +1,24 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// 'else if' struct, same as the 0x0C struct, but handled differently
+    /// Get system information variable
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x23 : MachineStateData
+    public class ScriptGetSystemInformation : MachineStateData
     {
         /// <summary>
-        /// Unknown, operator?
+        /// Flags, values unknown
         /// </summary>
-        public byte Operand_1 { get; set; }
+        public byte Flags { get; set; }
 
         /// <summary>
         /// Variable name
         /// </summary>
-        public string? VarName { get; set; }
+        public string? Variable { get; set; }
 
         /// <summary>
-        /// Variable value
+        /// Unknown
         /// </summary>
-        public string? VarValue { get; set; }
+        public string? Operand_3 { get; set; }
     }
 }

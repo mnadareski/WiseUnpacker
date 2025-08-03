@@ -6,6 +6,6 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown
         /// </summary>
-        public string? UnknownString_1 { get; set; }
+        public string? Operand_1 { get; set; }
     }
 }

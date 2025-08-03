@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
+using SabreTools.Models.GCF;
 using SabreTools.Models.WiseInstaller;
 
 namespace SabreTools.Serialization.Deserializers
@@ -88,13 +89,13 @@ namespace SabreTools.Serialization.Deserializers
         {
             var header = new ScriptFileHeader();
 
-            header.Unknown_2 = data.ReadUInt16LittleEndian();
+            header.Operand_1 = data.ReadUInt16LittleEndian();
             header.DeflateStart = data.ReadUInt32LittleEndian();
             header.DeflateEnd = data.ReadUInt32LittleEndian();
             header.Date = data.ReadUInt16LittleEndian();
             header.Time = data.ReadUInt16LittleEndian();
             header.InflatedSize = data.ReadUInt32LittleEndian();
-            header.Unknown_20 = data.ReadBytes(20);
+            header.Operand_7 = data.ReadBytes(20);
             header.Crc32 = data.ReadUInt32LittleEndian();
             header.DestFile = data.ReadNullTerminatedAnsiString();
 
@@ -104,7 +105,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.FileTexts[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
-            header.UnknownString = data.ReadNullTerminatedAnsiString();
+            header.Operand_11 = data.ReadNullTerminatedAnsiString();
 
             return header;
         }
@@ -129,10 +130,10 @@ namespace SabreTools.Serialization.Deserializers
             header.Unknown_22 = data.ReadBytes(22);
             header.Url = data.ReadNullTerminatedAnsiString();
             header.LogPath = data.ReadNullTerminatedAnsiString();
-            header.Font = data.ReadNullTerminatedAnsiString();
+            header.MessageFont = data.ReadNullTerminatedAnsiString();
 
             // If the font string is empty, then the header is trimmed
-            if (header.Font != null && header.Font.Length == 0)
+            if (header.MessageFont != null && header.MessageFont.Length == 0)
             {
                 // Seek back to the original position
                 data.Seek(current, SeekOrigin.Begin);
@@ -142,10 +143,11 @@ namespace SabreTools.Serialization.Deserializers
 
                 // TODO: Figure out if this maps to existing fields
                 header.Unknown_22 = data.ReadBytes(20);
-                header.Font = data.ReadNullTerminatedAnsiString();
+                header.MessageFont = data.ReadNullTerminatedAnsiString();
             }
 
-            header.Unknown_6 = data.ReadBytes(6);
+            header.FontSize = data.ReadUInt32LittleEndian();
+            header.Unknown_2 = data.ReadBytes(2);
             header.LanguageCount = data.ReadByteValue();
 
             header.UnknownStrings_7 = new string[7];
@@ -189,33 +191,33 @@ namespace SabreTools.Serialization.Deserializers
                 var op = (OperationCode)data.ReadByteValue();
                 MachineStateData? stateData = op switch
                 {
-                    OperationCode.CustomDeflateFileHeader => ParseScriptFileHeader(data, languageCount),
+                    OperationCode.InstallFile => ParseScriptFileHeader(data, languageCount),
                     OperationCode.Unknown0x03 => ParseUnknown0x03(data, languageCount),
                     OperationCode.FormData => ParseScriptFormData(data, languageCount),
-                    OperationCode.IniFile => ParseIniFileWrite(data),
+                    OperationCode.EditIniFile => ParseScriptEditIniFile(data),
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount),
-                    OperationCode.Unknown0x07 => ParseUnknown0x07(data),
-                    OperationCode.EndBranch => ParseUnknown0x08(data),
-                    OperationCode.FunctionCall => ParseUnknown0x09(data, languageCount),
-                    OperationCode.Unknown0x0A => ParseUnknown0x0A(data),
-                    OperationCode.Unknown0x0B => ParseUnknown0x0B(data),
-                    OperationCode.IfStatement => ParseUnknown0x0C(data),
+                    OperationCode.ExecuteProgram => ParseScriptExecuteProgram(data),
+                    OperationCode.EndBlock => ParseScriptEndBlock(data),
+                    OperationCode.FunctionCall => ParseScriptFunctionCall(data, languageCount),
+                    OperationCode.EditRegistry => ParseScriptEditRegistry(data),
+                    OperationCode.DeleteFile => ParseScriptDeleteFile(data),
+                    OperationCode.IfWhileStatement => ParseScriptIfWhileStatement(data),
                     OperationCode.ElseStatement => null, // No-op
                     OperationCode.StartFormData => null, // No-op
                     OperationCode.EndFormData => null, // No-op
                     OperationCode.Unknown0x11 => ParseUnknown0x11(data),
                     OperationCode.FileOnInstallMedium => ParseUnknown0x12(data, languageCount),
-                    OperationCode.UnknownDeflatedFile0x14 => ParseUnknown0x14(data),
-                    OperationCode.Unknown0x15 => ParseUnknown0x15(data),
-                    OperationCode.TempFilename => ParseUnknown0x16(data),
+                    OperationCode.CustomDialogSet => ParseScriptCustomDialogSet(data),
+                    OperationCode.GetSystemInformation => ParseScriptGetSystemInformation(data),
+                    OperationCode.GetTemporaryFilename => ParseScriptGetTemporaryFilename(data),
                     OperationCode.Unknown0x17 => ParseUnknown0x17(data),
                     OperationCode.Skip0x18 => null, // No-op, handled below
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
-                    OperationCode.Skip0x1B => null, // No-op
-                    OperationCode.Unknown0x1C => ParseUnknown0x1C(data),
+                    OperationCode.IncludeScript => null, // No-op
+                    OperationCode.AddTextToInstallLog => ParseScriptAddTextToInstallLog(data),
                     OperationCode.Unknown0x1D => ParseUnknown0x1D(data),
-                    OperationCode.Unknown0x1E => ParseUnknown0x1E(data),
+                    OperationCode.CompilerVariableIf => ParseScriptCompilerVariableIf(data),
                     OperationCode.ElseIfStatement => ParseUnknown0x23(data),
                     OperationCode.Skip0x24 => null, // No-op
                     OperationCode.Skip0x25 => null, // No-op
@@ -278,15 +280,15 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptIniFileWrite
+        /// Parse a Stream into a ScriptEditIniFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptIniFileWrite on success, null on error</returns>
-        private static ScriptIniFileWrite ParseIniFileWrite(Stream data)
+        /// <returns>Filled ScriptEditIniFile on success, null on error</returns>
+        private static ScriptEditIniFile ParseScriptEditIniFile(Stream data)
         {
-            var obj = new ScriptIniFileWrite();
+            var obj = new ScriptEditIniFile();
 
-            obj.File = data.ReadNullTerminatedAnsiString();
+            obj.Pathname = data.ReadNullTerminatedAnsiString();
             obj.Section = data.ReadNullTerminatedAnsiString();
             obj.Values = data.ReadNullTerminatedAnsiString();
 
@@ -302,8 +304,8 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x06();
 
-            obj.Unknown_2 = data.ReadBytes(2);
-            obj.Unknown = data.ReadUInt32LittleEndian();
+            obj.Operand_1 = data.ReadBytes(2);
+            obj.Operand_2 = data.ReadUInt32LittleEndian();
             obj.DeflateInfo = ParseScriptDeflateInfoContainer(data, languageCount);
             obj.Terminator = data.ReadByteValue();
 
@@ -311,108 +313,181 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x07
+        /// Parse a Stream into a ScriptExecuteProgram
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x07 on success, null on error</returns>
-        private static ScriptUnknown0x07 ParseUnknown0x07(Stream data)
+        /// <returns>Filled ScriptExecuteProgram on success, null on error</returns>
+        private static ScriptExecuteProgram ParseScriptExecuteProgram(Stream data)
         {
-            var obj = new ScriptUnknown0x07();
+            var obj = new ScriptExecuteProgram();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_3 = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.Pathname = data.ReadNullTerminatedAnsiString();
+            obj.CommandLine = data.ReadNullTerminatedAnsiString();
+            obj.DefaultDirectory = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x08
+        /// Parse a Stream into a ScriptEndBlock
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x08 on success, null on error</returns>
-        private static ScriptUnknown0x08 ParseUnknown0x08(Stream data)
+        /// <returns>Filled ScriptEndBlock on success, null on error</returns>
+        private static ScriptEndBlock ParseScriptEndBlock(Stream data)
         {
-            var obj = new ScriptUnknown0x08();
+            var obj = new ScriptEndBlock();
 
-            obj.Unknown_1 = data.ReadByteValue();
+            obj.Operand_1 = data.ReadByteValue();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x09
+        /// Parse a Stream into a ScriptFunctionCall
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x09 on success, null on error</returns>
-        private static ScriptUnknown0x09 ParseUnknown0x09(Stream data, int languageCount)
+        /// <returns>Filled ScriptFunctionCall on success, null on error</returns>
+        private static ScriptFunctionCall ParseScriptFunctionCall(Stream data, int languageCount)
         {
-            var obj = new ScriptUnknown0x09();
+            var obj = new ScriptFunctionCall();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_3 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_4 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadByteValue();
+            obj.DllPath = data.ReadNullTerminatedAnsiString();
+            obj.FunctionName = data.ReadNullTerminatedAnsiString();
+            obj.Operand_4 = data.ReadNullTerminatedAnsiString();
+            obj.ReturnVariable = data.ReadNullTerminatedAnsiString();
 
-            obj.UnknownStrings = new string[languageCount];
-            for (int i = 0; i < obj.UnknownStrings.Length; i++)
+            obj.Entries = new string[languageCount];
+            for (int i = 0; i < obj.Entries.Length; i++)
             {
-                obj.UnknownStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                // Read and store the entry string
+                obj.Entries[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+
+                // Switch based on the function
+                // TODO: Remove after mapping is complete
+                switch (obj.FunctionName)
+                {
+                    // Read INI Value
+                    case "f8": break;
+
+                    // Get Registry Key Value
+                    case "f9": break;
+
+                    // Check Configuration
+                    case "f12": break;
+
+                    // Unknown external
+                    case "f13":
+                        // TODO: Implement
+                        // Possibly Firefox-related for cookies?
+                        // Probably this layout:
+                        // - Variable for the dir name? (e.g. "DC_FIREFOX_COOKIE_DIR")
+                        // - Search path for the dir
+                        // - Variable name/message for not found directory (e.g. "NODIRFOUNDBAKA")
+                        break;
+
+                    // Set Variable
+                    case "f16": break;
+
+                    // Get Environment Variable
+                    case "f17": break;
+
+                    // Check if File/Dir Exists
+                    case "f19": break;
+
+                    // Unknown external
+                    case "f23":
+                        // TODO: Implement
+                        // Posssibly an uninstall creation script?
+                        // Probably this layout:
+                        // - Unknown numeric value (e.g. "0")
+                        // - Unknown numeric value (e.g. "0")
+                        // - Unknown string, empty in samples
+                        // - Tab-separated list of components? Locations? Some numeric?
+                        break;
+
+                    // Parse String
+                    case "f27": break;
+
+                    // Self-Register OCXs/DLLs
+                    case "f29": break;
+
+                    // Wizard Block
+                    case "f31": break;
+
+                    // Unknown external
+                    case "f33":
+                        // TODO: Implement
+                        // Possibly reading or writing from a cookies file
+                        // Probably this layout:
+                        // - Variable to read to/write from (e.g. "DC_LINE_OF_TEXT")
+                        // - Path to the cookies file (e.g. "%DC_WIN_DRIVE%:\Documents and Settings\%DC_LOGON_NAME%\Cookies\%DC_LOGON_NAME%@%DC_COOKIE_DOMAIN%[1].txt")
+                        // - Unknown string; in samples it was all 0x20-filled
+                        break;
+
+                    // Post to HTTP Server
+                    case "f34": break;
+
+                    // External DLL Calls
+                    default:
+                        string[] parts = obj.Entries[i].Split((char)0x7F);
+                        if (string.IsNullOrEmpty(obj.DllPath))
+                            Console.WriteLine($"Unrecognized function: {obj.FunctionName} with parts: {string.Join(", ", parts)}");
+
+                        break;
+                }
             }
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x0A
+        /// Parse a Stream into a ScriptEditRegistry
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x0A on success, null on error</returns>
-        private static ScriptUnknown0x0A ParseUnknown0x0A(Stream data)
+        /// <returns>Filled ScriptEditRegistry on success, null on error</returns>
+        private static ScriptEditRegistry ParseScriptEditRegistry(Stream data)
         {
-            var obj = new ScriptUnknown0x0A();
+            var obj = new ScriptEditRegistry();
 
-            obj.Unknown_2 = data.ReadUInt16LittleEndian();
-
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            if (obj.UnknownString_1 == string.Empty)
-                obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_3 = data.ReadNullTerminatedAnsiString();
+            obj.Root = data.ReadByteValue();
+            obj.DataType = data.ReadByteValue();
+            obj.Operand_3 = data.ReadByteValue();
+            obj.Key = data.ReadNullTerminatedAnsiString();
+            obj.NewValue = data.ReadNullTerminatedAnsiString();
+            obj.ValueName = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x0B
+        /// Parse a Stream into a ScriptDeleteFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x0B on success, null on error</returns>
-        private static ScriptUnknown0x0B ParseUnknown0x0B(Stream data)
+        /// <returns>Filled ScriptDeleteFile on success, null on error</returns>
+        private static ScriptDeleteFile ParseScriptDeleteFile(Stream data)
         {
-            var obj = new ScriptUnknown0x0B();
+            var obj = new ScriptDeleteFile();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.Pathname = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x0C
+        /// Parse a Stream into a ScriptIfWhileStatement
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x0C on success, null on error</returns>
-        private static ScriptUnknown0x0C ParseUnknown0x0C(Stream data)
+        /// <returns>Filled ScriptIfWhileStatement on success, null on error</returns>
+        private static ScriptIfWhileStatement ParseScriptIfWhileStatement(Stream data)
         {
-            var obj = new ScriptUnknown0x0C();
+            var obj = new ScriptIfWhileStatement();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.VarName = data.ReadNullTerminatedAnsiString();
-            obj.VarValue = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.Variable = data.ReadNullTerminatedAnsiString();
+            obj.Value = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -426,7 +501,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x11();
 
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -440,15 +515,15 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x12();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.Unknown_41 = data.ReadBytes(41);
+            obj.Operand_1 = data.ReadByteValue();
+            obj.Operand_2 = data.ReadBytes(41);
             obj.SourceFile = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_4 = data.ReadNullTerminatedAnsiString();
 
-            obj.UnknownStrings = new string[languageCount];
-            for (int i = 0; i < obj.UnknownStrings.Length; i++)
+            obj.Operand_5 = new string[languageCount];
+            for (int i = 0; i < obj.Operand_5.Length; i++)
             {
-                obj.UnknownStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                obj.Operand_5[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
             obj.DestFile = data.ReadNullTerminatedAnsiString();
@@ -457,48 +532,49 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x14
+        /// Parse a Stream into a ScriptCustomDialogSet
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x14 on success, null on error</returns>
-        private static ScriptUnknown0x14 ParseUnknown0x14(Stream data)
+        /// <returns>Filled ScriptCustomDialogSet on success, null on error</returns>
+        private static ScriptCustomDialogSet ParseScriptCustomDialogSet(Stream data)
         {
-            var obj = new ScriptUnknown0x14();
+            var obj = new ScriptCustomDialogSet();
 
             obj.DeflateStart = data.ReadUInt32LittleEndian();
             obj.DeflateEnd = data.ReadUInt32LittleEndian();
             obj.InflatedSize = data.ReadUInt32LittleEndian();
+            obj.DisplayVariable = data.ReadNullTerminatedAnsiString();
             obj.Name = data.ReadNullTerminatedAnsiString();
-            obj.Message = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x15
+        /// Parse a Stream into a ScriptGetSystemInformation
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x15 on success, null on error</returns>
-        private static ScriptUnknown0x15 ParseUnknown0x15(Stream data)
+        /// <returns>Filled ScriptGetSystemInformation on success, null on error</returns>
+        private static ScriptGetSystemInformation ParseScriptGetSystemInformation(Stream data)
         {
-            var obj = new ScriptUnknown0x15();
+            var obj = new ScriptGetSystemInformation();
 
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.Variable = data.ReadNullTerminatedAnsiString();
+            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x16
+        /// Parse a Stream into a ScriptGetTemporaryFilename
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x16 on success, null on error</returns>
-        private static ScriptUnknown0x16 ParseUnknown0x16(Stream data)
+        /// <returns>Filled ScriptGetTemporaryFilename on success, null on error</returns>
+        private static ScriptGetTemporaryFilename ParseScriptGetTemporaryFilename(Stream data)
         {
-            var obj = new ScriptUnknown0x16();
+            var obj = new ScriptGetTemporaryFilename();
 
-            obj.Name = data.ReadNullTerminatedAnsiString();
+            obj.Variable = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -512,9 +588,9 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x17();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.Unknown_4 = data.ReadBytes(4);
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadByteValue();
+            obj.Operand_2 = data.ReadBytes(4);
+            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -552,10 +628,10 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x19();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_3 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadByteValue();
+            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_4 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -569,23 +645,23 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x1A();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadByteValue();
+            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x1C
+        /// Parse a Stream into a ScriptAddTextToInstallLog
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x1C on success, null on error</returns>
-        private static ScriptUnknown0x1C ParseUnknown0x1C(Stream data)
+        /// <returns>Filled ScriptAddTextToInstallLog on success, null on error</returns>
+        private static ScriptAddTextToInstallLog ParseScriptAddTextToInstallLog(Stream data)
         {
-            var obj = new ScriptUnknown0x1C();
+            var obj = new ScriptAddTextToInstallLog();
 
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
+            obj.Text = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -599,23 +675,23 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x1D();
 
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x1E
+        /// Parse a Stream into a ScriptCompilerVariableIf
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x1E on success, null on error</returns>
-        private static ScriptUnknown0x1E ParseUnknown0x1E(Stream data)
+        /// <returns>Filled ScriptCompilerVariableIf on success, null on error</returns>
+        private static ScriptCompilerVariableIf ParseScriptCompilerVariableIf(Stream data)
         {
-            var obj = new ScriptUnknown0x1E();
+            var obj = new ScriptCompilerVariableIf();
 
-            obj.Unknown = data.ReadByteValue();
-            obj.UnknownString = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.Variable = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -629,7 +705,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x23();
 
-            obj.Unknown_1 = data.ReadByteValue();
+            obj.Operand_1 = data.ReadByteValue();
             obj.VarName = data.ReadNullTerminatedAnsiString();
             obj.VarValue = data.ReadNullTerminatedAnsiString();
 
@@ -645,9 +721,9 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x30();
 
-            obj.Unknown_1 = data.ReadByteValue();
-            obj.UnknownString_1 = data.ReadNullTerminatedAnsiString();
-            obj.UnknownString_2 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_1 = data.ReadByteValue();
+            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
+            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }

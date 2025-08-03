@@ -6,17 +6,17 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown
         /// </summary>
-        public byte Unknown_1 { get; set; }
+        public byte Operand_1 { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
         /// <remarks>4 bytes</remarks>
-        public byte[]? Unknown_4 { get; set; }
+        public byte[]? Operand_2 { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
-        public string? UnknownString_1 { get; set; }
+        public string? Operand_3 { get; set; }
     }
 }

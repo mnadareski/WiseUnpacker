@@ -1,10 +1,11 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// Wise script file?
+    /// Compressed custom dialog set data
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x14 : MachineStateData
+    /// TODO: Document the decompressed file format
+    public class ScriptCustomDialogSet : MachineStateData
     {
         /// <summary>
         /// Start of the deflated data
@@ -22,13 +23,13 @@ namespace SabreTools.Models.WiseInstaller
         public uint InflatedSize { get; set; }
 
         /// <summary>
+        /// Display variable name
+        /// </summary>
+        public string? DisplayVariable { get; set; }
+
+        /// <summary>
         /// Name
         /// </summary>
         public string? Name { get; set; }
-
-        /// <summary>
-        /// Message
-        /// </summary>
-        public string? Message { get; set; }
     }
 }

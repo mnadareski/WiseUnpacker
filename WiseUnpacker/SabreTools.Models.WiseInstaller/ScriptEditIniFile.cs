@@ -4,20 +4,23 @@ namespace SabreTools.Models.WiseInstaller
     /// Something with the .ini file, write .ini file?
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptIniFileWrite : MachineStateData
+    public class ScriptEditIniFile : MachineStateData
     {
         /// <summary>
-        /// Open for writing in append mode
+        /// Path name to INI file
         /// </summary>
-        public string? File { get; set; }
+        /// <remarks>Open for writing in append mode</remarks>
+        public string? Pathname { get; set; }
 
         /// <summary>
-        /// INI section text
+        /// INI section, represented by a Settings line
+        /// in the original script
         /// </summary>
         public string? Section { get; set; }
 
         /// <summary>
-        /// Multiline string containing values
+        /// Multiline string containing values, each representing
+        /// a new Settings line in the original script
         /// </summary>
         public string? Values { get; set; }
     }

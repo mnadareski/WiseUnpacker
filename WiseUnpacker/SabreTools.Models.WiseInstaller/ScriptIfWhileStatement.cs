@@ -1,7 +1,7 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// 'if' struct
+    /// If/While statement data
     /// </summary>
     /// <remarks>
     /// Examples:
@@ -36,21 +36,21 @@ namespace SabreTools.Models.WiseInstaller
     ///   0x0C 00 'COMPONENTS' 'A'
     /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x0C : MachineStateData
+    public class ScriptIfWhileStatement : MachineStateData
     {
         /// <summary>
-        /// Unknown, operator?
+        /// Flags, unknown values
         /// </summary>
-        public byte Unknown_1 { get; set; }
+        public byte Flags { get; set; }
 
         /// <summary>
         /// Variable name
         /// </summary>
-        public string? VarName { get; set; }
+        public string? Variable { get; set; }
 
         /// <summary>
-        /// Variable value
+        /// Value
         /// </summary>
-        public string? VarValue { get; set; }
+        public string? Value { get; set; }
     }
 }

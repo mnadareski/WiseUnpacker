@@ -7,12 +7,12 @@ namespace SabreTools.Models.WiseInstaller
         /// Unknown
         /// </summary>
         /// <remarks>2 bytes</remarks>
-        public byte[]? Unknown_2 { get; set; }
+        public byte[]? Operand_1 { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
-        public uint Unknown { get; set; }
+        public uint Operand_2 { get; set; }
 
         /// <summary>
         /// Deflate information

@@ -1,15 +1,21 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// Header for a Wise script file
+    /// Information about a file to be installed
     /// </summary>
+    /// <remarks>
+    /// Multiple files can be included in the installer from
+    /// a single source Install File statement in the script.
+    /// Wildcards have been observed in a few examples to denote
+    /// entire directories or subdirectories being copied.
+    /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
     public class ScriptFileHeader : MachineStateData
     {
         /// <summary>
         /// Values of 0x8000, 0x8100, 0x0000, 0x9800 0xA100 have been observed
         /// </summary>
-        public ushort Unknown_2 { get; set; }
+        public ushort Operand_1 { get; set; }
 
         /// <summary>
         /// Start of the deflated data
@@ -40,7 +46,7 @@ namespace SabreTools.Models.WiseInstaller
         /// Unknown, 20 * \0? Not seen in hl15of16.exe and hl1316.exe
         /// </summary>
         /// <remarks>20 bytes</remarks>
-        public byte[]? Unknown_20 { get; set; }
+        public byte[]? Operand_7 { get; set; }
 
         /// <summary>
         /// CRC-32 checksum of the data
@@ -61,6 +67,6 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Seen used on hl15of16.exe and hl1316.exe, on others its \0
         /// </summary>
-        public string? UnknownString { get; set; }
+        public string? Operand_11 { get; set; }
     }
 }
