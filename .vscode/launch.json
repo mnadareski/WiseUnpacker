@@ -11,48 +11,7 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Test/bin/Debug/net9.0/Test.dll",
-            "args": [
-                "-d",
-
-                // "-o", "/home/matt/Downloads/_BADWISE/1/DA3D",
-                // "/home/matt/Downloads/_BADWISE/1/DA3D.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/2/InstallAlabamaSmithEscapePompeii",
-                // "/home/matt/Downloads/_BADWISE/2/InstallAlabamaSmithEscapePompeii.exe"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/3/Shockwave_Installer",
-                // "/home/matt/Downloads/_BADWISE/3/Shockwave_Installer.exe"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/4/Wintv2K",
-                // "/home/matt/Downloads/_BADWISE/4/Wintv2K.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/5/DSETUP",
-                // "/home/matt/Downloads/_BADWISE/5/DSETUP.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/6/InstallCollapseII",
-                // "/home/matt/Downloads/_BADWISE/6/InstallCollapseII.exe"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/7/NETMTG",
-                // "/home/matt/Downloads/_BADWISE/7/NETMTG.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/8/TextTwistInstall",
-                // "/home/matt/Downloads/_BADWISE/8/TextTwistInstall.exe"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/9/4_2_19228_Vfw95-98",
-                // "/home/matt/Downloads/_BADWISE/9/4_2_19228_Vfw95-98.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/10/DTV39data",
-                // "/home/matt/Downloads/_BADWISE/10/DTV39data.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/11/GetDLLs",
-                // "/home/matt/Downloads/_BADWISE/11/GetDLLs.EXE"
-
-                // "-o", "/home/matt/Downloads/_BADWISE/12/hcwsubid_setup",
-                // "/home/matt/Downloads/_BADWISE/12/hcwsubid_setup.EXE"
-
-                "-o", "/home/matt/Downloads/_BADWISE/13/ArcadeInstallFull202RC2-google",
-                "/home/matt/Downloads/_BADWISE/13/ArcadeInstallFull202RC2-google.exe"
-            ],
+            "args": [],
 
             "cwd": "${workspaceFolder}/Test",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
