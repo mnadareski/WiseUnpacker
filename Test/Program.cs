@@ -113,6 +113,7 @@ namespace Test
                     return;
 
                 // Try to parse the script information
+                extracted?.Seek(0, SeekOrigin.Begin);
                 var script = WiseScript.Create(extracted);
                 if (script == null)
                 {

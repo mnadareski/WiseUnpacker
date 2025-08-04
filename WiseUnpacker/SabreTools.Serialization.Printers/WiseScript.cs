@@ -107,7 +107,7 @@ namespace SabreTools.Serialization.Printers
                 var entry = entries[i];
 
                 builder.AppendLine($"  State Machine Entry {i}:");
-                builder.AppendLine($"    Op: {entry.Op} (0x{entry.Op:X1})");
+                builder.AppendLine($"    Op: {entry.Op} (0x{(uint)entry.Op:X1})");
                 switch (entry.Data)
                 {
                     case ScriptFileHeader data: Print(builder, data); break;

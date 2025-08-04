@@ -17,7 +17,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.DllNameLen, "DLL name length");
             builder.AppendLine(overlayHeader.DllName, "DLL name");
             builder.AppendLine(overlayHeader.DllSize, "DLL size");
-            builder.AppendLine($"Flags: {overlayHeader.Flags} (0x{overlayHeader.Flags:X4})");
+            builder.AppendLine($"Flags: {overlayHeader.Flags} (0x{(uint)overlayHeader.Flags:X4})");
             builder.AppendLine(overlayHeader.Unknown_20, "Unknown");
             builder.AppendLine(overlayHeader.WiseScriptInflatedSize, "Wise script inflated size");
             builder.AppendLine(overlayHeader.WiseScriptDeflatedSize, "Wise script deflated size");
@@ -37,7 +37,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.DibInflatedSize, "DIB inflated size");
             builder.AppendLine(overlayHeader.InstallScriptDeflatedSize, "Install script deflated size");
             builder.AppendLine(overlayHeader.UnknownU32_4, "Unknown");
-            builder.AppendLine($"Endianness: {overlayHeader.Endianness} (0x{overlayHeader.Endianness:X4})");
+            builder.AppendLine($"Endianness: {overlayHeader.Endianness} (0x{(uint)overlayHeader.Endianness:X4})");
             builder.AppendLine(overlayHeader.InitTextLen, "Init text length");
             builder.AppendLine(overlayHeader.InitText, "Init text");
             builder.AppendLine();
