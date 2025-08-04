@@ -752,20 +752,20 @@ namespace SabreTools.Serialization.Wrappers
             if (ExtractFile(data, "PROGRESS.DLL", outputDirectory, ProgressDllDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
-            // Extract FILE0006, if it exists
-            if (ExtractFile(data, "FILE0006", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
-                return false;
-
             // Extract FILE0007, if it exists
-            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract FILE0008, if it exists
-            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract FILE0009, if it exists
-            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData10DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+                return false;
+
+            // Extract FILE000A, if it exists
+            if (ExtractFile(data, "FILE000A", outputDirectory, SomeData10DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract install script, if it exists
