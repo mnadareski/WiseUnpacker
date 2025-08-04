@@ -28,7 +28,10 @@ namespace SabreTools.Serialization.Deserializers
 
                 #region State Machine
 
-                var states = ParseStateMachine(data, header.LanguageCount);
+                // Flag old/trimmed headers
+                bool old = header.Unknown_22?.Length == 20;
+
+                var states = ParseStateMachine(data, header.LanguageCount, old);
                 if (states == null)
                     return null;
 
@@ -132,6 +135,7 @@ namespace SabreTools.Serialization.Deserializers
             header.MessageFont = data.ReadNullTerminatedAnsiString();
 
             // If the font string is empty, then the header is trimmed
+            int scriptStringsMultiplier = 55;
             if (header.MessageFont != null && header.MessageFont.Length == 0)
             {
                 // Seek back to the original position
@@ -143,6 +147,7 @@ namespace SabreTools.Serialization.Deserializers
                 // TODO: Figure out if this maps to existing fields
                 header.Unknown_22 = data.ReadBytes(20);
                 header.MessageFont = data.ReadNullTerminatedAnsiString();
+                scriptStringsMultiplier = 46;
             }
 
             header.FontSize = data.ReadUInt32LittleEndian();
@@ -162,7 +167,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.LanguageSelectionStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
-            header.ScriptStrings = new string[55 * header.LanguageCount];
+            header.ScriptStrings = new string[scriptStringsMultiplier * header.LanguageCount];
             for (int i = 0; i < header.ScriptStrings.Length; i++)
             {
                 header.ScriptStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
@@ -176,8 +181,9 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
+        /// <param name="old">Indicates an old install script</param>
         /// <returns>Filled state machine on success, null on error</returns>
-        private static MachineState[]? ParseStateMachine(Stream data, byte languageCount)
+        private static MachineState[]? ParseStateMachine(Stream data, byte languageCount, bool old)
         {
             // Initialize important loop information
             int op0x18skip = -1;
@@ -197,7 +203,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount),
                     OperationCode.ExecuteProgram => ParseScriptExecuteProgram(data),
                     OperationCode.EndBlock => ParseScriptEndBlock(data),
-                    OperationCode.FunctionCall => ParseScriptFunctionCall(data, languageCount),
+                    OperationCode.FunctionCall => ParseScriptFunctionCall(data, languageCount, old),
                     OperationCode.EditRegistry => ParseScriptEditRegistry(data),
                     OperationCode.DeleteFile => ParseScriptDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseScriptIfWhileStatement(data),
@@ -244,6 +250,7 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a ScriptUnknown0x03
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="languageCount">Language counter from the header</param>
         /// <returns>Filled ScriptUnknown0x03 on success, null on error</returns>
         /// <remarks>Seen in block included from rollback.wse<remarks>
         private static ScriptUnknown0x03 ParseUnknown0x03(Stream data, int languageCount)
@@ -264,6 +271,7 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a ScriptFormData
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="languageCount">Language counter from the header</param>
         /// <returns>Filled ScriptFormData on success, null on error</returns>
         private static ScriptFormData ParseScriptFormData(Stream data, int languageCount)
         {
@@ -299,6 +307,7 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a ScriptUnknown0x06
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="languageCount">Language counter from the header</param>
         /// <returns>Filled ScriptUnknown0x06 on success, null on error</returns>
         private static ScriptUnknown0x06 ParseUnknown0x06(Stream data, int languageCount)
         {
@@ -347,16 +356,21 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a ScriptFunctionCall
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="languageCount">Language counter from the header</param>
+        /// <param name="old">Indicates an old install script</param>
         /// <returns>Filled ScriptFunctionCall on success, null on error</returns>
-        private static ScriptFunctionCall ParseScriptFunctionCall(Stream data, int languageCount)
+        private static ScriptFunctionCall ParseScriptFunctionCall(Stream data, int languageCount, bool old)
         {
             var obj = new ScriptFunctionCall();
 
             obj.Operand_1 = data.ReadByteValue();
             obj.DllPath = data.ReadNullTerminatedAnsiString();
             obj.FunctionName = data.ReadNullTerminatedAnsiString();
-            obj.Operand_4 = data.ReadNullTerminatedAnsiString();
-            obj.ReturnVariable = data.ReadNullTerminatedAnsiString();
+            if (!old)
+            {
+                obj.Operand_4 = data.ReadNullTerminatedAnsiString();
+                obj.ReturnVariable = data.ReadNullTerminatedAnsiString();
+            }
 
             obj.Entries = new string[languageCount];
             for (int i = 0; i < obj.Entries.Length; i++)
@@ -510,6 +524,7 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a ScriptUnknown0x12
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="languageCount">Language counter from the header</param>
         /// <returns>Filled ScriptUnknown0x12 on success, null on error</returns>
         private static ScriptUnknown0x12 ParseUnknown0x12(Stream data, int languageCount)
         {

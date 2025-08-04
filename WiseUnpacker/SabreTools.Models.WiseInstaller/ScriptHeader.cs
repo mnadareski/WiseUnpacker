@@ -125,6 +125,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// 55 * <see cref="LanguageCount"/> strings
         /// </summary>
+        /// <remarks>In trimmed scripts, this number seems to be 46?</remarks>
         public string[]? ScriptStrings { get; set; }
     }
 }

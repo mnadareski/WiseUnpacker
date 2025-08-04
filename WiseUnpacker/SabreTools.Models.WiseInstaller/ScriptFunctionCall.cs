@@ -37,11 +37,13 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Args?
         /// </summary>
+        /// <remarks>In older/trimmed scripts, this seems to be missing?</remarks>
         public string? Operand_4 { get; set; }
 
         /// <summary>
         /// Return variable from an external call
         /// </summary>
+        /// <remarks>In older/trimmed scripts, this seems to be missing?</remarks>
         public string? ReturnVariable { get; set; }
 
         /// <summary>
