@@ -18,9 +18,16 @@ namespace SabreTools.Serialization.Deserializers
             {
                 var overlayHeader = ParseOverlayHeader(data);
 
+                if (overlayHeader.DibInflatedSize >= data.Length)
+                    return null;
+                if (overlayHeader.WiseScriptDeflatedSize >= data.Length)
+                    return null;
+                if (overlayHeader.FinalFileDeflatedSize >= data.Length)
+                    return null;
+
                 // Valid for older overlay headers
-                if (overlayHeader.Endianness == 0x0000)
-                    return overlayHeader;
+                    if (overlayHeader.Endianness == 0x0000)
+                        return overlayHeader;
                 if (overlayHeader.Endianness != Endianness.LittleEndian && overlayHeader.Endianness != Endianness.BigEndian)
                     return null;
 
