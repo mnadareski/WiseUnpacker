@@ -582,9 +582,20 @@ namespace SabreTools.Serialization.Wrappers
                 return ExtractStatus.FAIL;
             }
 
+            // If the read value is exactly one less than the expected read
+            // then seek forward an extra byte to match up. It is not known
+            // why this is necessary in some cases.
+            if (bytesRead == expectedBytesRead + 1)
+            {
+                // TODO: What does this byte represent?
+                _ = data.ReadByteValue();
+                bytesRead += 1;
+            }
+
             // If not PKZIP, read the checksum bytes
             if (!IsPKZIP)
             {
+                // Seek to the true end of the data
                 data.Seek(current + bytesRead, SeekOrigin.Begin);
                 uint deflateCrc = data.ReadUInt32LittleEndian();
                 bytesRead += 4;
