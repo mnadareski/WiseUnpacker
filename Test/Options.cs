@@ -17,6 +17,11 @@ namespace Test
         public bool Debug { get; private set; } = false;
 
         /// <summary>
+        /// Enable extraction for the input file
+        /// </summary>
+        public bool Extract { get; private set; } = false;
+
+        /// <summary>
         /// Print both the overlay and script information
         /// to screen and file, if possible
         /// </summary>
@@ -72,11 +77,20 @@ namespace Test
                         options.OutputPath = index + 1 < args.Length ? args[++index] : string.Empty;
                         break;
 
+                    case "-x":
+                    case "--extract":
+                        options.Extract = true;
+                        break;
+
                     default:
                         options.InputPaths.Add(arg);
                         break;
                 }
             }
+
+            // If neither info nor extract is defined, default to extract
+            if (!options.Info && !options.Extract)
+                options.Extract = true;
 
             // Validate we have any input paths to work on
             if (options.InputPaths.Count == 0)
@@ -98,7 +112,7 @@ namespace Test
         /// </summary>
         public static void DisplayHelp()
         {
-            Console.WriteLine("Wise Installer Extraction Reference Implementation");
+            Console.WriteLine("Wise Installer Reference Implementation");
             Console.WriteLine();
             Console.WriteLine("Test <options> file|directory ...");
             Console.WriteLine();
@@ -106,6 +120,7 @@ namespace Test
             Console.WriteLine("-?, -h, --help           Display this help text and quit");
             Console.WriteLine("-d, --debug              Enable debug mode");
             Console.WriteLine("-i, --info               Print overlay and script info");
+            Console.WriteLine("-x, --extract            Extract files (default if nothing else provided)");
             Console.WriteLine("-o, --outdir [PATH]      Set output path for extraction (required)");
         }
 

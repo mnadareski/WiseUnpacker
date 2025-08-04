@@ -23,17 +23,16 @@ namespace Test
             // Loop through the input paths
             foreach (string inputPath in options.InputPaths)
             {
-                ExtractPath(inputPath, options.OutputPath, options.Info, options.Debug);
+                ProcessPath(inputPath, options);
             }
         }
 
         /// <summary>
-        /// Wrapper to extract data for a single path
+        /// Wrapper to process a single path
         /// </summary>
         /// <param name="path">File or directory path</param>
-        /// <param name="outputDirectory">Output directory path</param>
-        /// <param name="includeDebug">Enable including debug information</param>
-        private static void ExtractPath(string path, string outputDirectory, bool includeInfo, bool includeDebug)
+        /// <param name="options">User-defined options</param>
+        private static void ProcessPath(string path, Options options)
         {
             // Normalize by getting the full path
             path = Path.GetFullPath(path);
@@ -42,13 +41,13 @@ namespace Test
             // Check if the file or directory exists
             if (File.Exists(path))
             {
-                ExtractFile(path, outputDirectory, includeInfo, includeDebug);
+                ProcessFile(path, options);
             }
             else if (Directory.Exists(path))
             {
                 foreach (string file in IOExtensions.SafeEnumerateFiles(path, "*", SearchOption.AllDirectories))
                 {
-                    ExtractFile(file, outputDirectory, includeInfo, includeDebug);
+                    ProcessFile(file, options);
                 }
             }
             else
@@ -58,22 +57,19 @@ namespace Test
         }
 
         /// <summary>
-        /// Wrapper to extract data for a single file
+        /// Wrapper to process a single file
         /// </summary>
         /// <param name="file">File path</param>
-        /// <param name="outputDirectory">Output directory path</param>
-        /// <param name="includeDebug">Enable including debug information</param>
-        private static void ExtractFile(string file, string outputDirectory, bool includeInfo, bool includeDebug)
+        /// <param name="options">User-defined options</param>
+        private static void ProcessFile(string file, Options options)
         {
             // Attempt to print information
-            if (includeInfo)
-                PrintFileInfo(file, outputDirectory, includeDebug);
+            if (options.Info)
+                PrintFileInfo(file, options.OutputPath, options.Debug);
 
             // Attempt to extract the file
-            if (WiseOverlayHeader.ExtractAll(file, outputDirectory, includeDebug))
-                Console.WriteLine($"Extracted {file} to {outputDirectory}");
-            else
-                Console.WriteLine(value: $"Failed to extract {file}!");
+            if (options.Extract)
+                ExtractFile(file, options.OutputPath, options.Debug);
         }
 
         /// <summary>
@@ -142,6 +138,20 @@ namespace Test
                 Console.WriteLine(includeDebug ? ex : "[Exception opening file, please try again]");
                 Console.WriteLine();
             }
+        }
+
+        /// <summary>
+        /// Wrapper to extract all files from the input
+        /// </summary>
+        /// <param name="file">File path</param>
+        /// <param name="outputDirectory">Output directory path</param>
+        /// <param name="includeDebug">Enable including debug information</param>
+        private static void ExtractFile(string file, string outputDirectory, bool includeDebug)
+        {
+            if (WiseOverlayHeader.ExtractAll(file, outputDirectory, includeDebug))
+                Console.WriteLine($"Extracted {file} to {outputDirectory}");
+            else
+                Console.WriteLine(value: $"Failed to extract {file}!");
         }
     }
 }
