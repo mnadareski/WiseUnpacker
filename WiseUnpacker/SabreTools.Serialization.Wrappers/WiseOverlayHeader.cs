@@ -760,7 +760,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
 
             // Extract FILE000{n}.DAT, if it exists
-            if (ExtractFile(data, "FILE00XX.DAT", outputDirectory, SomeData5DeflatedSize, SomeData5InflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, IsPKZIP ? null : "FILE00XX.DAT", outputDirectory, SomeData5DeflatedSize, SomeData5InflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             dataStart = data.Position;
