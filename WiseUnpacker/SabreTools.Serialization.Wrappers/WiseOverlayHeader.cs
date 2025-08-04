@@ -574,7 +574,7 @@ namespace SabreTools.Serialization.Wrappers
             out MemoryStream? extracted)
         {
             // Debug output
-            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: [STREAM], Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc:X8}");
+            if (includeDebug) Console.WriteLine($"Filename: {filename}, Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc:X8}");
 
             // Check the validity of the inputs
             if (expectedBytesRead == 0 || expectedBytesRead >= (data.Length - data.Position) || expectedBytesWritten == 0)
