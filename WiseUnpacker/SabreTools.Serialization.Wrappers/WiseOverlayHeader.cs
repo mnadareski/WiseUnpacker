@@ -267,19 +267,63 @@ namespace SabreTools.Serialization.Wrappers
 
             // Attempt to deserialize the file as either NE or PE
             var wrapper = CreateExecutableWrapper(data);
-            if (wrapper is not NewExecutable && wrapper is not PortableExecutable)
+            if (wrapper is NewExecutable ne)
+            {
+                return FindOverlayHeader(data, ne, includeDebug, out header);
+            }
+            else if (wrapper is PortableExecutable pe)
+            {
+                return FindOverlayHeader(data, pe, includeDebug, out header);
+            }
+            else
             {
                 if (includeDebug) Console.Error.WriteLine("Only NE and PE executables are supported");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Find the overlay header from a NE Wise installer, if possible
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="nex">Wrapper representing the NE</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <param name="header">The found overlay header on success, null otherwise</param>
+        /// <returns>True if the header was found and valid, false otherwise</returns>
+        public static bool FindOverlayHeader(Stream data, NewExecutable nex, bool includeDebug, out WiseOverlayHeader? header)
+        {
+            // Set the default header value
+            header = null;
 
             // Get the overlay offset
-            long overlayOffset = wrapper switch
+            long overlayOffset = GetOverlayAddress(nex);
+            if (overlayOffset < 0 || overlayOffset >= data.Length)
             {
-                NewExecutable ne => GetOverlayAddress(ne),
-                PortableExecutable pe => pe.OverlayData != null && pe.OverlayData.Length > 0 ? pe.OverlayAddress : -1,
-                _ => -1,
-            };
+                if (includeDebug) Console.Error.WriteLine("Could not parse the overlay header");
+                return false;
+            }
+
+            // Attempt to get the overlay header
+            data.Seek(overlayOffset, SeekOrigin.Begin);
+            header = Create(data);
+            return header != null;
+        }
+
+        /// <summary>
+        /// Find the overlay header from a PE Wise installer, if possible
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="nex">Wrapper representing the PE</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <param name="header">The found overlay header on success, null otherwise</param>
+        /// <returns>True if the header was found and valid, false otherwise</returns>
+        public static bool FindOverlayHeader(Stream data, PortableExecutable pex, bool includeDebug, out WiseOverlayHeader? header)
+        {
+            // Set the default header value
+            header = null;
+
+            // Get the overlay offset
+            long overlayOffset = pex.OverlayAddress;
 
             // Attempt to get the overlay header
             if (overlayOffset >= 0 && overlayOffset < data.Length)
@@ -288,13 +332,6 @@ namespace SabreTools.Serialization.Wrappers
                 header = Create(data);
                 if (header != null)
                     return true;
-            }
-
-            // If the file wasn't a PE, don't search for the header further
-            if (wrapper is not PortableExecutable pex)
-            {
-                if (includeDebug) Console.Error.WriteLine("Could not parse the overlay header");
-                return false;
             }
 
             // If there are no resources
