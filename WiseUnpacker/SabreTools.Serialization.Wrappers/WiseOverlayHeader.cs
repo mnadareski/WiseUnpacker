@@ -592,7 +592,7 @@ namespace SabreTools.Serialization.Wrappers
                 bytesRead += 1;
 
                 // Debug output
-                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: {padding}");
+                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
             }
 
             // If not PKZIP, read the checksum bytes
