@@ -722,16 +722,8 @@ namespace SabreTools.Serialization.Wrappers
             if (ExtractFile(data, "CTL3D32.DLL", outputDirectory, Ctl3d32DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
-            // Extract seventh file, if it exists
-            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
-                return false;
-
-            // Extract eighth file, if it exists
-            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
-                return false;
-
-            // Extract nineth file, if it exists
-            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            // Extract UNKNOWN_FILE, if it exists -- TODO: Figure out where this actually lives
+            if (ExtractFile(data, "UNKNOWN_FILE", outputDirectory, Model.UnknownDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract Ocxreg32.EXE, if it exists
@@ -747,12 +739,20 @@ namespace SabreTools.Serialization.Wrappers
             if (ExtractFile(data, "PROGRESS.DLL", outputDirectory, ProgressDllDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
-            // Extract UNKNOWN_FILE, if it exists -- TODO: Figure out where this actually lives
-            if (ExtractFile(data, "UNKNOWN_FILE", outputDirectory, Model.UnknownU32_2, -1, 0, includeDebug) == ExtractStatus.FAIL)
-                return false;
-
             // Extract FILE0006, if it exists
             if (ExtractFile(data, "FILE0006", outputDirectory, SomeData6DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+                return false;
+
+            // Extract FILE0007, if it exists
+            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+                return false;
+
+            // Extract FILE0008, if it exists
+            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+                return false;
+
+            // Extract FILE0009, if it exists
+            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract install script, if it exists

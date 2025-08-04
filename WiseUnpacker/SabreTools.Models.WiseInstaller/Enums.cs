@@ -117,9 +117,10 @@ namespace SabreTools.Models.WiseInstaller
         Unknown0x17 = 0x17,
 
         /// <summary>
-        /// Skip this byte? On some installers also skip next 6 bytes FIXME
+        /// New Event
         /// </summary>
-        Skip0x18 = 0x18,
+        /// <remarks>On some installers also skip next 6 bytes FIXME</remarks>
+        NewEvent = 0x18,
 
         /// <summary>
         /// Unknown

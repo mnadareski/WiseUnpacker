@@ -23,7 +23,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.WiseScriptDeflatedSize, "Wise script deflated size");
             builder.AppendLine(overlayHeader.WiseDllDeflatedSize, "Wise DLL deflated size");
             builder.AppendLine(overlayHeader.Ctl3d32DeflatedSize, "CTL3D32.DLL deflated size");
-            builder.AppendLine(overlayHeader.UnknownU32_2, "Unknown");
+            builder.AppendLine(overlayHeader.UnknownDeflatedSize, "Unknown");
             builder.AppendLine(overlayHeader.RegToolDeflatedSize, "Ocxreg32.EXE deflated size");
             builder.AppendLine(overlayHeader.ProgressDllDeflatedSize, "PROGRESS.DLL deflated size");
             builder.AppendLine(overlayHeader.SomeData6DeflatedSize, "FILE0006 deflated size");

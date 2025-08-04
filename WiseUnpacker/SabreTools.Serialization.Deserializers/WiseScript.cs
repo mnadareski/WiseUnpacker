@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
-using SabreTools.Models.GCF;
 using SabreTools.Models.WiseInstaller;
 
 namespace SabreTools.Serialization.Deserializers
@@ -211,7 +210,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.GetSystemInformation => ParseScriptGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseScriptGetTemporaryFilename(data),
                     OperationCode.Unknown0x17 => ParseUnknown0x17(data),
-                    OperationCode.Skip0x18 => null, // No-op, handled below
+                    OperationCode.NewEvent => null, // No-op, handled below
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
                     OperationCode.IncludeScript => null, // No-op
@@ -227,8 +226,8 @@ namespace SabreTools.Serialization.Deserializers
                 };
 
                 // Special handling
-                if (op == OperationCode.Skip0x18)
-                    op0x18skip = ParseUnknown0x18(data, op0x18skip);
+                if (op == OperationCode.NewEvent)
+                    op0x18skip = ParseNewEvent(data, op0x18skip);
 
                 var state = new MachineState
                 {
@@ -246,6 +245,7 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <returns>Filled ScriptUnknown0x03 on success, null on error</returns>
+        /// <remarks>Seen in block included from rollback.wse<remarks>
         private static ScriptUnknown0x03 ParseUnknown0x03(Stream data, int languageCount)
         {
             var obj = new ScriptUnknown0x03();
@@ -601,7 +601,7 @@ namespace SabreTools.Serialization.Deserializers
         /// <param name="data">Stream to parse</param>
         /// <param name="op0x18skip">Current 0x18 skip value</param>
         /// <returns>New 0x18 skip value</returns>
-        internal static int ParseUnknown0x18(Stream data, int op0x18skip)
+        internal static int ParseNewEvent(Stream data, int op0x18skip)
         {
             // If the skip amount needs to be determined
             if (op0x18skip == -1)

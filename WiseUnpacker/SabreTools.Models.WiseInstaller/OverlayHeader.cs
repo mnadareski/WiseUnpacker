@@ -53,9 +53,9 @@ namespace SabreTools.Models.WiseInstaller
         public uint Ctl3d32DeflatedSize { get; set; }
 
         /// <summary>
-        /// Unknown
+        /// Deflated size of unknown file
         /// </summary>
-        public uint UnknownU32_2 { get; set; }
+        public uint UnknownDeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of Ocxreg32.EXE,
