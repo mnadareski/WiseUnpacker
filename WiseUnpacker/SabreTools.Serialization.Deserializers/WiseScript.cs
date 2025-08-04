@@ -83,36 +83,6 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptFileHeader
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptFileHeader on success, null on error</returns>
-        private static ScriptFileHeader ParseScriptFileHeader(Stream data, int languageCount)
-        {
-            var header = new ScriptFileHeader();
-
-            header.Operand_1 = data.ReadUInt16LittleEndian();
-            header.DeflateStart = data.ReadUInt32LittleEndian();
-            header.DeflateEnd = data.ReadUInt32LittleEndian();
-            header.Date = data.ReadUInt16LittleEndian();
-            header.Time = data.ReadUInt16LittleEndian();
-            header.InflatedSize = data.ReadUInt32LittleEndian();
-            header.Operand_7 = data.ReadBytes(20);
-            header.Crc32 = data.ReadUInt32LittleEndian();
-            header.DestFile = data.ReadNullTerminatedAnsiString();
-
-            header.FileTexts = new string[languageCount];
-            for (int i = 0; i < header.FileTexts.Length; i++)
-            {
-                header.FileTexts[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
-            }
-
-            header.Operand_11 = data.ReadNullTerminatedAnsiString();
-
-            return header;
-        }
-
-        /// <summary>
         /// Parse a Stream into a ScriptHeader
         /// </summary>
         /// <param name="data">Stream to parse</param>
@@ -199,7 +169,7 @@ namespace SabreTools.Serialization.Deserializers
                 MachineStateData? stateData = op switch
                 {
                     OperationCode.InstallFile => ParseScriptFileHeader(data, languageCount),
-                    OperationCode.Unknown0x03 => ParseUnknown0x03(data, languageCount),
+                    OperationCode.DisplayMessage => ParseScriptDisplayMessage(data, languageCount),
                     OperationCode.FormData => ParseScriptFormData(data, languageCount),
                     OperationCode.EditIniFile => ParseScriptEditIniFile(data),
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount),
@@ -213,7 +183,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.StartFormData => null, // No-op
                     OperationCode.EndFormData => null, // No-op
                     OperationCode.Unknown0x11 => ParseUnknown0x11(data),
-                    OperationCode.FileOnInstallMedium => ParseUnknown0x12(data, languageCount),
+                    OperationCode.CopyLocalFile => ParseScriptCopyLocalFile(data, languageCount),
                     OperationCode.CustomDialogSet => ParseScriptCustomDialogSet(data),
                     OperationCode.GetSystemInformation => ParseScriptGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseScriptGetTemporaryFilename(data),
@@ -225,7 +195,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.AddTextToInstallLog => ParseScriptAddTextToInstallLog(data),
                     OperationCode.Unknown0x1D => ParseUnknown0x1D(data),
                     OperationCode.CompilerVariableIf => ParseScriptCompilerVariableIf(data),
-                    OperationCode.ElseIfStatement => ParseUnknown0x23(data),
+                    OperationCode.ElseIfStatement => ParseScriptElseIf(data),
                     OperationCode.Skip0x24 => null, // No-op
                     OperationCode.Skip0x25 => null, // No-op
                     OperationCode.ReadByteAndStrings => ParseUnknown0x30(data),
@@ -249,21 +219,51 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x03
+        /// Parse a Stream into a ScriptFileHeader
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled ScriptFileHeader on success, null on error</returns>
+        private static ScriptFileHeader ParseScriptFileHeader(Stream data, int languageCount)
+        {
+            var header = new ScriptFileHeader();
+
+            header.Operand_1 = data.ReadUInt16LittleEndian();
+            header.DeflateStart = data.ReadUInt32LittleEndian();
+            header.DeflateEnd = data.ReadUInt32LittleEndian();
+            header.Date = data.ReadUInt16LittleEndian();
+            header.Time = data.ReadUInt16LittleEndian();
+            header.InflatedSize = data.ReadUInt32LittleEndian();
+            header.Operand_7 = data.ReadBytes(20);
+            header.Crc32 = data.ReadUInt32LittleEndian();
+            header.DestFile = data.ReadNullTerminatedAnsiString();
+
+            header.Description = new string[languageCount];
+            for (int i = 0; i < header.Description.Length; i++)
+            {
+                header.Description[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+            }
+
+            header.Operand_11 = data.ReadNullTerminatedAnsiString();
+
+            return header;
+        }
+
+        /// <summary>
+        /// Parse a Stream into a ScriptDisplayMessage
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <returns>Filled ScriptUnknown0x03 on success, null on error</returns>
+        /// <returns>Filled ScriptDisplayMessage on success, null on error</returns>
         /// <remarks>Seen in block included from rollback.wse<remarks>
-        private static ScriptUnknown0x03 ParseUnknown0x03(Stream data, int languageCount)
+        private static ScriptDisplayMessage ParseScriptDisplayMessage(Stream data, int languageCount)
         {
-            var obj = new ScriptUnknown0x03();
+            var obj = new ScriptDisplayMessage();
 
-            obj.Operand_0 = data.ReadByteValue();
-            obj.LangStrings = new string[languageCount * 2];
-            for (int i = 0; i < obj.LangStrings.Length; i++)
+            obj.Flags = data.ReadByteValue();
+            obj.TitleText = new string[languageCount * 2];
+            for (int i = 0; i < obj.TitleText.Length; i++)
             {
-                obj.LangStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                obj.TitleText[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
             return obj;
@@ -470,9 +470,6 @@ namespace SabreTools.Serialization.Deserializers
             obj.Root = data.ReadByteValue();
             obj.DataType = data.ReadByteValue();
             obj.Key = data.ReadNullTerminatedAnsiString();
-            if (obj.Key == string.Empty)
-                obj.Key = data.ReadNullTerminatedAnsiString();
-
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
 
@@ -525,27 +522,27 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x12
+        /// Parse a Stream into a ScriptCopyLocalFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <returns>Filled ScriptUnknown0x12 on success, null on error</returns>
-        private static ScriptUnknown0x12 ParseUnknown0x12(Stream data, int languageCount)
+        /// <returns>Filled ScriptCopyLocalFile on success, null on error</returns>
+        private static ScriptCopyLocalFile ParseScriptCopyLocalFile(Stream data, int languageCount)
         {
-            var obj = new ScriptUnknown0x12();
+            var obj = new ScriptCopyLocalFile();
 
             obj.Operand_1 = data.ReadByteValue();
             obj.Operand_2 = data.ReadBytes(41);
-            obj.SourceFile = data.ReadNullTerminatedAnsiString();
+            obj.Source = data.ReadNullTerminatedAnsiString();
             obj.Operand_4 = data.ReadNullTerminatedAnsiString();
 
-            obj.Operand_5 = new string[languageCount];
-            for (int i = 0; i < obj.Operand_5.Length; i++)
+            obj.Description = new string[languageCount];
+            for (int i = 0; i < obj.Description.Length; i++)
             {
-                obj.Operand_5[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                obj.Description[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
-            obj.DestFile = data.ReadNullTerminatedAnsiString();
+            obj.Destination = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -720,17 +717,17 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x23
+        /// Parse a Stream into a ScriptElseIf
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x23 on success, null on error</returns>
-        private static ScriptUnknown0x23 ParseUnknown0x23(Stream data)
+        /// <returns>Filled ScriptElseIf on success, null on error</returns>
+        private static ScriptElseIf ParseScriptElseIf(Stream data)
         {
-            var obj = new ScriptUnknown0x23();
+            var obj = new ScriptElseIf();
 
-            obj.Operand_1 = data.ReadByteValue();
-            obj.VarName = data.ReadNullTerminatedAnsiString();
-            obj.VarValue = data.ReadNullTerminatedAnsiString();
+            obj.Operator = data.ReadByteValue();
+            obj.Variable = data.ReadNullTerminatedAnsiString();
+            obj.Value = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }

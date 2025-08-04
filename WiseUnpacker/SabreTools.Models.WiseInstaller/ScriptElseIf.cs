@@ -1,24 +1,24 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// 'else if' struct, same as the 0x0C struct, but handled differently
+    /// ElseIf Statement
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x23 : MachineStateData
+    public class ScriptElseIf : MachineStateData
     {
         /// <summary>
-        /// Unknown, operator?
+        /// Operator, values need to be mapped
         /// </summary>
-        public byte Operand_1 { get; set; }
+        public byte Operator { get; set; }
 
         /// <summary>
         /// Variable name
         /// </summary>
-        public string? VarName { get; set; }
+        public string? Variable { get; set; }
 
         /// <summary>
-        /// Variable value
+        /// Value
         /// </summary>
-        public string? VarValue { get; set; }
+        public string? Value { get; set; }
     }
 }

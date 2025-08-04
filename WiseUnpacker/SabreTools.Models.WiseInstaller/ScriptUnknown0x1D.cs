@@ -1,6 +1,6 @@
 namespace SabreTools.Models.WiseInstaller
 {
-    /// <remarks>Only seen in Blitzkriegdemo.exe</remarks>
+    /// <remarks>Possibly Copy Local File</remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
     public class ScriptUnknown0x1D : MachineStateData
     {

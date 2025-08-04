@@ -62,7 +62,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// One file text per language, \0 terminated
         /// </summary>
-        public string[]? FileTexts { get; set; }
+        public string[]? Description { get; set; }
 
         /// <summary>
         /// Seen used on hl15of16.exe and hl1316.exe, on others its \0

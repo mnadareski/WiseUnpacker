@@ -1,10 +1,10 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
-    /// File on install medium
+    /// Copy Local File
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x12 : MachineStateData
+    public class ScriptCopyLocalFile : MachineStateData
     {
         /// <summary>
         /// Unknown, 0x0C
@@ -18,9 +18,9 @@ namespace SabreTools.Models.WiseInstaller
         public byte[]? Operand_2 { get; set; }
 
         /// <summary>
-        /// Source file 
+        /// Source file
         /// </summary>
-        public string? SourceFile { get; set; }
+        public string? Source { get; set; }
 
         /// <summary>
         /// Unknown
@@ -28,13 +28,13 @@ namespace SabreTools.Models.WiseInstaller
         public string? Operand_4 { get; set; }
 
         /// <summary>
-        /// Unknown string(s), one per language
+        /// Description, one per language
         /// </summary>
-        public string[]? Operand_5 { get; set; }
+        public string[]? Description { get; set; }
 
         /// <summary>
         /// Destination file
         /// </summary>
-        public string? DestFile { get; set; }
+        public string? Destination { get; set; }
     }
 }

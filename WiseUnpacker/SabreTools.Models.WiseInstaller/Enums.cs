@@ -22,9 +22,9 @@ namespace SabreTools.Models.WiseInstaller
         InstallFile = 0x00,
 
         /// <summary>
-        /// Unknown
+        /// Display Message
         /// </summary>
-        Unknown0x03 = 0x03,
+        DisplayMessage = 0x03,
 
         /// <summary>
         /// Form data?
@@ -92,9 +92,9 @@ namespace SabreTools.Models.WiseInstaller
         Unknown0x11 = 0x11,
 
         /// <summary>
-        /// File on install medium (CD/DVD), to copy?
+        /// Copy Local File
         /// </summary>
-        FileOnInstallMedium = 0x12,
+        CopyLocalFile = 0x12,
 
         /// <summary>
         /// Custom Dialog Set
