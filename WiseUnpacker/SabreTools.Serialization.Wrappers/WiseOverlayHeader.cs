@@ -718,13 +718,15 @@ namespace SabreTools.Serialization.Wrappers
                 else
                 {
                     byte[] deflateCrcBytes = new byte[4];
-                    _ = data.Read(deflateCrcBytes, 0, (int)(data.Length - data.Position));
+                    int realCrcLength = data.Read(deflateCrcBytes, 0, (int)(data.Length - data.Position));
 
                     // Parse as a little-endian 32-bit value
                     deflateCrc = (uint)(deflateCrcBytes[0]
                                | (deflateCrcBytes[1] << 8)
                                | (deflateCrcBytes[2] << 16)
                                | (deflateCrcBytes[3] << 24));
+
+                    bytesRead += realCrcLength;
                 }
 
                 // If the CRC to check isn't set
