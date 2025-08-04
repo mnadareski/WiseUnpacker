@@ -747,6 +747,10 @@ namespace SabreTools.Serialization.Wrappers
             if (ExtractFile(data, "PROGRESS.DLL", outputDirectory, ProgressDllDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
+            // Extract UNKNOWN_FILE, if it exists -- TODO: Figure out where this actually lives
+            if (ExtractFile(data, "UNKNOWN_FILE", outputDirectory, Model.UnknownU32_2, -1, 0, includeDebug) == ExtractStatus.FAIL)
+                return false;
+
             // Extract FILE0006, if it exists
             if (ExtractFile(data, "FILE0006", outputDirectory, SomeData6DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;

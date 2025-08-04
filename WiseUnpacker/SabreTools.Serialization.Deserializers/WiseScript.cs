@@ -399,7 +399,7 @@ namespace SabreTools.Serialization.Deserializers
                     // Unknown external
                     case "f23":
                         // TODO: Implement
-                        // Posssibly an uninstall creation script?
+                        // Add ProgMan Icon(?)
                         // Probably this layout:
                         // - Unknown numeric value (e.g. "0")
                         // - Unknown numeric value (e.g. "0")

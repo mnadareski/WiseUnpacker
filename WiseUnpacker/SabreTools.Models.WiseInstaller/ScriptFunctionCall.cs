@@ -24,7 +24,7 @@ namespace SabreTools.Models.WiseInstaller
         /// f16 - Set Variable
         /// f17 - Get Environment Variable
         /// f19 - Check if File/Dir Exists
-        /// f23 - ???? [Included in uninstal.wse]
+        /// f23 - Add ProgMan Icon(?) [Included in uninstal.wse]
         /// f27 - Parse String
         /// f29 - Self-Register OCXs/DLLs
         /// f31 - Wizard Block
