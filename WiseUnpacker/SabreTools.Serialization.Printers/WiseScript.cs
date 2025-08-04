@@ -40,6 +40,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(header.Url, "  URL");
             builder.AppendLine(header.LogPath, "  Log path");
             builder.AppendLine(header.MessageFont, "  Font");
+            builder.AppendLine(header.FontSize, "  Font size");
             builder.AppendLine(header.Unknown_2, "  Unknown");
             builder.AppendLine(header.LanguageCount, "  Language count");
             builder.AppendLine();
