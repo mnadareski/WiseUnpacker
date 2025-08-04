@@ -67,7 +67,7 @@ namespace Test
         {
             // Attempt to print information
             if (includeInfo)
-                PrintFileInfo(file, includeDebug);
+                PrintFileInfo(file, outputDirectory, includeDebug);
 
             // Attempt to extract the file
             if (WiseOverlayHeader.ExtractAll(file, outputDirectory, includeDebug))
@@ -80,11 +80,12 @@ namespace Test
         /// Wrapper to print overlay and script information for a single file
         /// </summary>
         /// <param name="file">File path</param>
+        /// <param name="outputDirectory">Output directory path</param>
         /// <param name="includeDebug">Enable including debug information</param>
-        private static void PrintFileInfo(string file, bool includeDebug)
+        private static void PrintFileInfo(string file, string outputDirectory, bool includeDebug)
         {
             // Get the base info output name
-            string filenameBase = $"info-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}";
+            string filenameBase = Path.Combine(outputDirectory, $"info-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}");
 
             Console.WriteLine($"Attempting to print info for {file}");
 
