@@ -388,7 +388,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            // Parse the executable and recurse
+            // Parse the executable, if possible
             data.Seek(resourceOffset, SeekOrigin.Begin);
             var resourceExe = CreateExecutableWrapper(data);
             if (resourceExe is not PortableExecutable resourcePex)
@@ -397,63 +397,8 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            // Get the end of the file, if possible
-            long endOfFile = resourcePex.GetEndOfFile();
-            if (endOfFile == -1)
-                return false;
-
-            // If the section table is missing
-            if (resourcePex.Model.SectionTable == null)
-                return false;
-
-            // If we have certificate data, use that as the end
-            if (resourcePex.Model.OptionalHeader?.CertificateTable != null)
-            {
-                int certificateTableAddress = (int)resourcePex.Model.OptionalHeader.CertificateTable.VirtualAddress.ConvertVirtualAddress(resourcePex.Model.SectionTable);
-                if (certificateTableAddress != 0 && resourceOffset + certificateTableAddress < endOfFile)
-                    endOfFile = resourceOffset + certificateTableAddress;
-            }
-
-            // Search through all sections and find the furthest a section goes
-            overlayOffset = -1;
-            foreach (var section in resourcePex.Model.SectionTable)
-            {
-                // If we have an invalid section
-                if (section == null)
-                    continue;
-
-                // If we have an invalid section address
-                int sectionAddress = (int)section.VirtualAddress.ConvertVirtualAddress(resourcePex.Model.SectionTable);
-                if (sectionAddress == 0)
-                    continue;
-
-                // If we have an invalid section size
-                if (section.SizeOfRawData == 0 && section.VirtualSize == 0)
-                    continue;
-
-                // Get the real section size
-                int sectionSize;
-                if (section.SizeOfRawData < section.VirtualSize)
-                    sectionSize = (int)section.VirtualSize;
-                else
-                    sectionSize = (int)section.SizeOfRawData;
-
-                // Compare and set the end of section data
-                if (resourceOffset + sectionAddress + sectionSize > overlayOffset)
-                    overlayOffset = resourceOffset + sectionAddress + sectionSize;
-            }
-
-            // If we didn't find the end of section data
-            if (overlayOffset < 0 || overlayOffset >= endOfFile)
-            {
-                if (includeDebug) Console.Error.WriteLine($"Invalid overlay offset: {overlayOffset}");
-                return false;
-            }
-
-            // Attempt to get the overlay header
-            data.Seek(overlayOffset, SeekOrigin.Begin);
-            header = Create(data);
-            return header != null;
+            // Recurse into the resource
+            return FindOverlayHeader(data, resourcePex, includeDebug, out header);
         }
 
         /// <summary>
