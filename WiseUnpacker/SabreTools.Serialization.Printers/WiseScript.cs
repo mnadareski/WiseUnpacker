@@ -314,6 +314,7 @@ namespace SabreTools.Serialization.Printers
         {
             builder.AppendLine($"    Data: ScriptEditRegistry");
             builder.AppendLine(data.Root, $"      Root");
+            builder.AppendLine(data.DataType, $"      Data type");
             builder.AppendLine(data.Key, $"      Key");
             builder.AppendLine(data.NewValue, $"      New value");
             builder.AppendLine(data.ValueName, $"      Value name");

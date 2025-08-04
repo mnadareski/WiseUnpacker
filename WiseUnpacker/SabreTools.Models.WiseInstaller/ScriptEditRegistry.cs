@@ -18,11 +18,6 @@ namespace SabreTools.Models.WiseInstaller
         public byte DataType { get; set; }
 
         /// <summary>
-        /// Unknown
-        /// </summary>
-        public byte Operand_3 { get; set; }
-
-        /// <summary>
         /// Key path
         /// </summary>
         public string? Key { get; set; }

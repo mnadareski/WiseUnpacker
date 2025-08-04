@@ -469,7 +469,6 @@ namespace SabreTools.Serialization.Deserializers
 
             obj.Root = data.ReadByteValue();
             obj.DataType = data.ReadByteValue();
-            obj.Operand_3 = data.ReadByteValue();
             obj.Key = data.ReadNullTerminatedAnsiString();
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
