@@ -657,7 +657,7 @@ namespace SabreTools.Serialization.Wrappers
                 // We want to log this but ignore the error
                 if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
                 {
-                    if (includeDebug) Console.WriteLine($"Ignoring mismatched write values for {filename} because read values match!");
+                    if (includeDebug) Console.WriteLine($"Ignoring mismatched write values for {filename} because read values match! Possible patch file...");
                 }
             }
 
