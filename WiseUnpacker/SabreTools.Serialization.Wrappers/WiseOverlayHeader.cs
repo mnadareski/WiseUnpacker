@@ -626,13 +626,6 @@ namespace SabreTools.Serialization.Wrappers
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, expected to read {expectedBytesRead} bytes but only {data.Length - data.Position} bytes remain");
                 return ExtractStatus.INVALID;
             }
-            else if (expectedBytesWritten == 0)
-            {
-                // TODO: This one might actually be a valid case?
-                extracted = null;
-                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, expected to write 0 bytes");
-                return ExtractStatus.INVALID;
-            }
 
             // Cache the current offset
             long current = data.Position;
