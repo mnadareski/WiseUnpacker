@@ -595,6 +595,19 @@ namespace SabreTools.Serialization.Wrappers
                 if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
             }
 
+            // If the read value is exactly one less than the expected read
+            // then seek forward an extra byte to match up. It is not known
+            // why this is necessary in some cases.
+            if (bytesRead == expectedBytesRead + 1)
+            {
+                // TODO: What does this byte represent?
+                byte padding = data.ReadByteValue();
+                bytesRead += 1;
+
+                // Debug output
+                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
+            }
+
             // If not PKZIP, read the checksum bytes
             if (!IsPKZIP)
             {
@@ -746,6 +759,19 @@ namespace SabreTools.Serialization.Wrappers
             {
                 if (includeDebug) Console.Error.WriteLine($"Could not extract {filename}");
                 return ExtractStatus.FAIL;
+            }
+
+            // If the read value is exactly one less than the expected read
+            // then seek forward an extra byte to match up. It is not known
+            // why this is necessary in some cases.
+            if (bytesRead == expectedBytesRead + 1)
+            {
+                // TODO: What does this byte represent?
+                byte padding = data.ReadByteValue();
+                bytesRead += 1;
+
+                // Debug output
+                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
             }
 
             // If not PKZIP, read the checksum bytes
