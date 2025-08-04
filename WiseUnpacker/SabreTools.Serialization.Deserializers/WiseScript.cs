@@ -618,6 +618,10 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>New 0x18 skip value</returns>
         internal static int ParseNewEvent(Stream data, int op0x18skip)
         {
+            // If the end of the stream has been reached
+            if (data.Position >= data.Length)
+                return -1;
+
             // If the skip amount needs to be determined
             if (op0x18skip == -1)
             {
