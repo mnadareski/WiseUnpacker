@@ -582,35 +582,20 @@ namespace SabreTools.Serialization.Wrappers
                 return ExtractStatus.FAIL;
             }
 
-            // If the read value is exactly one less than the expected read
-            // then seek forward an extra byte to match up. It is not known
-            // why this is necessary in some cases.
-            if (bytesRead == expectedBytesRead + 1)
-            {
-                // TODO: What does this byte represent?
-                byte padding = data.ReadByteValue();
-                bytesRead += 1;
-
-                // Debug output
-                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
-            }
-
-            // If the read value is exactly one less than the expected read
-            // then seek forward an extra byte to match up. It is not known
-            // why this is necessary in some cases.
-            if (bytesRead == expectedBytesRead - 1)
-            {
-                // TODO: What does this byte represent?
-                byte padding = data.ReadByteValue();
-                bytesRead += 1;
-
-                // Debug output
-                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
-            }
-
             // If not PKZIP, read the checksum bytes
             if (!IsPKZIP)
             {
+                // If the read value is off-by-one after checksum
+                if (bytesRead == expectedBytesRead - 5)
+                {
+                    // TODO: What does this byte represent?
+                    byte padding = data.ReadByteValue();
+                    bytesRead += 1;
+
+                    // Debug output
+                    if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
+                }
+
                 // Seek to the true end of the data
                 data.Seek(current + bytesRead, SeekOrigin.Begin);
                 uint deflateCrc = data.ReadUInt32LittleEndian();
@@ -761,22 +746,20 @@ namespace SabreTools.Serialization.Wrappers
                 return ExtractStatus.FAIL;
             }
 
-            // If the read value is exactly one less than the expected read
-            // then seek forward an extra byte to match up. It is not known
-            // why this is necessary in some cases.
-            if (bytesRead == expectedBytesRead - 1)
-            {
-                // TODO: What does this byte represent?
-                byte padding = data.ReadByteValue();
-                bytesRead += 1;
-
-                // Debug output
-                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
-            }
-
             // If not PKZIP, read the checksum bytes
             if (!IsPKZIP)
             {
+                // If the read value is off-by-one after checksum
+                if (bytesRead == expectedBytesRead - 5)
+                {
+                    // TODO: What does this byte represent?
+                    byte padding = data.ReadByteValue();
+                    bytesRead += 1;
+
+                    // Debug output
+                    if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X}");
+                }
+
                 data.Seek(current + bytesRead, SeekOrigin.Begin);
                 uint deflateCrc = data.ReadUInt32LittleEndian();
                 bytesRead += 4;
