@@ -598,7 +598,7 @@ namespace SabreTools.Serialization.Wrappers
             // If the read value is exactly one less than the expected read
             // then seek forward an extra byte to match up. It is not known
             // why this is necessary in some cases.
-            if (bytesRead == expectedBytesRead + 1)
+            if (bytesRead == expectedBytesRead - 1)
             {
                 // TODO: What does this byte represent?
                 byte padding = data.ReadByteValue();
@@ -764,7 +764,7 @@ namespace SabreTools.Serialization.Wrappers
             // If the read value is exactly one less than the expected read
             // then seek forward an extra byte to match up. It is not known
             // why this is necessary in some cases.
-            if (bytesRead == expectedBytesRead + 1)
+            if (bytesRead == expectedBytesRead - 1)
             {
                 // TODO: What does this byte represent?
                 byte padding = data.ReadByteValue();
