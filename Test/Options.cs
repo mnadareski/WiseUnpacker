@@ -17,6 +17,12 @@ namespace Test
         public bool Debug { get; private set; } = false;
 
         /// <summary>
+        /// Print both the overlay and script information
+        /// to screen and file, if possible
+        /// </summary>
+        public bool Info { get; private set; } = false;
+
+        /// <summary>
         /// Set of input paths to use for operations
         /// </summary>
         public List<string> InputPaths { get; private set; } = [];
@@ -54,6 +60,11 @@ namespace Test
                     case "-d":
                     case "--debug":
                         options.Debug = true;
+                        break;
+
+                    case "-i":
+                    case "--info":
+                        options.Info = true;
                         break;
 
                     case "-o":
@@ -94,6 +105,7 @@ namespace Test
             Console.WriteLine("Options:");
             Console.WriteLine("-?, -h, --help           Display this help text and quit");
             Console.WriteLine("-d, --debug              Enable debug mode");
+            Console.WriteLine("-i, --info               Print overlay and script info");
             Console.WriteLine("-o, --outdir [PATH]      Set output path for extraction (required)");
         }
 

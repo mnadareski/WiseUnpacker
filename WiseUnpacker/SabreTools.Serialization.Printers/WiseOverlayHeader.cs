@@ -23,13 +23,13 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.WiseScriptDeflatedSize, "Wise script deflated size");
             builder.AppendLine(overlayHeader.WiseDllDeflatedSize, "Wise DLL deflated size");
             builder.AppendLine(overlayHeader.Ctl3d32DeflatedSize, "CTL3D32.DLL deflated size");
-            builder.AppendLine(overlayHeader.SomeData4DeflatedSize, "Unknown");
+            builder.AppendLine(overlayHeader.SomeData4DeflatedSize, "FILE0004 deflated size");
             builder.AppendLine(overlayHeader.RegToolDeflatedSize, "Ocxreg32.EXE deflated size");
             builder.AppendLine(overlayHeader.ProgressDllDeflatedSize, "PROGRESS.DLL deflated size");
-            builder.AppendLine(overlayHeader.SomeData7DeflatedSize, "FILE0006 deflated size");
-            builder.AppendLine(overlayHeader.SomeData8DeflatedSize, "FILE0007 deflated size");
-            builder.AppendLine(overlayHeader.SomeData9DeflatedSize, "FILE0008 deflated size");
-            builder.AppendLine(overlayHeader.SomeData10DeflatedSize, "FILE0009 deflated size");
+            builder.AppendLine(overlayHeader.SomeData7DeflatedSize, "FILE0007 deflated size");
+            builder.AppendLine(overlayHeader.SomeData8DeflatedSize, "FILE0008 deflated size");
+            builder.AppendLine(overlayHeader.SomeData9DeflatedSize, "FILE0009 deflated size");
+            builder.AppendLine(overlayHeader.SomeData10DeflatedSize, "FILE000A deflated size");
             builder.AppendLine(overlayHeader.FinalFileDeflatedSize, "FILE000{n}.DAT deflated size");
             builder.AppendLine(overlayHeader.FinalFileInflatedSize, "FILE000{n}.DAT inflated size");
             builder.AppendLine(overlayHeader.EOF, "EOF");

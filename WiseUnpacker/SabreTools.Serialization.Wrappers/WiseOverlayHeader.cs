@@ -254,57 +254,13 @@ namespace SabreTools.Serialization.Wrappers
         }
 
         /// <summary>
-        /// Open a potential WISE installer file and any additional files
-        /// </summary>
-        /// <returns>True if the file could be opened, false otherwise</returns>
-        private static bool OpenFile(string name, out ReadOnlyCompositeStream? stream)
-        {
-            // If the file exists as-is
-            if (File.Exists(name))
-            {
-                var fileStream = File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                stream = new ReadOnlyCompositeStream([fileStream]);
-
-                // Strip the extension
-                name = Path.GetFileNameWithoutExtension(name);
-            }
-
-            // If the base name was provided, try to open the associated exe
-            else if (File.Exists($"{name}.exe"))
-            {
-                var fileStream = File.Open($"{name}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                stream = new ReadOnlyCompositeStream([fileStream]);
-            }
-
-            // Otherwise, the file cannot be opened
-            else
-            {
-                stream = null;
-                return false;
-            }
-
-            // Loop through and try to read all additional files
-            byte fileno = 2;
-            string extraPath = $"{name}.W{fileno:X}";
-            while (File.Exists(extraPath))
-            {
-                var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                stream.AddStream(fileStream);
-                fileno++;
-                extraPath = $"{name}.W{fileno:X}";
-            }
-
-            return true;
-        }
-
-        /// <summary>
         /// Find the overlay header from the Wise installer, if possible
         /// </summary>
         /// <param name="data">Stream representing the Wise installer</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <param name="header">The found overlay header on success, null otherwise</param>
         /// <returns>True if the header was found and valid, false otherwise</returns>
-        private static bool FindOverlayHeader(Stream data, bool includeDebug, out WiseOverlayHeader? header)
+        public static bool FindOverlayHeader(Stream data, bool includeDebug, out WiseOverlayHeader? header)
         {
             // Set the default header value
             header = null;
@@ -461,6 +417,50 @@ namespace SabreTools.Serialization.Wrappers
             data.Seek(overlayOffset, SeekOrigin.Begin);
             header = Create(data);
             return header != null;
+        }
+
+        /// <summary>
+        /// Open a potential WISE installer file and any additional files
+        /// </summary>
+        /// <returns>True if the file could be opened, false otherwise</returns>
+        private static bool OpenFile(string name, out ReadOnlyCompositeStream? stream)
+        {
+            // If the file exists as-is
+            if (File.Exists(name))
+            {
+                var fileStream = File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+
+                // Strip the extension
+                name = Path.GetFileNameWithoutExtension(name);
+            }
+
+            // If the base name was provided, try to open the associated exe
+            else if (File.Exists($"{name}.exe"))
+            {
+                var fileStream = File.Open($"{name}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+            }
+
+            // Otherwise, the file cannot be opened
+            else
+            {
+                stream = null;
+                return false;
+            }
+
+            // Loop through and try to read all additional files
+            byte fileno = 2;
+            string extraPath = $"{name}.W{fileno:X}";
+            while (File.Exists(extraPath))
+            {
+                var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream.AddStream(fileStream);
+                fileno++;
+                extraPath = $"{name}.W{fileno:X}";
+            }
+
+            return true;
         }
 
         /// <summary>
