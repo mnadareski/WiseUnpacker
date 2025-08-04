@@ -531,39 +531,8 @@ namespace SabreTools.Serialization.Wrappers
             uint expectedCrc,
             bool includeDebug)
         {
-            // Debug output
-            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: {outputDirectory}, Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc:X4}");
-
-            // Check the validity of the inputs
-            if (expectedBytesRead == 0 || expectedBytesRead >= (data.Length - data.Position) || expectedBytesWritten == 0)
-            {
-                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, invalid inputs detected");
-                return ExtractStatus.INVALID;
-            }
-
-            // Cache the current offset
-            long current = data.Position;
-
-            // Skip the PKZIP header, if it exists
-            Models.PKZIP.LocalFileHeader? zipHeader = null;
-            long zipHeaderBytes = 0;
-            if (IsPKZIP)
-            {
-                zipHeader = Deserializers.PKZIP.ParseLocalFileHeader(data);
-                zipHeaderBytes = data.Position - current;
-
-                // Always trust the PKZIP CRC-32 value over what is supplied
-                if (zipHeader != null)
-                    expectedCrc = zipHeader.CRC32;
-
-                // Debug output
-                if (includeDebug) Console.WriteLine($"PKZIP Filename: {zipHeader?.FileName}, PKZIP Expected Read: {zipHeader?.CompressedSize}, PKZIP Expected Write: {zipHeader?.UncompressedSize}, PKZIP Expected CRC-32: {zipHeader?.CRC32:X4}");
-            }
-
-            // Set the name from the zip header if missing
-            filename ??= zipHeader?.FileName ?? Guid.NewGuid().ToString();
-
             // Ensure directory separators are consistent
+            filename ??= "[NULL]";
             if (Path.DirectorySeparatorChar == '\\')
                 filename = filename.Replace('/', '\\');
             else if (Path.DirectorySeparatorChar == '/')
@@ -576,139 +545,11 @@ namespace SabreTools.Serialization.Wrappers
                 Directory.CreateDirectory(directoryName);
 
             // Extract the file
-            if (!Inflate(data, filename, out long bytesRead, out long bytesWritten, out uint writtenCrc))
-            {
-                if (includeDebug) Console.Error.WriteLine($"Could not extract {filename}");
-                return ExtractStatus.FAIL;
-            }
+            ExtractStatus status = ExtractStream(data, filename, expectedBytesRead, expectedBytesWritten, expectedCrc, includeDebug, out var extracted);
+            if (extracted != null)
+                File.WriteAllBytes(filename, extracted.ToArray());
 
-            // If not PKZIP, read the checksum bytes
-            if (!IsPKZIP)
-            {
-                // Seek to the true end of the data
-                data.Seek(current + bytesRead, SeekOrigin.Begin);
-
-                // If the read value is off-by-one after checksum
-                if (bytesRead == expectedBytesRead - 5)
-                {
-                    // If not at the end of the file, get the corrected offset
-                    if (data.Position + 5 < data.Length)
-                    {
-                        // TODO: What does this byte represent?
-                        byte padding = data.ReadByteValue();
-                        bytesRead += 1;
-
-                        // Debug output
-                        if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X2}");
-                    }
-                    else
-                    {
-                        // Debug output
-                        if (includeDebug) Console.WriteLine($"Not enough data to adjust offset");
-                    }
-                }
-
-                // If there is enough data to read the full CRC
-                uint deflateCrc;
-                if (data.Position + 4 < data.Length)
-                {
-                    deflateCrc = data.ReadUInt32LittleEndian();
-                    bytesRead += 4;
-                }
-                // Otherwise, read what is possible and pad with 0x00
-                else
-                {
-                    byte[] deflateCrcBytes = new byte[4];
-                    _ = data.Read(deflateCrcBytes, 0, (int)(data.Length - data.Position));
-
-                    // Parse as a little-endian 32-bit value
-                    deflateCrc = (uint)(deflateCrcBytes[0]
-                               | (deflateCrcBytes[1] << 8)
-                               | (deflateCrcBytes[2] << 16)
-                               | (deflateCrcBytes[3] << 24));
-                }
-
-                // If the CRC to check isn't set
-                if (expectedCrc == 0)
-                    expectedCrc = deflateCrc;
-
-                // Debug output
-                if (includeDebug) Console.WriteLine($"DeflateStream CRC-32: {deflateCrc:X4}");
-            }
-
-            // Otherwise, account for the header bytes read
-            else
-            {
-                bytesRead += zipHeaderBytes;
-                data.Seek(current + bytesRead, SeekOrigin.Begin);
-            }
-
-            // Debug output
-            if (includeDebug) Console.WriteLine($"Actual Read: {bytesRead}, Actual Write: {bytesWritten}, Actual CRC-32: {writtenCrc:X4}");
-
-            // If there's a mismatch during both reading and writing
-            if (expectedBytesRead >= 0 && expectedBytesRead != bytesRead)
-            {
-                // This in/out check helps catch false positives, such as
-                // files that have an off-by-one mismatch for read values
-                // but properly match the output written values.
-
-                // If the written bytes not correct as well
-                if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
-                {
-                    // Delete the errored file
-                    File.Delete(filename);
-
-                    if (includeDebug) Console.Error.WriteLine($"Mismatched read/write values for {filename}!");
-                    data.Seek(current, SeekOrigin.Begin);
-                    return ExtractStatus.WRONG_SIZE;
-                }
-
-                // If the written bytes are not being verified
-                else if (expectedBytesWritten < 0)
-                {
-                    // Delete the errored file
-                    File.Delete(filename);
-
-                    if (includeDebug) Console.Error.WriteLine($"Mismatched read/write values for {filename}!");
-                    data.Seek(current, SeekOrigin.Begin);
-                    return ExtractStatus.WRONG_SIZE;
-                }
-            }
-
-            // If there's just a mismatch during only writing
-            if (expectedBytesRead >= 0 && expectedBytesRead == bytesRead)
-            {
-                // We want to log this but ignore the error
-                if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
-                {
-                    if (includeDebug) Console.WriteLine($"Ignoring mismatched write values for {filename} because read values match! Possible patch file...");
-                }
-            }
-
-            // Otherwise, the write size should be checked normally
-            else if (expectedBytesRead == 0 && expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
-            {
-                // Delete the errored file
-                File.Delete(filename);
-
-                if (includeDebug) Console.Error.WriteLine($"Mismatched write values for {filename}!");
-                data.Seek(current, SeekOrigin.Begin);
-                return ExtractStatus.WRONG_SIZE;
-            }
-
-            // If there's a mismatch with the CRC-32
-            if (expectedCrc != 0 && expectedCrc != writtenCrc)
-            {
-                // Delete the errored file
-                File.Delete(filename);
-
-                if (includeDebug) Console.Error.WriteLine($"Mismatched CRC-32 values for {filename}!");
-                data.Seek(current, SeekOrigin.Begin);
-                return ExtractStatus.BAD_CRC;
-            }
-
-            return ExtractStatus.GOOD;
+            return status;
         }
 
         /// <summary>
@@ -730,10 +571,10 @@ namespace SabreTools.Serialization.Wrappers
             long expectedBytesWritten,
             uint expectedCrc,
             bool includeDebug,
-            out Stream? extracted)
+            out MemoryStream? extracted)
         {
             // Debug output
-            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: [STREAM], Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc:X4}");
+            if (includeDebug) Console.WriteLine($"Filename: {filename}, Output: [STREAM], Expected Read: {expectedBytesRead}, Expected Write: {expectedBytesWritten}, Expected CRC-32: {expectedCrc:X8}");
 
             // Check the validity of the inputs
             if (expectedBytesRead == 0 || expectedBytesRead >= (data.Length - data.Position) || expectedBytesWritten == 0)
@@ -824,7 +665,7 @@ namespace SabreTools.Serialization.Wrappers
                     expectedCrc = deflateCrc;
 
                 // Debug output
-                if (includeDebug) Console.WriteLine($"DeflateStream CRC-32: {deflateCrc:X4}");
+                if (includeDebug) Console.WriteLine($"DeflateStream CRC-32: {deflateCrc:X8}");
             }
 
             // Otherwise, account for the header bytes read
@@ -835,7 +676,7 @@ namespace SabreTools.Serialization.Wrappers
             }
 
             // Debug output
-            if (includeDebug) Console.WriteLine($"Actual Read: {bytesRead}, Actual Write: {bytesWritten}, Actual CRC-32: {writtenCrc:X4}");
+            if (includeDebug) Console.WriteLine($"Actual Read: {bytesRead}, Actual Write: {bytesWritten}, Actual CRC-32: {writtenCrc:X8}");
 
             // If there's a mismatch during both reading and writing
             if (expectedBytesRead >= 0 && expectedBytesRead != bytesRead)
@@ -1020,44 +861,7 @@ namespace SabreTools.Serialization.Wrappers
             out uint crc)
         {
             var output = File.Open(outputPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-
-            inputSize = 0;
-            outputSize = 0;
-            crc = 0;
-
-            var hasher = new HashWrapper(HashType.CRC32);
-            try
-            {
-                long start = input.Position;
-                var ds = new DeflateStream(input, CompressionMode.Decompress, leaveOpen: true);
-                while (true)
-                {
-                    byte[] buf = new byte[1024];
-                    int read = ds.Read(buf, 0, buf.Length);
-                    if (read == 0)
-                        break;
-
-                    hasher.Process(buf, 0, read);
-                    output.Write(buf, 0, read);
-                }
-
-                // Save the deflate values
-                inputSize = ds.TotalIn;
-                outputSize = ds.TotalOut;
-            }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                output?.Close();
-            }
-
-            hasher.Terminate();
-            byte[] hashBytes = hasher.CurrentHashBytes!;
-            crc = BitConverter.ToUInt32(hashBytes, 0);
-            return true;
+            return Inflate(input, output, out inputSize, out outputSize, out crc);
         }
 
         /// <summary>
