@@ -486,15 +486,39 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            // Loop through and try to read all additional files
-            byte fileno = 2;
-            string extraPath = $"{name}.W{fileno:X}";
-            while (File.Exists(extraPath))
+            // Get the pattern for file naming
+            string filePattern;
+            bool longDigits;
+            if (File.Exists($"{name}.W02"))
             {
-                var fileStream = File.Open(extraPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                filePattern = $"{name}.W";
+                longDigits = false;
+            }
+            else if (File.Exists($"{name}.w02"))
+            {
+                filePattern = $"{name}.w";
+                longDigits = false;
+            }
+            else if (File.Exists($"{name}.002"))
+            {
+                filePattern = $"{name}.";
+                longDigits = true;
+            }
+            else
+            {
+                return true;
+            }
+
+            // Loop through and try to read all additional files
+            for (byte fileno = 2; ; fileno++)
+            {
+                string nextPart = longDigits ? $"{filePattern}{fileno:X3}" : $"{filePattern}{fileno:X2}";
+                if (!File.Exists(nextPart))
+                    break;
+
+                var fileStream = File.Open(nextPart, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream.AddStream(fileStream);
                 fileno++;
-                extraPath = $"{name}.W{fileno:X}";
             }
 
             return true;
