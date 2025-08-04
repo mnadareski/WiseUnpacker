@@ -634,8 +634,18 @@ namespace SabreTools.Serialization.Wrappers
                 }
             }
 
-            // If there's just a mismatch during writing
-            if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
+            // If there's just a mismatch during only writing
+            if (expectedBytesRead >= 0 && expectedBytesRead == bytesRead)
+            {
+                // We want to log this but ignore the error
+                if (expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
+                {
+                    if (includeDebug) Console.Error.WriteLine($"Ignoring mismatched write values for {filename} because read values match!");
+                }
+            }
+
+            // Otherwise, the write size should be checked normally
+            else if (expectedBytesRead == 0 && expectedBytesWritten >= 0 && expectedBytesWritten != bytesWritten)
             {
                 // Delete the errored file
                 File.Delete(filename);
