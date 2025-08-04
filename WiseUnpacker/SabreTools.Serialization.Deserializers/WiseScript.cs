@@ -29,7 +29,7 @@ namespace SabreTools.Serialization.Deserializers
                 #region State Machine
 
                 // Flag old/trimmed headers
-                bool old = header.Unknown_22?.Length == 20;
+                bool old = header.Unknown_22?.Length != 22;
 
                 var states = ParseStateMachine(data, header.LanguageCount, old);
                 if (states == null)
@@ -145,7 +145,9 @@ namespace SabreTools.Serialization.Deserializers
                 header = new ScriptHeader();
 
                 // TODO: Figure out if this maps to existing fields
-                header.Unknown_22 = data.ReadBytes(20);
+                header.Unknown_22 = data.ReadBytes(18);
+                header.Url = data.ReadNullTerminatedAnsiString();
+                header.LogPath = data.ReadNullTerminatedAnsiString();
                 header.MessageFont = data.ReadNullTerminatedAnsiString();
                 scriptStringsMultiplier = 46;
             }
