@@ -620,7 +620,7 @@ namespace SabreTools.Serialization.Wrappers
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, expected to read 0 bytes");
                 return ExtractStatus.INVALID;
             }
-            else if (expectedBytesRead >= (data.Length - data.Position))
+            else if (expectedBytesRead > (data.Length - data.Position))
             {
                 extracted = null;
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract {filename}, expected to read {expectedBytesRead} bytes but only {data.Length - data.Position} bytes remain");
