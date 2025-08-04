@@ -147,7 +147,7 @@ namespace SabreTools.Models.WiseInstaller
         AddTextToInstallLog = 0x1C,
 
         /// <summary>
-        /// Unknown
+        /// Unknown, possibly "Move File"
         /// </summary>
         Unknown0x1D = 0x1D,
 
