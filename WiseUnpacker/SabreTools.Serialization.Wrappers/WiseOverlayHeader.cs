@@ -67,8 +67,17 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="OverlayHeader.DibInflatedSize"/>
         public uint DibInflatedSize => Model.DibInflatedSize;
 
+        /// <inheritdoc cref="OverlayHeader.FinalFileDeflatedSize"/>
+        public uint FinalFileDeflatedSize => Model.FinalFileDeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.FinalFileInflatedSize"/>
+        public uint FinalFileInflatedSize => Model.FinalFileInflatedSize;
+
         /// <inheritdoc cref="OverlayHeader.Flags"/>
         public OverlayHeaderFlags Flags => Model.Flags;
+
+        /// <inheritdoc cref="OverlayHeader.InstallScriptDeflatedSize"/>
+        public uint InstallScriptDeflatedSize => Model.InstallScriptDeflatedSize ?? 0;
 
         /// <summary>
         /// Indicates if data is packed in PKZIP containers
@@ -88,26 +97,20 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="OverlayHeader.ProgressDllDeflatedSize"/>
         public uint ProgressDllDeflatedSize => Model.ProgressDllDeflatedSize;
 
-        /// <inheritdoc cref="OverlayHeader.SomeData5DeflatedSize"/>
-        public uint SomeData5DeflatedSize => Model.SomeData5DeflatedSize;
-
-        /// <inheritdoc cref="OverlayHeader.SomeData5InflatedSize"/>
-        public uint SomeData5InflatedSize => Model.SomeData5InflatedSize;
-
-        /// <inheritdoc cref="OverlayHeader.SomeData6DeflatedSize"/>
-        public uint SomeData6DeflatedSize => Model.SomeData6DeflatedSize;
+        /// <inheritdoc cref="OverlayHeader.SomeData4DeflatedSize"/>
+        public uint SomeData4DeflatedSize => Model.SomeData4DeflatedSize;
 
         /// <inheritdoc cref="OverlayHeader.SomeData7DeflatedSize"/>
         public uint SomeData7DeflatedSize => Model.SomeData7DeflatedSize;
-
-        /// <inheritdoc cref="OverlayHeader.InstallScriptDeflatedSize"/>
-        public uint InstallScriptDeflatedSize => Model.InstallScriptDeflatedSize ?? 0;
 
         /// <inheritdoc cref="OverlayHeader.SomeData8DeflatedSize"/>
         public uint SomeData8DeflatedSize => Model.SomeData8DeflatedSize;
 
         /// <inheritdoc cref="OverlayHeader.SomeData9DeflatedSize"/>
         public uint SomeData9DeflatedSize => Model.SomeData9DeflatedSize;
+
+        /// <inheritdoc cref="OverlayHeader.SomeData10DeflatedSize"/>
+        public uint SomeData10DeflatedSize => Model.SomeData10DeflatedSize;
 
         /// <inheritdoc cref="OverlayHeader.RegToolDeflatedSize"/>
         public uint RegToolDeflatedSize => Model.RegToolDeflatedSize;
@@ -732,8 +735,8 @@ namespace SabreTools.Serialization.Wrappers
             if (ExtractFile(data, "CTL3D32.DLL", outputDirectory, Ctl3d32DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
-            // Extract UNKNOWN_FILE, if it exists -- TODO: Figure out where this actually lives
-            if (ExtractFile(data, "UNKNOWN_FILE", outputDirectory, Model.UnknownDeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            // Extract FILE0004, if it exists
+            if (ExtractFile(data, "FILE0004", outputDirectory, SomeData4DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract Ocxreg32.EXE, if it exists
@@ -750,19 +753,19 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
 
             // Extract FILE0006, if it exists
-            if (ExtractFile(data, "FILE0006", outputDirectory, SomeData6DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0006", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract FILE0007, if it exists
-            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData7DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0007", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract FILE0008, if it exists
-            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData8DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0008", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract FILE0009, if it exists
-            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData9DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, "FILE0009", outputDirectory, SomeData10DeflatedSize, -1, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             // Extract install script, if it exists
@@ -770,7 +773,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
 
             // Extract FILE000{n}.DAT, if it exists
-            if (ExtractFile(data, IsPKZIP ? null : "FILE00XX.DAT", outputDirectory, SomeData5DeflatedSize, SomeData5InflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
+            if (ExtractFile(data, IsPKZIP ? null : "FILE00XX.DAT", outputDirectory, FinalFileDeflatedSize, FinalFileInflatedSize, 0, includeDebug) == ExtractStatus.FAIL)
                 return false;
 
             dataStart = data.Position;

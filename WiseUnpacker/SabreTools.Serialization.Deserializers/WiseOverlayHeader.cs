@@ -56,15 +56,15 @@ namespace SabreTools.Serialization.Deserializers
             header.WiseScriptDeflatedSize = data.ReadUInt32LittleEndian();
             header.WiseDllDeflatedSize = data.ReadUInt32LittleEndian();
             header.Ctl3d32DeflatedSize = data.ReadUInt32LittleEndian();
-            header.UnknownDeflatedSize = data.ReadUInt32LittleEndian();
+            header.SomeData4DeflatedSize = data.ReadUInt32LittleEndian();
             header.RegToolDeflatedSize = data.ReadUInt32LittleEndian();
             header.ProgressDllDeflatedSize = data.ReadUInt32LittleEndian();
-            header.SomeData6DeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData7DeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData8DeflatedSize = data.ReadUInt32LittleEndian();
             header.SomeData9DeflatedSize = data.ReadUInt32LittleEndian();
-            header.SomeData5DeflatedSize = data.ReadUInt32LittleEndian();
-            header.SomeData5InflatedSize = data.ReadUInt32LittleEndian();
+            header.SomeData10DeflatedSize = data.ReadUInt32LittleEndian();
+            header.FinalFileDeflatedSize = data.ReadUInt32LittleEndian();
+            header.FinalFileInflatedSize = data.ReadUInt32LittleEndian();
             header.EOF = data.ReadUInt32LittleEndian();
             header.DibDeflatedSize = data.ReadUInt32LittleEndian();
 

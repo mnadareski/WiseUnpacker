@@ -53,9 +53,9 @@ namespace SabreTools.Models.WiseInstaller
         public uint Ctl3d32DeflatedSize { get; set; }
 
         /// <summary>
-        /// Deflated size of unknown file
+        /// Deflated size of unknown data
         /// </summary>
-        public uint UnknownDeflatedSize { get; set; }
+        public uint SomeData4DeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of Ocxreg32.EXE,
@@ -70,33 +70,33 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Deflated size of unknown data
         /// </summary>
-        public uint SomeData6DeflatedSize { get; set; }
-
-        /// <summary>
-        /// Deflated size of unknown data
-        /// </summary>
         public uint SomeData7DeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of unknown data
         /// </summary>
-        /// <remarks>Samples were MS-DOS executables</remarks>
         public uint SomeData8DeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of unknown data
         /// </summary>
+        /// <remarks>Samples were MS-DOS executables</remarks>
         public uint SomeData9DeflatedSize { get; set; }
+
+        /// <summary>
+        /// Deflated size of unknown data
+        /// </summary>
+        public uint SomeData10DeflatedSize { get; set; }
 
         /// <summary>
         /// Deflated size of FILE000{n}.DAT
         /// </summary>
-        public uint SomeData5DeflatedSize { get; set; }
+        public uint FinalFileDeflatedSize { get; set; }
 
         /// <summary>
         /// Inflated size of FILE000{n}.DAT
         /// </summary>
-        public uint SomeData5InflatedSize { get; set; }
+        public uint FinalFileInflatedSize { get; set; }
 
         /// <summary>
         /// On multi-disc installers this is set to 0x00000000, so it may
