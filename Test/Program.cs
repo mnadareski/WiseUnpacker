@@ -81,7 +81,6 @@ namespace Test
         /// </summary>
         /// <param name="file">File path</param>
         /// <param name="includeDebug">Enable including debug information</param>
-        /// TODO: Implement script file printing?
         private static void PrintFileInfo(string file, bool includeDebug)
         {
             // Get the base info output name
@@ -100,17 +99,40 @@ namespace Test
                     return;
                 }
 
-                // Create the output data
-                var builder = header.ExportStringBuilder();
-                if (builder == null)
+                // Create the header output data
+                var hBuilder = header.ExportStringBuilderExt();
+                if (hBuilder == null)
                 {
-                    Console.WriteLine("No item information could be generated");
+                    Console.WriteLine("No header information could be generated");
                     return;
                 }
 
-                Console.WriteLine(builder);
+                // Try to read the script information
+                stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
+                if (header.ExtractStream(stream, "WiseScript.bin", header.WiseScriptDeflatedSize, header.WiseScriptInflatedSize, 0, includeDebug, out var extracted) == WiseOverlayHeader.ExtractStatus.FAIL)
+                    return;
+
+                // Try to parse the script information
+                var script = WiseScript.Create(extracted);
+                if (script == null)
+                {
+                    Console.WriteLine($"No valid script could be extracted from {file}, skipping...");
+                    return;
+                }
+
+                // Create script output data
+                var sBuilder = script.ExportStringBuilderExt();
+                if (sBuilder == null)
+                {
+                    Console.WriteLine("No header information could be generated");
+                    return;
+                }
+
+                Console.WriteLine(hBuilder);
                 using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}.txt"));
-                sw.WriteLine(builder.ToString());
+                sw.WriteLine(hBuilder.ToString());
+                sw.WriteLine();
+                sw.WriteLine(sBuilder.ToString());
                 sw.Flush();
             }
             catch (Exception ex)

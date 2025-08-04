@@ -18,7 +18,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Represents the status returned from extracting a file
         /// </summary>
-        private enum ExtractStatus
+        public enum ExtractStatus
         {
             /// <summary>
             /// Extraction wasn't performed because the inputs were invalid
@@ -685,7 +685,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="extracted">Output stream representing the extracted data, null on error</param>
         /// <returns>Extraction status representing the final state</returns>
         /// <remarks>Assumes that the current stream position is where the compressed data lives</remarks>
-        private ExtractStatus ExtractStream(Stream data,
+        public ExtractStatus ExtractStream(Stream data,
             string? filename,
             long expectedBytesRead,
             long expectedBytesWritten,
@@ -834,7 +834,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if the file extracted successfully, false otherwise</returns>
-        private ExtractStatus ExtractFile(Stream data,
+        public ExtractStatus ExtractFile(Stream data,
             long dataStart,
             ScriptFileHeader obj,
             int index,
