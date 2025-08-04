@@ -588,8 +588,11 @@ namespace SabreTools.Serialization.Wrappers
             if (bytesRead == expectedBytesRead + 1)
             {
                 // TODO: What does this byte represent?
-                _ = data.ReadByteValue();
+                byte padding = data.ReadByteValue();
                 bytesRead += 1;
+
+                // Debug output
+                if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: {padding}");
             }
 
             // If not PKZIP, read the checksum bytes
