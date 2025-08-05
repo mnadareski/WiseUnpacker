@@ -152,9 +152,9 @@ namespace SabreTools.Models.WiseInstaller
         RenameFileDirectory = 0x1D,
 
         /// <summary>
-        /// Compiler Variable If
+        /// Open/Close Install.log
         /// </summary>
-        CompilerVariableIf = 0x1E,
+        OpenCloseInstallLog = 0x1E,
 
         /// <summary>
         /// else if statement (inside if statement branch)

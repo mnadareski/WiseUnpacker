@@ -135,7 +135,7 @@ namespace SabreTools.Serialization.Printers
                     case IncludeScript data: Print(builder, data); break;
                     case AddTextToInstallLog data: Print(builder, data); break;
                     case RenameFileDirectory data: Print(builder, data); break;
-                    case CompilerVariableIf data: Print(builder, data); break;
+                    case OpenCloseInstallLog data: Print(builder, data); break;
                     case ElseIfStatement data: Print(builder, data); break;
                     case ScriptUnknown0x30 data: Print(builder, data); break;
 
@@ -457,11 +457,11 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, CompilerVariableIf data)
+        private static void Print(StringBuilder builder, OpenCloseInstallLog data)
         {
-            builder.AppendLine($"    Data: CompilerVariableIf");
+            builder.AppendLine($"    Data: OpenCloseInstallLog");
             builder.AppendLine(data.Flags, $"      Flags");
-            builder.AppendLine(data.Variable, $"      Variable");
+            builder.AppendLine(data.LogName, $"      Log name");
             builder.AppendLine();
         }
 

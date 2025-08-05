@@ -196,7 +196,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.IncludeScript => ParseIncludeScript(data),
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
                     OperationCode.RenameFileDirectory => ParseRenameFileDirectory(data),
-                    OperationCode.CompilerVariableIf => ParseCompilerVariableIf(data),
+                    OperationCode.OpenCloseInstallLog => ParseOpenCloseInstallLog(data),
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
 
                     // Opcodes past this point are unverified
@@ -437,15 +437,14 @@ namespace SabreTools.Serialization.Deserializers
                         // - Unknown string (e.g. ".;..;..\\..;..\\..\\..;..\\..\\..\\..;\\")
                         break;
 
-                    // Unknown
+                    // Check Disk Space
                     case "f23":
                         // TODO: Implement
-                        // Add ProgMan Icon(?) / Billboard?
                         // Probably this layout:
                         // - Flags (numeric)
                         // - Unknown numeric value (e.g. "0")
                         // - Unknown numeric value (e.g. "0")
-                        // - Unknown string, empty in samples
+                        // - Locations to search (e.g. "UNINSTALL_PATH MAINDIR PROGRAM_FILES")
                         // - Tab-separated list of components? Locations? Some numeric?
                         break;
 
@@ -772,16 +771,16 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a CompilerVariableIf
+        /// Parse a Stream into a OpenCloseInstallLog
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled CompilerVariableIf on success, null on error</returns>
-        private static CompilerVariableIf ParseCompilerVariableIf(Stream data)
+        /// <returns>Filled OpenCloseInstallLog on success, null on error</returns>
+        private static OpenCloseInstallLog ParseOpenCloseInstallLog(Stream data)
         {
-            var obj = new CompilerVariableIf();
+            var obj = new OpenCloseInstallLog();
 
             obj.Flags = data.ReadByteValue();
-            obj.Variable = data.ReadNullTerminatedAnsiString();
+            obj.LogName = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }

@@ -9,7 +9,7 @@ namespace SabreTools.Serialization
         /// <returns>The formal action name on success, null otherwise</returns>
         public static string? FromWiseFunctionId(this string? functionId)
         {
-            return functionId?.ToLowerInvariant() switch
+            return functionId switch
             {
                 "f1" => "Unknown",
                 "f8" => "Read INI Value",
@@ -22,13 +22,16 @@ namespace SabreTools.Serialization
                 "f17" => "Get Environment Variable",
                 "f19" => "Check if File/Dir Exists",
                 "f22" => "Unknown",
-                "f23" => "Unknown",
+                "f23" => "Check Disk Space",
                 "f25" => "Insert Line Into Text File",
                 "f27" => "Parse String",
                 "f29" => "Self-Register OCXs/DLLs",
                 "f31" => "Wizard Block",
                 "f33" => "Read/Update Text File",
                 "f34" => "Post to HTTP Server",
+
+                // External DLL
+                "ShellLink" => "Create Shortcut",
                 _ => null,
             };
         }
