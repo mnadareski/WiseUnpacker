@@ -29,10 +29,7 @@ namespace SabreTools.Serialization.Deserializers
 
                 #region State Machine
 
-                // Flag old/trimmed headers
-                bool old = header.Unknown_22?.Length != 22;
-
-                var states = ParseStateMachine(data, header.LanguageCount, old);
+                var states = ParseStateMachine(data, header);
                 if (states == null)
                     return null;
 
@@ -153,11 +150,15 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a state machine
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <param name="languageCount">Language counter from the header</param>
+        /// <param name="header">Parsed script header for information</param>
         /// <param name="old">Indicates an old install script</param>
         /// <returns>Filled state machine on success, null on error</returns>
-        private static MachineState[]? ParseStateMachine(Stream data, byte languageCount, bool old)
+        private static MachineState[]? ParseStateMachine(Stream data, ScriptHeader header)
         {
+            // Extract required information
+            byte languageCount = header.LanguageCount;
+            bool old = header.Unknown_22?.Length != 22;
+
             // Initialize important loop information
             int op0x18skip = -1;
 
@@ -177,7 +178,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
                     OperationCode.FunctionCall => ParseExternalDLLCall(data, languageCount, old),
-                    OperationCode.EditRegistry => ParseScriptEditRegistry(data),
+                    OperationCode.EditRegistry => ParseEditRegistry(data),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
@@ -194,9 +195,9 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
                     OperationCode.IncludeScript => ParseIncludeScript(data),
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
-                    OperationCode.Unknown0x1D => ParseUnknown0x1D(data),
+                    OperationCode.RenameFileDirectory => ParseRenameFileDirectory(data),
                     OperationCode.CompilerVariableIf => ParseCompilerVariableIf(data),
-                    OperationCode.ElseIfStatement => ParseScriptElseIf(data),
+                    OperationCode.ElseIfStatement => ParseElseIfStatement(data),
                     OperationCode.Skip0x24 => null, // No-op
                     OperationCode.Skip0x25 => null, // No-op
                     OperationCode.ReadByteAndStrings => ParseUnknown0x30(data),
@@ -405,10 +406,20 @@ namespace SabreTools.Serialization.Deserializers
                     // Check if File/Dir Exists
                     case "f19": break;
 
-                    // Unknown external
+                    // Unknown
+                    case "f22":
+                        // TODO: Implement
+                        // Probably this layout: 
+                        // - Variable name (e.g. "OEMCUST")
+                        // - INI name (e.g. "OEMCUST.INI")
+                        // - INI name again (e.g. "OEMCUST.INI")
+                        // - Unknown string (e.g. ".;..;..\\..;..\\..\\..;..\\..\\..\\..;\\")
+                        break;
+
+                    // Unknown
                     case "f23":
                         // TODO: Implement
-                        // Add ProgMan Icon(?)
+                        // Add ProgMan Icon(?) / Billboard?
                         // Probably this layout:
                         // - Unknown numeric value (e.g. "0")
                         // - Unknown numeric value (e.g. "0")
@@ -445,19 +456,38 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptEditRegistry
+        /// Parse a Stream into a EditRegistry
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptEditRegistry on success, null on error</returns>
-        private static EditRegistry ParseScriptEditRegistry(Stream data)
+        /// <returns>Filled EditRegistry on success, null on error</returns>
+        private static EditRegistry ParseEditRegistry(Stream data)
         {
+            // Cache the current offset
+            long current = data.Position;
+
+            // Read as standard first
             var obj = new EditRegistry();
 
             obj.Root = data.ReadByteValue();
-            obj.DataType = data.ReadByteValue(); // TODO: ushort, sometimes?
+            obj.DataType = data.ReadByteValue();
             obj.Key = data.ReadNullTerminatedAnsiString();
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
+
+            // The following block is a hack to support script versions
+            // If a marker value is seen, read with larger data type
+            // TODO: Determine what flag or header value marks this
+            if (obj.Key?.Length == 0)
+            {
+                data.Seek(current, SeekOrigin.Begin);
+                obj = new EditRegistry();
+
+                obj.Root = data.ReadByteValue();
+                obj.DataType = data.ReadUInt16();
+                obj.Key = data.ReadNullTerminatedAnsiString();
+                obj.NewValue = data.ReadNullTerminatedAnsiString();
+                obj.ValueName = data.ReadNullTerminatedAnsiString();
+            }
 
             return obj;
         }
@@ -693,16 +723,16 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x1D
+        /// Parse a Stream into a RenameFileDirectory
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x1D on success, null on error</returns>
-        private static ScriptUnknown0x1D ParseUnknown0x1D(Stream data)
+        /// <returns>Filled RenameFileDirectory on success, null on error</returns>
+        private static RenameFileDirectory ParseRenameFileDirectory(Stream data)
         {
-            var obj = new ScriptUnknown0x1D();
+            var obj = new RenameFileDirectory();
 
-            obj.Operand_1 = data.ReadNullTerminatedAnsiString();
-            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
+            obj.OldPathname = data.ReadNullTerminatedAnsiString();
+            obj.NewFileName = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
@@ -723,11 +753,11 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptElseIf
+        /// Parse a Stream into a ElseIfStatement
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptElseIf on success, null on error</returns>
-        private static ElseIfStatement ParseScriptElseIf(Stream data)
+        /// <returns>Filled ElseIfStatement on success, null on error</returns>
+        private static ElseIfStatement ParseElseIfStatement(Stream data)
         {
             var obj = new ElseIfStatement();
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using SabreTools.Hashing;
@@ -843,6 +844,53 @@ namespace SabreTools.Serialization.Wrappers
         }
 
         /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="dataStart">Start of the deflated data</param>
+        /// <param name="obj">Deflate information</param>
+        /// <param name="index">File index for automatic naming</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        public ExtractStatus ExtractFile(Stream data,
+            long dataStart,
+            ScriptUnknown0x06 obj,
+            int index,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Get the generated base name
+            string baseName = $"WISE_0x06_{obj.Operand_1.ToHexString()}";
+
+            // If there are no deflate objects
+            if (obj.DeflateInfo?.Info == null)
+            {
+                if (includeDebug) Console.WriteLine($"Skipping {baseName} because the deflate object array is null!");
+                return ExtractStatus.FAIL;
+            }
+
+            // Loop through the values
+            for (int i = 0; i < obj.DeflateInfo.Info.Length; i++)
+            {
+                // Get the deflate info object
+                var info = obj.DeflateInfo.Info[i];
+
+                // Get expected values
+                long expectedBytesRead = info.DeflateEnd - info.DeflateStart;
+                long expectedBytesWritten = info.InflatedSize;
+
+                // Perform path replacements
+                string filename = $"{baseName}{index:X4}";
+                data.Seek(dataStart + info.DeflateStart, SeekOrigin.Begin);
+                _ = ExtractFile(data, filename, outputDirectory, expectedBytesRead, expectedBytesWritten, expectedCrc: 0, includeDebug);
+            }
+
+            // Always return good -- TODO: Fix this
+            return ExtractStatus.GOOD;
+        }
+
+        /// <summary>
         /// Extract the predefined, static files defined in the header
         /// </summary>
         /// <param name="data">Stream representing the Wise installer</param>
@@ -999,7 +1047,7 @@ namespace SabreTools.Serialization.Wrappers
 
             // Initialize important loop information
             int normalFileCount = 0;
-            string? tempPath = null;
+            Dictionary<string, string> environment = [];
 
             // Loop through the state machine and process
             foreach (var state in script.States)
@@ -1015,19 +1063,21 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.EditIniFile:
-                        if (state.Data is not EditIniFile unknown0x05Data)
+                        if (state.Data is not EditIniFile editIniFile)
                             return false;
 
                         // Ensure directory separators are consistent
-                        string iniFilePath = unknown0x05Data.Pathname ?? $"WISE{normalFileCount:X4}.ini";
+                        string iniFilePath = editIniFile.Pathname ?? $"WISE{normalFileCount:X4}.ini";
                         if (Path.DirectorySeparatorChar == '\\')
                             iniFilePath = iniFilePath.Replace('/', '\\');
                         else if (Path.DirectorySeparatorChar == '/')
                             iniFilePath = iniFilePath.Replace('\\', '/');
 
                         // Perform path replacements
-                        if (tempPath != null)
-                            iniFilePath = iniFilePath.Replace($"%{tempPath}%", "tempfile");
+                        foreach (var kvp in environment)
+                        {
+                            iniFilePath = iniFilePath.Replace($"%{kvp.Key}%", kvp.Value);
+                        }
 
                         iniFilePath = iniFilePath.Replace("%", string.Empty);
 
@@ -1039,27 +1089,32 @@ namespace SabreTools.Serialization.Wrappers
 
                         using (var iniFile = File.Open(iniFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
                         {
-                            iniFile.Write(Encoding.ASCII.GetBytes($"[{unknown0x05Data.Section}]\n"));
-                            iniFile.Write(Encoding.ASCII.GetBytes($"{unknown0x05Data.Values ?? string.Empty}\n"));
+                            iniFile.Write(Encoding.ASCII.GetBytes($"[{editIniFile.Section}]\n"));
+                            iniFile.Write(Encoding.ASCII.GetBytes($"{editIniFile.Values ?? string.Empty}\n"));
                             iniFile.Flush();
                         }
 
                         break;
 
                     case OperationCode.UnknownDeflatedFile0x06:
-                        // TODO: Figure out how to properly support these files
-                        // Multiple entries can go to the same file, but with different messages
+                        if (state.Data is not ScriptUnknown0x06 unknown0x06)
+                            return false;
+
+                        // Try to extract to the output directory
+                        ExtractFile(data, dataStart, unknown0x06, ++normalFileCount, outputDirectory, includeDebug);
                         break;
 
                     case OperationCode.CustomDialogSet:
                         // TODO: Figure out how to properly support these files
+                        // Multiple entries can go to the same file, but with different messages
                         break;
 
                     case OperationCode.GetTemporaryFilename:
-                        if (state.Data is not GetTemporaryFilename unknown0x16Data)
+                        if (state.Data is not GetTemporaryFilename getTemporaryFilename)
                             return false;
 
-                        tempPath = unknown0x16Data.Variable;
+                        if (getTemporaryFilename.Variable != null)
+                            environment[getTemporaryFilename.Variable] = Guid.NewGuid().ToString();
                         break;
 
                     default:

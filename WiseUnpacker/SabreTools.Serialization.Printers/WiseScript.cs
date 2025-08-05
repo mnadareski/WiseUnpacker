@@ -134,7 +134,7 @@ namespace SabreTools.Serialization.Printers
                     case ScriptUnknown0x1A data: Print(builder, data); break;
                     case IncludeScript data: Print(builder, data); break;
                     case AddTextToInstallLog data: Print(builder, data); break;
-                    case ScriptUnknown0x1D data: Print(builder, data); break;
+                    case RenameFileDirectory data: Print(builder, data); break;
                     case CompilerVariableIf data: Print(builder, data); break;
                     case ElseIfStatement data: Print(builder, data); break;
                     case ScriptUnknown0x30 data: Print(builder, data); break;
@@ -448,11 +448,11 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x1D data)
+        private static void Print(StringBuilder builder, RenameFileDirectory data)
         {
-            builder.AppendLine($"    Data: ScriptUnknown0x1D");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
-            builder.AppendLine(data.Operand_2, $"      Unknown");
+            builder.AppendLine($"    Data: RenameFileDirectory");
+            builder.AppendLine(data.OldPathname, $"      Old pathname");
+            builder.AppendLine(data.NewFileName, $"      New file name");
             builder.AppendLine();
         }
 
