@@ -385,11 +385,26 @@ namespace SabreTools.Serialization.Deserializers
                 // TODO: Remove after mapping is complete
                 switch (obj.FunctionName)
                 {
+                    // Unknown
+                    case "f1":
+                        // TODO: Implement
+                        // Probably this layout: 
+                        // - Flags (numeric)
+                        // - Unknown string (empty in sample)
+                        // - Executable path (e.g. "%WIN%\hcwSubID.exe")
+                        // - Executable path again (e.g. "%WIN%\hcwSubID.exe")
+                        // - Unknown string (empty in sample)
+                        // - Numeric value (e.g. "0")
+                        break;
+
                     // Read INI Value
                     case "f8": break;
 
                     // Get Registry Key Value
                     case "f9": break;
+
+                    // Win32 System Directory
+                    case "f11": break;
 
                     // Check Configuration
                     case "f12": break;
@@ -410,6 +425,7 @@ namespace SabreTools.Serialization.Deserializers
                     case "f22":
                         // TODO: Implement
                         // Probably this layout: 
+                        // - Flags (numeric)
                         // - Variable name (e.g. "OEMCUST")
                         // - INI name (e.g. "OEMCUST.INI")
                         // - INI name again (e.g. "OEMCUST.INI")
@@ -421,6 +437,7 @@ namespace SabreTools.Serialization.Deserializers
                         // TODO: Implement
                         // Add ProgMan Icon(?) / Billboard?
                         // Probably this layout:
+                        // - Flags (numeric)
                         // - Unknown numeric value (e.g. "0")
                         // - Unknown numeric value (e.g. "0")
                         // - Unknown string, empty in samples
