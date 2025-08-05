@@ -159,18 +159,6 @@ namespace SabreTools.Models.WiseInstaller
         /// ElseIf Statement
         /// </summary>
         ElseIfStatement = 0x23,
-
-        /// <summary>
-        /// Read 1 byte and 2 strings, only seen in cuteftp.exe, same
-        /// as 0x15? or maybe even 0x23?
-        /// </summary>
-        /// <remarks>
-        /// From research, this seems to be an erroneous addition. It
-        /// has only been observed locally when registry items failed
-        /// to parse properly the first time, leading to a string
-        /// value of "0" to be seen as an opcode of 0x30.
-        /// </remarks>
-        ReadByteAndStrings = 0x30,
     }
 
     /// <summary>

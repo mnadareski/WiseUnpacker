@@ -202,13 +202,11 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.OpenCloseInstallLog => ParseOpenCloseInstallLog(data),
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
 
-                    // Opcodes past this point are unverified
-                    OperationCode.ReadByteAndStrings => ParseUnknown0x30(data),
-
                     _ => null,
                     //_ => throw new IndexOutOfRangeException(nameof(op)),
                 };
 
+                // Debug statement
                 if (stateData == null)
                     Console.WriteLine($"Opcode {op} resulted in null data");
 
