@@ -294,6 +294,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(data.Flags, $"      Unknown");
             builder.AppendLine(data.DllPath, $"      DLL path");
             builder.AppendLine(data.FunctionName, $"      Function name");
+            builder.AppendLine(data.FunctionName.FromWiseFunctionId(), $"      Derived action name");
             builder.AppendLine(data.Operand_4, $"      Unknown");
             builder.AppendLine(data.ReturnVariable, $"      Return variable");
             builder.AppendLine($"      Entries");

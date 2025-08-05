@@ -403,6 +403,9 @@ namespace SabreTools.Serialization.Deserializers
                     // Get Registry Key Value
                     case "f9": break;
 
+                    // Register Font
+                    case "f10": break;
+
                     // Win32 System Directory
                     case "f11": break;
 
@@ -443,6 +446,9 @@ namespace SabreTools.Serialization.Deserializers
                         // - Unknown string, empty in samples
                         // - Tab-separated list of components? Locations? Some numeric?
                         break;
+
+                    // Insert Line Into Text File
+                    case "f25": break;
 
                     // Parse String
                     case "f27": break;
@@ -491,10 +497,19 @@ namespace SabreTools.Serialization.Deserializers
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
 
+            // If the end of the stream is reached
+            if (data.Position >= data.Length)
+                return obj;
+
+            // Peek at the next byte
+            byte nextByte = data.ReadByteValue();
+            data.Seek(-1, SeekOrigin.Current);
+
             // The following block is a hack to support script versions
-            // If a marker value is seen, read with larger data type
+            // If the next byte is not a recognized function value,
+            // reread the block with a ushort data type.
             // TODO: Determine what flag or header value marks this
-            if (obj.Key?.Length == 0)
+            if (nextByte > 0x25)
             {
                 data.Seek(current, SeekOrigin.Begin);
                 obj = new EditRegistry();

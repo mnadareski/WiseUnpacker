@@ -30,22 +30,6 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// Function name
         /// </summary>
-        /// <remarks>
-        /// f8 - Read INI Value
-        /// f9 - Get Registry Key Value
-        /// f12 - Check Configuration
-        /// f13 - Search for File
-        /// f16 - Set Variable
-        /// f17 - Get Environment Variable
-        /// f19 - Check if File/Dir Exists
-        /// f23 - Add ProgMan Icon(?) [Included in uninstal.wse]
-        /// f27 - Parse String
-        /// f29 - Self-Register OCXs/DLLs
-        /// f31 - Wizard Block
-        /// f33 - Read/Update Text File
-        /// f34 - Post to HTTP Server
-        /// [External] - Call DLL Function
-        /// </remarks>
         public string? FunctionName { get; set; }
 
         /// <summary>
