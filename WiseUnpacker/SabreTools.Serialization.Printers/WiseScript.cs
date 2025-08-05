@@ -132,6 +132,7 @@ namespace SabreTools.Serialization.Printers
                     case ScriptUnknown0x17 data: Print(builder, data); break;
                     case ScriptUnknown0x19 data: Print(builder, data); break;
                     case ScriptUnknown0x1A data: Print(builder, data); break;
+                    case IncludeScript data: Print(builder, data); break;
                     case AddTextToInstallLog data: Print(builder, data); break;
                     case ScriptUnknown0x1D data: Print(builder, data); break;
                     case CompilerVariableIf data: Print(builder, data); break;
@@ -431,6 +432,12 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine(data.Operand_2, $"      Unknown");
             builder.AppendLine(data.Operand_3, $"      Unknown");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, IncludeScript data)
+        {
+            builder.AppendLine($"    Data: IncludeScript");
             builder.AppendLine();
         }
 

@@ -180,7 +180,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.EditRegistry => ParseScriptEditRegistry(data),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
-                    OperationCode.ElseStatement => ParseElseStatement(data), // No-op
+                    OperationCode.ElseStatement => ParseElseStatement(data),
                     OperationCode.StartFormData => null, // No-op
                     OperationCode.EndFormData => null, // No-op
                     OperationCode.Unknown0x11 => ParseUnknown0x11(data),
@@ -192,7 +192,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.NewEvent => null, // No-op, handled below
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
-                    OperationCode.IncludeScript => null, // No-op
+                    OperationCode.IncludeScript => ParseIncludeScript(data),
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
                     OperationCode.Unknown0x1D => ParseUnknown0x1D(data),
                     OperationCode.CompilerVariableIf => ParseCompilerVariableIf(data),
@@ -666,6 +666,16 @@ namespace SabreTools.Serialization.Deserializers
             obj.Operand_3 = data.ReadNullTerminatedAnsiString();
 
             return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an IncludeScript
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled IncludeScript on success, null on error</returns>
+        private static IncludeScript ParseIncludeScript(Stream data)
+        {
+            return new IncludeScript();
         }
 
         /// <summary>

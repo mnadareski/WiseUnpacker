@@ -7,6 +7,7 @@ using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Matching;
 using SabreTools.Models.WiseInstaller;
+using SabreTools.Models.WiseInstaller.Actions;
 using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
