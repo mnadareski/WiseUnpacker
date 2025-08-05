@@ -49,23 +49,14 @@ namespace SabreTools.Models.WiseInstaller
         public byte[]? UnknownBytes_2 { get; set; }
 
         /// <summary>
-        /// Points to the end of the first of two "NewEvent" (0x18)
-        /// items in the Wise installer script
+        /// Points to the Exit event in the script, if it exists
         /// </summary>
-        /// <remarks>
-        /// Set to 0 if there are less than 2 events
-        /// Possibly the "Exit" event
-        /// </remarks>
-        public uint WiseScriptNewEventOffset_1 { get; set; }
+        public uint WiseScriptExitEventOffset { get; set; }
 
         /// <summary>
-        /// Points to the end of the second of two "NewEvent" (0x18)
-        /// items in the Wise installer script
+        /// Points to the Cancel event in the script, if it exists
         /// </summary>
-        /// <remarks>
-        /// Possibly the "Cancel" event
-        /// </remarks>
-        public uint WiseScriptNewEventOffset_2 { get; set; }
+        public uint WiseScriptCancelEventOffset { get; set; }
 
         /// <summary>
         /// Inflated size of the Wise installer script

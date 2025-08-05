@@ -22,8 +22,8 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.StartGradient, "Start gradient");
             builder.AppendLine(overlayHeader.EndGradient, "End gradient");
             builder.AppendLine(overlayHeader.UnknownBytes_2, "Unknown");
-            builder.AppendLine(overlayHeader.WiseScriptNewEventOffset_1, "Wise script new event offset 1");
-            builder.AppendLine(overlayHeader.WiseScriptNewEventOffset_2, "Wise script new event offset 2");
+            builder.AppendLine(overlayHeader.WiseScriptExitEventOffset, "Wise script exit event offset");
+            builder.AppendLine(overlayHeader.WiseScriptCancelEventOffset, "Wise script cancel event offset");
             builder.AppendLine(overlayHeader.WiseScriptInflatedSize, "Wise script inflated size");
             builder.AppendLine(overlayHeader.WiseScriptDeflatedSize, "Wise script deflated size");
             builder.AppendLine(overlayHeader.WiseDllDeflatedSize, "Wise DLL deflated size");

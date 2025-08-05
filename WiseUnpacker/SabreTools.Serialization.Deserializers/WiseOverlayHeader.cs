@@ -62,8 +62,8 @@ namespace SabreTools.Serialization.Deserializers
             header.StartGradient = data.ReadBytes(3);
             header.EndGradient = data.ReadBytes(3);
             header.UnknownBytes_2 = data.ReadBytes(4);
-            header.WiseScriptNewEventOffset_1 = data.ReadUInt32LittleEndian();
-            header.WiseScriptNewEventOffset_2 = data.ReadUInt32LittleEndian();
+            header.WiseScriptExitEventOffset = data.ReadUInt32LittleEndian();
+            header.WiseScriptCancelEventOffset = data.ReadUInt32LittleEndian();
             header.WiseScriptInflatedSize = data.ReadUInt32LittleEndian();
             header.WiseScriptDeflatedSize = data.ReadUInt32LittleEndian();
             header.WiseDllDeflatedSize = data.ReadUInt32LittleEndian();
