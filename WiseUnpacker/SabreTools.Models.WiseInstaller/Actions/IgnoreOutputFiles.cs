@@ -1,5 +1,8 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
+    /// <summary>
+    /// Ignore Output Files
+    /// </summary>
     /// <remarks>
     /// This seems to indicate files that are ignored or otherwise
     /// not copied from the source. It has been observed before
@@ -16,11 +19,12 @@ namespace SabreTools.Models.WiseInstaller
     /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
-    public class ScriptUnknown0x11 : MachineStateData
+    public class IgnoreOutputFiles : MachineStateData
     {
         /// <summary>
-        /// Unknown
+        /// Pathname to ignore
         /// </summary>
-        public string? Operand_1 { get; set; }
+        /// <remarks>Can contain wildcards</remarks>
+        public string? Pathname { get; set; }
     }
 }

@@ -87,9 +87,10 @@ namespace SabreTools.Models.WiseInstaller
         EndUserDefinedAction = 0x10,
 
         /// <summary>
-        /// Unknown
+        /// Ignore Output Files(?)
         /// </summary>
-        Unknown0x11 = 0x11,
+        /// <remarks>Unconfirmed</remarks>
+        IgnoreOutputFiles = 0x11,
 
         /// <summary>
         /// Copy Local File

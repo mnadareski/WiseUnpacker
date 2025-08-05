@@ -187,7 +187,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.ElseStatement => ParseElseStatement(data),
                     OperationCode.StartUserDefinedAction => ParseStartUserDefinedAction(data),
                     OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
-                    OperationCode.Unknown0x11 => ParseUnknown0x11(data),
+                    OperationCode.IgnoreOutputFiles => ParseIgnoreOutputFiles(data),
                     OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
@@ -586,15 +586,15 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x11
+        /// Parse a Stream into a IgnoreOutputFiles
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x11 on success, null on error</returns>
-        private static ScriptUnknown0x11 ParseUnknown0x11(Stream data)
+        /// <returns>Filled IgnoreOutputFiles on success, null on error</returns>
+        private static IgnoreOutputFiles ParseIgnoreOutputFiles(Stream data)
         {
-            var obj = new ScriptUnknown0x11();
+            var obj = new IgnoreOutputFiles();
 
-            obj.Operand_1 = data.ReadNullTerminatedAnsiString();
+            obj.Pathname = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }

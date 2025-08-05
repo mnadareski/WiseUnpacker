@@ -127,7 +127,7 @@ namespace SabreTools.Serialization.Printers
                     case ElseStatement data: Print(builder, data); break;
                     case StartUserDefinedAction data: Print(builder, data); break;
                     case EndUserDefinedAction data: Print(builder, data); break;
-                    case ScriptUnknown0x11 data: Print(builder, data); break;
+                    case IgnoreOutputFiles data: Print(builder, data); break;
                     case CopyLocalFile data: Print(builder, data); break;
                     case CustomDialogSet data: Print(builder, data); break;
                     case GetSystemInformation data: Print(builder, data); break;
@@ -363,10 +363,10 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x11 data)
+        private static void Print(StringBuilder builder, IgnoreOutputFiles data)
         {
-            builder.AppendLine($"    Data: ScriptUnknown0x11");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine($"    Data: IgnoreOutputFiles");
+            builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine();
         }
 
