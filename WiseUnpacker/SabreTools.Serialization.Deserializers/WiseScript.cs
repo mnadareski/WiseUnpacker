@@ -192,7 +192,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
-                    OperationCode.Unknown0x17 => ParseUnknown0x17(data),
+                    OperationCode.PlayMultimediaFile => ParsePlayMultimediaFile(data),
                     OperationCode.NewEvent => ParseNewEvent(data, ref op0x18skip),
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
@@ -424,6 +424,9 @@ namespace SabreTools.Serialization.Deserializers
                     // Search for File
                     case "f13": break;
 
+                    // Read/Write Binary File
+                    case "f15": break;
+
                     // Set Variable
                     case "f16": break;
 
@@ -463,6 +466,17 @@ namespace SabreTools.Serialization.Deserializers
 
                     // Self-Register OCXs/DLLs
                     case "f29": break;
+
+                    // Unknown
+                    case "f30":
+                        // TODO: Implement
+                        // Maybe "Modify Component Size"?
+                        // Probably this layout:
+                        // - Flags (numeric)
+                        // - Directory name (e.g. "%INST%\..\DirectX")
+                        // - File name (e.g. "%INST%\..\DirectX\DSETUP.DLL")
+                        // - Size? (e.g. "2623")
+                        break;
 
                     // Wizard Block
                     case "f31": break;
@@ -644,17 +658,18 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x17
+        /// Parse a Stream into a PlayMultimediaFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x17 on success, null on error</returns>
-        private static ScriptUnknown0x17 ParseUnknown0x17(Stream data)
+        /// <returns>Filled PlayMultimediaFile on success, null on error</returns>
+        private static PlayMultimediaFile ParsePlayMultimediaFile(Stream data)
         {
-            var obj = new ScriptUnknown0x17();
+            var obj = new PlayMultimediaFile();
 
-            obj.Operand_1 = data.ReadByteValue();
-            obj.Operand_2 = data.ReadBytes(4);
-            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.XPosition = data.ReadUInt16LittleEndian();
+            obj.YPosition = data.ReadUInt16LittleEndian();
+            obj.Pathname = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }

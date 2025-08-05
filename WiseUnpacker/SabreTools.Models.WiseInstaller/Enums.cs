@@ -112,14 +112,13 @@ namespace SabreTools.Models.WiseInstaller
         GetTemporaryFilename = 0x16,
 
         /// <summary>
-        /// Unknown
+        /// Play Multimedia File
         /// </summary>
-        Unknown0x17 = 0x17,
+        PlayMultimediaFile = 0x17,
 
         /// <summary>
         /// New Event
         /// </summary>
-        /// <remarks>On some installers also skip next 6 bytes FIXME</remarks>
         NewEvent = 0x18,
 
         /// <summary>

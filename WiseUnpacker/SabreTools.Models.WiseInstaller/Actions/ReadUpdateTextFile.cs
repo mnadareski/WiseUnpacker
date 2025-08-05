@@ -3,7 +3,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// <summary>
     /// Read/Update Text File
     /// 
-    /// /// This action begins a loop that reads and, optionally, updates text in a text file. Each loop
+    /// This action begins a loop that reads and, optionally, updates text in a text file. Each loop
     /// puts the next line of text into a variable. You can put actions in the loop that change the
     /// contents of the variable (example: Parse String). Optionally, the changed variable can
     /// be written back to the file. The loop repeats for each line of the file. This action requires

@@ -130,7 +130,7 @@ namespace SabreTools.Serialization.Printers
                     case CustomDialogSet data: Print(builder, data); break;
                     case GetSystemInformation data: Print(builder, data); break;
                     case GetTemporaryFilename data: Print(builder, data); break;
-                    case ScriptUnknown0x17 data: Print(builder, data); break;
+                    case PlayMultimediaFile data: Print(builder, data); break;
                     case NewEvent data: Print(builder, data); break;
                     case ScriptUnknown0x19 data: Print(builder, data); break;
                     case ScriptUnknown0x1A data: Print(builder, data); break;
@@ -410,12 +410,13 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x17 data)
+        private static void Print(StringBuilder builder, PlayMultimediaFile data)
         {
-            builder.AppendLine($"    Data: ScriptUnknown0x17");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
-            builder.AppendLine(data.Operand_2, $"      Unknown");
-            builder.AppendLine(data.Operand_3, $"      Unknown");
+            builder.AppendLine($"    Data: PlayMultimediaFile");
+            builder.AppendLine(data.Flags, $"      Flags");
+            builder.AppendLine(data.XPosition, $"      X position");
+            builder.AppendLine(data.YPosition, $"      Y position");
+            builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine();
         }
 
