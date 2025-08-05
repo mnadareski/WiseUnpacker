@@ -898,6 +898,34 @@ namespace SabreTools.Serialization.Wrappers
         }
 
         /// <summary>
+        /// Attempt to extract a file defined by a file header
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="dataStart">Start of the deflated data</param>
+        /// <param name="obj">Deflate information</param>
+        /// <param name="index">File index for automatic naming</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if the file extracted successfully, false otherwise</returns>
+        public ExtractStatus ExtractFile(Stream data,
+            long dataStart,
+            CustomDialogSet obj,
+            int index,
+            string outputDirectory,
+            bool includeDebug)
+        {
+            // Get expected values
+            long expectedBytesRead = obj.DeflateEnd - obj.DeflateStart;
+            long expectedBytesWritten = obj.InflatedSize;
+
+            // Perform path replacements
+            string filename = $"WISE_0x14_{obj.DisplayVariable}-{obj.Name}";
+            filename = filename.Replace("%", string.Empty);
+            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
+            return ExtractFile(data, filename, outputDirectory, expectedBytesRead, expectedBytesWritten, expectedCrc: 0, includeDebug);
+        }
+
+        /// <summary>
         /// Extract the predefined, static files defined in the header
         /// </summary>
         /// <param name="data">Stream representing the Wise installer</param>
@@ -1112,8 +1140,11 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.CustomDialogSet:
-                        // TODO: Figure out how to properly support these files
-                        // Multiple entries can go to the same file, but with different messages
+                        if (state.Data is not CustomDialogSet customDialogSet)
+                            return false;
+
+                        // Try to extract to the output directory
+                        ExtractFile(data, dataStart, customDialogSet, ++normalFileCount, outputDirectory, includeDebug);
                         break;
 
                     case OperationCode.GetTemporaryFilename:
