@@ -7,10 +7,15 @@ namespace SabreTools.Models.WiseInstaller
     public class ScriptHeader
     {
         /// <summary>
+        /// Flags, unknown mapping
+        /// </summary>
+        public byte Flags { get; set; }
+
+        /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>5 bytes</remarks>
-        public byte[]? Unknown_5 { get; set; }
+        /// <remarks>4 bytes</remarks>
+        public byte[]? UnknownBytes_1 { get; set; }
 
         /// <summary>
         /// Total deflated size of OP 0x00 files?
@@ -31,7 +36,7 @@ namespace SabreTools.Models.WiseInstaller
         /// Unknown
         /// </summary>
         /// <remarks>4 bytes</remarks>
-        public byte[]? Unknown_4 { get; set; }
+        public byte[]? UnknownBytes_2 { get; set; }
 
         /// <summary>
         /// Creation of this WiseScript.bin since UNIX epoch
@@ -50,12 +55,12 @@ namespace SabreTools.Models.WiseInstaller
         public string? Url { get; set; }
 
         /// <summary>
-        /// \0 terminated string
+        /// Log pathname
         /// </summary>
-        public string? LogPath { get; set; }
+        public string? LogPathname { get; set; }
 
         /// <summary>
-        /// \0 terminated string
+        /// Message font
         /// </summary>
         public string? MessageFont { get; set; }
 

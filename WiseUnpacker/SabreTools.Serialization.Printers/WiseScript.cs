@@ -32,14 +32,15 @@ namespace SabreTools.Serialization.Printers
                 return;
             }
 
-            builder.AppendLine(header.Unknown_5, "  Unknown");
+            builder.AppendLine(header.Flags, "  Flags");
+            builder.AppendLine(header.UnknownBytes_1, "  Unknown");
             builder.AppendLine(header.SomeOffset1, "  Unknown");
             builder.AppendLine(header.SomeOffset2, "  Unknown");
-            builder.AppendLine(header.Unknown_4, "  Unknown");
+            builder.AppendLine(header.UnknownBytes_2, "  Unknown");
             builder.AppendLine(header.DateTime, "  Datetime");
             builder.AppendLine(header.Unknown_22, "  Unknown");
             builder.AppendLine(header.Url, "  URL");
-            builder.AppendLine(header.LogPath, "  Log path");
+            builder.AppendLine(header.LogPathname, "  Log pathname");
             builder.AppendLine(header.MessageFont, "  Font");
             builder.AppendLine(header.FontSize, "  Font size");
             builder.AppendLine(header.Unknown_2, "  Unknown");

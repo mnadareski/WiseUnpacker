@@ -29,18 +29,43 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>12 bytes</remarks>
-        public byte[]? Unknown_12 { get; set; }
+        /// <remarks>2 bytes</remarks>
+        public byte[]? UnknownBytes_1 { get; set; }
 
         /// <summary>
-        /// Unknown, possibly an offset or size
+        /// Start Gradient
         /// </summary>
-        public uint UnknownU32_1 { get; set; }
+        public byte[]? StartGradient { get; set; }
 
         /// <summary>
-        /// Unknown, possibly an offset or size
+        /// End Gradient
         /// </summary>
-        public uint UnknownU32_2 { get; set; }
+        public byte[]? EndGradient { get; set; }
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        /// <remarks>4 bytes</remarks>
+        public byte[]? UnknownBytes_2 { get; set; }
+
+        /// <summary>
+        /// Points to the end of the first of two "NewEvent" (0x18)
+        /// items in the Wise installer script
+        /// </summary>
+        /// <remarks>
+        /// Set to 0 if there are less than 2 events
+        /// Possibly the "Exit" event
+        /// </remarks>
+        public uint WiseScriptNewEventOffset_1 { get; set; }
+
+        /// <summary>
+        /// Points to the end of the second of two "NewEvent" (0x18)
+        /// items in the Wise installer script
+        /// </summary>
+        /// <remarks>
+        /// Possibly the "Cancel" event
+        /// </remarks>
+        public uint WiseScriptNewEventOffset_2 { get; set; }
 
         /// <summary>
         /// Inflated size of the Wise installer script

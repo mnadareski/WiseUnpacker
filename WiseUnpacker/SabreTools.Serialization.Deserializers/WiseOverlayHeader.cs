@@ -58,9 +58,12 @@ namespace SabreTools.Serialization.Deserializers
             }
 
             header.Flags = (OverlayHeaderFlags)data.ReadUInt32LittleEndian();
-            header.Unknown_12 = data.ReadBytes(12);
-            header.UnknownU32_1 = data.ReadUInt32LittleEndian();
-            header.UnknownU32_2 = data.ReadUInt32LittleEndian();
+            header.UnknownBytes_1 = data.ReadBytes(2);
+            header.StartGradient = data.ReadBytes(3);
+            header.EndGradient = data.ReadBytes(3);
+            header.UnknownBytes_2 = data.ReadBytes(4);
+            header.WiseScriptNewEventOffset_1 = data.ReadUInt32LittleEndian();
+            header.WiseScriptNewEventOffset_2 = data.ReadUInt32LittleEndian();
             header.WiseScriptInflatedSize = data.ReadUInt32LittleEndian();
             header.WiseScriptDeflatedSize = data.ReadUInt32LittleEndian();
             header.WiseDllDeflatedSize = data.ReadUInt32LittleEndian();

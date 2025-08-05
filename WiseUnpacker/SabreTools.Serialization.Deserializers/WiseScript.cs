@@ -92,14 +92,15 @@ namespace SabreTools.Serialization.Deserializers
 
             var header = new ScriptHeader();
 
-            header.Unknown_5 = data.ReadBytes(5);
+            header.Flags = data.ReadByteValue();
+            header.UnknownBytes_1 = data.ReadBytes(4);
             header.SomeOffset1 = data.ReadUInt32LittleEndian();
             header.SomeOffset2 = data.ReadUInt32LittleEndian();
-            header.Unknown_4 = data.ReadBytes(4);
+            header.UnknownBytes_2 = data.ReadBytes(4);
             header.DateTime = data.ReadUInt32LittleEndian();
             header.Unknown_22 = data.ReadBytes(22);
             header.Url = data.ReadNullTerminatedAnsiString();
-            header.LogPath = data.ReadNullTerminatedAnsiString();
+            header.LogPathname = data.ReadNullTerminatedAnsiString();
             header.MessageFont = data.ReadNullTerminatedAnsiString();
 
             // If the font string is empty, then the header is trimmed
@@ -113,9 +114,10 @@ namespace SabreTools.Serialization.Deserializers
                 header = new ScriptHeader();
 
                 // TODO: Figure out if this maps to existing fields
-                header.Unknown_22 = data.ReadBytes(18);
+                header.Flags = data.ReadByteValue();
+                header.Unknown_22 = data.ReadBytes(17);
                 header.Url = data.ReadNullTerminatedAnsiString();
-                header.LogPath = data.ReadNullTerminatedAnsiString();
+                header.LogPathname = data.ReadNullTerminatedAnsiString();
                 header.MessageFont = data.ReadNullTerminatedAnsiString();
                 scriptStringsMultiplier = 46;
             }
