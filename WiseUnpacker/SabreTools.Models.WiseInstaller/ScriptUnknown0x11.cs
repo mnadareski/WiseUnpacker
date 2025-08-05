@@ -11,6 +11,10 @@ namespace SabreTools.Models.WiseInstaller
     /// The issue with this theory is that there do not seem
     /// to be any flags, notably missing the "Include Sub Directories"
     /// and "Remove Directory Containing Files" items.
+    /// 
+    /// There's already another definition for delete file,
+    /// so that just muddies the waters about what this is
+    /// supposed to be further.
     /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
     public class ScriptUnknown0x11 : MachineStateData

@@ -29,8 +29,18 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>20 bytes</remarks>
-        public byte[]? Unknown_20 { get; set; }
+        /// <remarks>12 bytes</remarks>
+        public byte[]? Unknown_12 { get; set; }
+
+        /// <summary>
+        /// Unknown, possibly an offset or size
+        /// </summary>
+        public uint UnknownU32_1 { get; set; }
+
+        /// <summary>
+        /// Unknown, possibly an offset or size
+        /// </summary>
+        public uint UnknownU32_2 { get; set; }
 
         /// <summary>
         /// Inflated size of the Wise installer script

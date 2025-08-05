@@ -1014,7 +1014,7 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.EditIniFile:
-                        if (state.Data is not ScriptEditIniFile unknown0x05Data)
+                        if (state.Data is not EditIniFile unknown0x05Data)
                             return false;
 
                         // Ensure directory separators are consistent
@@ -1055,7 +1055,7 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.GetTemporaryFilename:
-                        if (state.Data is not ScriptGetTemporaryFilename unknown0x16Data)
+                        if (state.Data is not GetTemporaryFilename unknown0x16Data)
                             return false;
 
                         tempPath = unknown0x16Data.Variable;

@@ -1,11 +1,14 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
-    /// Compressed custom dialog set data
+    /// Custom Dialog
+    /// 
+    /// Use this action to create your own dialog box or dialog box set.
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
+    /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     /// TODO: Document the decompressed file format
-    public class ScriptCustomDialogSet : MachineStateData
+    public class CustomDialogSet : MachineStateData
     {
         /// <summary>
         /// Start of the deflated data

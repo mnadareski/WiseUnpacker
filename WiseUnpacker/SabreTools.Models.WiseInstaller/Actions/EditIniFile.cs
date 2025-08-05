@@ -1,10 +1,14 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
-    /// Something with the .ini file, write .ini file?
+    /// Edit INI File
+    /// 
+    /// This action edits an .INI file on the destination computer. To edit SYSTEM.INI, use the
+    /// Add to SYSTEM.INI action instead.
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptEditIniFile : MachineStateData
+    /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
+    public class EditIniFile : MachineStateData
     {
         /// <summary>
         /// Path name to INI file

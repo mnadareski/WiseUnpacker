@@ -1,5 +1,6 @@
 using System.Text;
 using SabreTools.Models.WiseInstaller;
+using SabreTools.Models.WiseInstaller.Actions;
 using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Printers
@@ -112,28 +113,29 @@ namespace SabreTools.Serialization.Printers
                 switch (entry.Data)
                 {
                     case ScriptFileHeader data: Print(builder, data); break;
-                    case ScriptDisplayMessage data: Print(builder, data); break;
+                    case DisplayMessage data: Print(builder, data); break;
                     case ScriptFormData data: Print(builder, data); break;
-                    case ScriptEditIniFile data: Print(builder, data); break;
+                    case EditIniFile data: Print(builder, data); break;
                     case ScriptUnknown0x06 data: Print(builder, data); break;
-                    case ScriptExecuteProgram data: Print(builder, data); break;
-                    case ScriptEndBlock data: Print(builder, data); break;
-                    case ScriptFunctionCall data: Print(builder, data); break;
-                    case ScriptEditRegistry data: Print(builder, data); break;
-                    case ScriptDeleteFile data: Print(builder, data); break;
-                    case ScriptIfWhileStatement data: Print(builder, data); break;
+                    case ExecuteProgram data: Print(builder, data); break;
+                    case EndBlockStatement data: Print(builder, data); break;
+                    case ExternalDLLCall data: Print(builder, data); break;
+                    case EditRegistry data: Print(builder, data); break;
+                    case DeleteFile data: Print(builder, data); break;
+                    case IfWhileStatement data: Print(builder, data); break;
+                    case ElseStatement data: Print(builder, data); break;
                     case ScriptUnknown0x11 data: Print(builder, data); break;
-                    case ScriptCopyLocalFile data: Print(builder, data); break;
-                    case ScriptCustomDialogSet data: Print(builder, data); break;
-                    case ScriptGetSystemInformation data: Print(builder, data); break;
-                    case ScriptGetTemporaryFilename data: Print(builder, data); break;
+                    case CopyLocalFile data: Print(builder, data); break;
+                    case CustomDialogSet data: Print(builder, data); break;
+                    case GetSystemInformation data: Print(builder, data); break;
+                    case GetTemporaryFilename data: Print(builder, data); break;
                     case ScriptUnknown0x17 data: Print(builder, data); break;
                     case ScriptUnknown0x19 data: Print(builder, data); break;
                     case ScriptUnknown0x1A data: Print(builder, data); break;
-                    case ScriptAddTextToInstallLog data: Print(builder, data); break;
+                    case AddTextToInstallLog data: Print(builder, data); break;
                     case ScriptUnknown0x1D data: Print(builder, data); break;
-                    case ScriptCompilerVariableIf data: Print(builder, data); break;
-                    case ScriptElseIf data: Print(builder, data); break;
+                    case CompilerVariableIf data: Print(builder, data); break;
+                    case ElseIfStatement data: Print(builder, data); break;
                     case ScriptUnknown0x30 data: Print(builder, data); break;
 
                     // TODO: Implement printers for all types
@@ -172,9 +174,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptDisplayMessage data)
+        private static void Print(StringBuilder builder, DisplayMessage data)
         {
-            builder.AppendLine($"    Data: ScriptDisplayMessage");
+            builder.AppendLine($"    Data: DisplayMessage");
             builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine($"      Title/Text strings");
             builder.AppendLine("      -------------------------");
@@ -214,9 +216,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptEditIniFile data)
+        private static void Print(StringBuilder builder, EditIniFile data)
         {
-            builder.AppendLine($"    Data: ScriptEditIniFile");
+            builder.AppendLine($"    Data: EditIniFile");
             builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine(data.Section, $"      Section");
             builder.AppendLine(data.Values, $"      Values");
@@ -268,9 +270,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptExecuteProgram data)
+        private static void Print(StringBuilder builder, ExecuteProgram data)
         {
-            builder.AppendLine($"    Data: ScriptExecuteProgram");
+            builder.AppendLine($"    Data: ExecuteProgram");
             builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine(data.CommandLine, $"      Command Line");
@@ -278,17 +280,17 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptEndBlock data)
+        private static void Print(StringBuilder builder, EndBlockStatement data)
         {
-            builder.AppendLine($"    Data: ScriptUnknown0x08");
+            builder.AppendLine($"    Data: EndBlockStatement");
             builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptFunctionCall data)
+        private static void Print(StringBuilder builder, ExternalDLLCall data)
         {
-            builder.AppendLine($"    Data: ScriptFunctionCall");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine($"    Data: ExternalDLLCall");
+            builder.AppendLine(data.Flags, $"      Unknown");
             builder.AppendLine(data.DllPath, $"      DLL path");
             builder.AppendLine(data.FunctionName, $"      Function name");
             builder.AppendLine(data.Operand_4, $"      Unknown");
@@ -310,9 +312,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptEditRegistry data)
+        private static void Print(StringBuilder builder, EditRegistry data)
         {
-            builder.AppendLine($"    Data: ScriptEditRegistry");
+            builder.AppendLine($"    Data: EditRegistry");
             builder.AppendLine(data.Root, $"      Root");
             builder.AppendLine(data.DataType, $"      Data type");
             builder.AppendLine(data.Key, $"      Key");
@@ -321,20 +323,26 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptDeleteFile data)
+        private static void Print(StringBuilder builder, DeleteFile data)
         {
-            builder.AppendLine($"    Data: ScriptDeleteFile");
+            builder.AppendLine($"    Data: DeleteFile");
             builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptIfWhileStatement data)
+        private static void Print(StringBuilder builder, IfWhileStatement data)
         {
-            builder.AppendLine($"    Data: ScriptIfWhileStatement");
+            builder.AppendLine($"    Data: IfWhileStatement");
             builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.Variable, $"      Variable");
             builder.AppendLine(data.Value, $"      Value");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ElseStatement data)
+        {
+            builder.AppendLine($"    Data: ElseStatement");
             builder.AppendLine();
         }
 
@@ -345,9 +353,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptCopyLocalFile data)
+        private static void Print(StringBuilder builder, CopyLocalFile data)
         {
-            builder.AppendLine($"    Data: ScriptCopyLocalFile");
+            builder.AppendLine($"    Data: CopyLocalFile");
             builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine(data.Operand_2, $"      Unknown");
             builder.AppendLine(data.Source, $"      Source");
@@ -371,9 +379,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptCustomDialogSet data)
+        private static void Print(StringBuilder builder, CustomDialogSet data)
         {
-            builder.AppendLine($"    Data: ScriptCustomDialogSet");
+            builder.AppendLine($"    Data: CustomDialogSet");
             builder.AppendLine(data.DeflateStart, $"      Deflate start");
             builder.AppendLine(data.DeflateEnd, $"      Deflate end");
             builder.AppendLine(data.InflatedSize, $"      Inflated size");
@@ -382,17 +390,18 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptGetSystemInformation data)
+        private static void Print(StringBuilder builder, GetSystemInformation data)
         {
-            builder.AppendLine($"    Data: ScriptGetSystemInformation");
+            builder.AppendLine($"    Data: GetSystemInformation");
+            builder.AppendLine(data.Flags, $"      Variable");
             builder.AppendLine(data.Variable, $"      Variable");
-            builder.AppendLine(data.Operand_3, $"      Unknown");
+            builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptGetTemporaryFilename data)
+        private static void Print(StringBuilder builder, GetTemporaryFilename data)
         {
-            builder.AppendLine($"    Data: ScriptGetTemporaryFilename");
+            builder.AppendLine($"    Data: GetTemporaryFilename");
             builder.AppendLine(data.Variable, $"      Variable");
             builder.AppendLine();
         }
@@ -425,9 +434,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptAddTextToInstallLog data)
+        private static void Print(StringBuilder builder, AddTextToInstallLog data)
         {
-            builder.AppendLine($"    Data: ScriptAddTextToInstallLog");
+            builder.AppendLine($"    Data: AddTextToInstallLog");
             builder.AppendLine(data.Text, $"      Text");
             builder.AppendLine();
         }
@@ -440,17 +449,17 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptCompilerVariableIf data)
+        private static void Print(StringBuilder builder, CompilerVariableIf data)
         {
-            builder.AppendLine($"    Data: ScriptCompilerVariableIf");
+            builder.AppendLine($"    Data: CompilerVariableIf");
             builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.Variable, $"      Variable");
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptElseIf data)
+        private static void Print(StringBuilder builder, ElseIfStatement data)
         {
-            builder.AppendLine($"    Data: ScriptElseIf");
+            builder.AppendLine($"    Data: ElseIfStatement");
             builder.AppendLine(data.Operator, $"      Operator");
             builder.AppendLine(data.Variable, $"      Variable");
             builder.AppendLine(data.Value, $"      Value");

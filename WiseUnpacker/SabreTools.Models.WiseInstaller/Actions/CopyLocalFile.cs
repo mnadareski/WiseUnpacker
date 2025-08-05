@@ -1,10 +1,14 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
     /// Copy Local File
+    /// 
+    /// This action copies uncompressed files from a floppy disk, CD, the destination computer,
+    /// or a network drive.
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptCopyLocalFile : MachineStateData
+    /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
+    public class CopyLocalFile : MachineStateData
     {
         /// <summary>
         /// Unknown, 0x0C

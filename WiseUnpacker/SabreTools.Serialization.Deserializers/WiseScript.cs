@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.Models.WiseInstaller;
+using SabreTools.Models.WiseInstaller.Actions;
 
 namespace SabreTools.Serialization.Deserializers
 {
@@ -169,32 +170,32 @@ namespace SabreTools.Serialization.Deserializers
                 MachineStateData? stateData = op switch
                 {
                     OperationCode.InstallFile => ParseScriptFileHeader(data, languageCount),
-                    OperationCode.DisplayMessage => ParseScriptDisplayMessage(data, languageCount),
+                    OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.FormData => ParseScriptFormData(data, languageCount),
-                    OperationCode.EditIniFile => ParseScriptEditIniFile(data),
+                    OperationCode.EditIniFile => ParseEditIniFile(data),
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount),
-                    OperationCode.ExecuteProgram => ParseScriptExecuteProgram(data),
-                    OperationCode.EndBlock => ParseScriptEndBlock(data),
-                    OperationCode.FunctionCall => ParseScriptFunctionCall(data, languageCount, old),
+                    OperationCode.ExecuteProgram => ParseExecuteProgram(data),
+                    OperationCode.EndBlock => ParseEndBlockStatement(data),
+                    OperationCode.FunctionCall => ParseExternalDLLCall(data, languageCount, old),
                     OperationCode.EditRegistry => ParseScriptEditRegistry(data),
-                    OperationCode.DeleteFile => ParseScriptDeleteFile(data),
-                    OperationCode.IfWhileStatement => ParseScriptIfWhileStatement(data),
-                    OperationCode.ElseStatement => null, // No-op
+                    OperationCode.DeleteFile => ParseDeleteFile(data),
+                    OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
+                    OperationCode.ElseStatement => ParseElseStatement(data), // No-op
                     OperationCode.StartFormData => null, // No-op
                     OperationCode.EndFormData => null, // No-op
                     OperationCode.Unknown0x11 => ParseUnknown0x11(data),
-                    OperationCode.CopyLocalFile => ParseScriptCopyLocalFile(data, languageCount),
-                    OperationCode.CustomDialogSet => ParseScriptCustomDialogSet(data),
-                    OperationCode.GetSystemInformation => ParseScriptGetSystemInformation(data),
-                    OperationCode.GetTemporaryFilename => ParseScriptGetTemporaryFilename(data),
+                    OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
+                    OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
+                    OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
+                    OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
                     OperationCode.Unknown0x17 => ParseUnknown0x17(data),
                     OperationCode.NewEvent => null, // No-op, handled below
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
                     OperationCode.IncludeScript => null, // No-op
-                    OperationCode.AddTextToInstallLog => ParseScriptAddTextToInstallLog(data),
+                    OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
                     OperationCode.Unknown0x1D => ParseUnknown0x1D(data),
-                    OperationCode.CompilerVariableIf => ParseScriptCompilerVariableIf(data),
+                    OperationCode.CompilerVariableIf => ParseCompilerVariableIf(data),
                     OperationCode.ElseIfStatement => ParseScriptElseIf(data),
                     OperationCode.Skip0x24 => null, // No-op
                     OperationCode.Skip0x25 => null, // No-op
@@ -249,15 +250,14 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptDisplayMessage
+        /// Parse a Stream into a DisplayMessage
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <returns>Filled ScriptDisplayMessage on success, null on error</returns>
-        /// <remarks>Seen in block included from rollback.wse<remarks>
-        private static ScriptDisplayMessage ParseScriptDisplayMessage(Stream data, int languageCount)
+        /// <returns>Filled DisplayMessage on success, null on error</returns>
+        private static DisplayMessage ParseDisplayMessage(Stream data, int languageCount)
         {
-            var obj = new ScriptDisplayMessage();
+            var obj = new DisplayMessage();
 
             obj.Flags = data.ReadByteValue();
             obj.TitleText = new string[languageCount * 2];
@@ -290,13 +290,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptEditIniFile
+        /// Parse a Stream into an EditIniFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptEditIniFile on success, null on error</returns>
-        private static ScriptEditIniFile ParseScriptEditIniFile(Stream data)
+        /// <returns>Filled EditIniFile on success, null on error</returns>
+        private static EditIniFile ParseEditIniFile(Stream data)
         {
-            var obj = new ScriptEditIniFile();
+            var obj = new EditIniFile();
 
             obj.Pathname = data.ReadNullTerminatedAnsiString();
             obj.Section = data.ReadNullTerminatedAnsiString();
@@ -324,13 +324,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptExecuteProgram
+        /// Parse a Stream into a ExecuteProgram
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptExecuteProgram on success, null on error</returns>
-        private static ScriptExecuteProgram ParseScriptExecuteProgram(Stream data)
+        /// <returns>Filled ExecuteProgram on success, null on error</returns>
+        private static ExecuteProgram ParseExecuteProgram(Stream data)
         {
-            var obj = new ScriptExecuteProgram();
+            var obj = new ExecuteProgram();
 
             obj.Flags = data.ReadByteValue();
             obj.Pathname = data.ReadNullTerminatedAnsiString();
@@ -341,13 +341,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptEndBlock
+        /// Parse a Stream into a EndBlockStatement
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptEndBlock on success, null on error</returns>
-        private static ScriptEndBlock ParseScriptEndBlock(Stream data)
+        /// <returns>Filled EndBlockStatement on success, null on error</returns>
+        private static EndBlockStatement ParseEndBlockStatement(Stream data)
         {
-            var obj = new ScriptEndBlock();
+            var obj = new EndBlockStatement();
 
             obj.Operand_1 = data.ReadByteValue();
 
@@ -355,17 +355,17 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptFunctionCall
+        /// Parse a Stream into a ExternalDLLCall
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
         /// <param name="old">Indicates an old install script</param>
-        /// <returns>Filled ScriptFunctionCall on success, null on error</returns>
-        private static ScriptFunctionCall ParseScriptFunctionCall(Stream data, int languageCount, bool old)
+        /// <returns>Filled ExternalDLLCall on success, null on error</returns>
+        private static ExternalDLLCall ParseExternalDLLCall(Stream data, int languageCount, bool old)
         {
-            var obj = new ScriptFunctionCall();
+            var obj = new ExternalDLLCall();
 
-            obj.Operand_1 = data.ReadByteValue();
+            obj.Flags = data.ReadByteValue();
             obj.DllPath = data.ReadNullTerminatedAnsiString();
             obj.FunctionName = data.ReadNullTerminatedAnsiString();
             if (!old)
@@ -393,15 +393,8 @@ namespace SabreTools.Serialization.Deserializers
                     // Check Configuration
                     case "f12": break;
 
-                    // Unknown external
-                    case "f13":
-                        // TODO: Implement
-                        // Possibly Firefox-related for cookies?
-                        // Probably this layout:
-                        // - Variable for the dir name? (e.g. "DC_FIREFOX_COOKIE_DIR")
-                        // - Search path for the dir
-                        // - Variable name/message for not found directory (e.g. "NODIRFOUNDBAKA")
-                        break;
+                    // Search for File
+                    case "f13": break;
 
                     // Set Variable
                     case "f16": break;
@@ -432,15 +425,8 @@ namespace SabreTools.Serialization.Deserializers
                     // Wizard Block
                     case "f31": break;
 
-                    // Unknown external
-                    case "f33":
-                        // TODO: Implement
-                        // Possibly reading or writing from a cookies file
-                        // Probably this layout:
-                        // - Variable to read to/write from (e.g. "DC_LINE_OF_TEXT")
-                        // - Path to the cookies file (e.g. "%DC_WIN_DRIVE%:\Documents and Settings\%DC_LOGON_NAME%\Cookies\%DC_LOGON_NAME%@%DC_COOKIE_DOMAIN%[1].txt")
-                        // - Unknown string; in samples it was all 0x20-filled
-                        break;
+                    // Read/Update Text File
+                    case "f33": break;
 
                     // Post to HTTP Server
                     case "f34": break;
@@ -463,12 +449,12 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <returns>Filled ScriptEditRegistry on success, null on error</returns>
-        private static ScriptEditRegistry ParseScriptEditRegistry(Stream data)
+        private static EditRegistry ParseScriptEditRegistry(Stream data)
         {
-            var obj = new ScriptEditRegistry();
+            var obj = new EditRegistry();
 
             obj.Root = data.ReadByteValue();
-            obj.DataType = data.ReadByteValue();
+            obj.DataType = data.ReadByteValue(); // TODO: ushort, sometimes?
             obj.Key = data.ReadNullTerminatedAnsiString();
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
@@ -477,13 +463,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptDeleteFile
+        /// Parse a Stream into a DeleteFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptDeleteFile on success, null on error</returns>
-        private static ScriptDeleteFile ParseScriptDeleteFile(Stream data)
+        /// <returns>Filled DeleteFile on success, null on error</returns>
+        private static DeleteFile ParseDeleteFile(Stream data)
         {
-            var obj = new ScriptDeleteFile();
+            var obj = new DeleteFile();
 
             obj.Flags = data.ReadByteValue();
             obj.Pathname = data.ReadNullTerminatedAnsiString();
@@ -492,19 +478,29 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptIfWhileStatement
+        /// Parse a Stream into a IfWhileStatement
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptIfWhileStatement on success, null on error</returns>
-        private static ScriptIfWhileStatement ParseScriptIfWhileStatement(Stream data)
+        /// <returns>Filled IfWhileStatement on success, null on error</returns>
+        private static IfWhileStatement ParseIfWhileStatement(Stream data)
         {
-            var obj = new ScriptIfWhileStatement();
+            var obj = new IfWhileStatement();
 
             obj.Flags = data.ReadByteValue();
             obj.Variable = data.ReadNullTerminatedAnsiString();
             obj.Value = data.ReadNullTerminatedAnsiString();
 
             return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an ElseStatement
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled ElseStatement on success, null on error</returns>
+        private static ElseStatement ParseElseStatement(Stream data)
+        {
+            return new ElseStatement();
         }
 
         /// <summary>
@@ -522,14 +518,14 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptCopyLocalFile
+        /// Parse a Stream into a CopyLocalFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <returns>Filled ScriptCopyLocalFile on success, null on error</returns>
-        private static ScriptCopyLocalFile ParseScriptCopyLocalFile(Stream data, int languageCount)
+        /// <returns>Filled CopyLocalFile on success, null on error</returns>
+        private static CopyLocalFile ParseCopyLocalFile(Stream data, int languageCount)
         {
-            var obj = new ScriptCopyLocalFile();
+            var obj = new CopyLocalFile();
 
             obj.Operand_1 = data.ReadByteValue();
             obj.Operand_2 = data.ReadBytes(41);
@@ -548,13 +544,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptCustomDialogSet
+        /// Parse a Stream into a CustomDialogSet
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptCustomDialogSet on success, null on error</returns>
-        private static ScriptCustomDialogSet ParseScriptCustomDialogSet(Stream data)
+        /// <returns>Filled CustomDialogSet on success, null on error</returns>
+        private static CustomDialogSet ParseCustomDialogSet(Stream data)
         {
-            var obj = new ScriptCustomDialogSet();
+            var obj = new CustomDialogSet();
 
             obj.DeflateStart = data.ReadUInt32LittleEndian();
             obj.DeflateEnd = data.ReadUInt32LittleEndian();
@@ -566,29 +562,29 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptGetSystemInformation
+        /// Parse a Stream into a GetSystemInformation
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptGetSystemInformation on success, null on error</returns>
-        private static ScriptGetSystemInformation ParseScriptGetSystemInformation(Stream data)
+        /// <returns>Filled GetSystemInformation on success, null on error</returns>
+        private static GetSystemInformation ParseGetSystemInformation(Stream data)
         {
-            var obj = new ScriptGetSystemInformation();
+            var obj = new GetSystemInformation();
 
             obj.Flags = data.ReadByteValue();
             obj.Variable = data.ReadNullTerminatedAnsiString();
-            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
+            obj.Pathname = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptGetTemporaryFilename
+        /// Parse a Stream into a GetTemporaryFilename
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptGetTemporaryFilename on success, null on error</returns>
-        private static ScriptGetTemporaryFilename ParseScriptGetTemporaryFilename(Stream data)
+        /// <returns>Filled GetTemporaryFilename on success, null on error</returns>
+        private static GetTemporaryFilename ParseGetTemporaryFilename(Stream data)
         {
-            var obj = new ScriptGetTemporaryFilename();
+            var obj = new GetTemporaryFilename();
 
             obj.Variable = data.ReadNullTerminatedAnsiString();
 
@@ -673,13 +669,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptAddTextToInstallLog
+        /// Parse a Stream into a AddTextToInstallLog
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptAddTextToInstallLog on success, null on error</returns>
-        private static ScriptAddTextToInstallLog ParseScriptAddTextToInstallLog(Stream data)
+        /// <returns>Filled AddTextToInstallLog on success, null on error</returns>
+        private static AddTextToInstallLog ParseAddTextToInstallLog(Stream data)
         {
-            var obj = new ScriptAddTextToInstallLog();
+            var obj = new AddTextToInstallLog();
 
             obj.Text = data.ReadNullTerminatedAnsiString();
 
@@ -702,13 +698,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptCompilerVariableIf
+        /// Parse a Stream into a CompilerVariableIf
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptCompilerVariableIf on success, null on error</returns>
-        private static ScriptCompilerVariableIf ParseScriptCompilerVariableIf(Stream data)
+        /// <returns>Filled CompilerVariableIf on success, null on error</returns>
+        private static CompilerVariableIf ParseCompilerVariableIf(Stream data)
         {
-            var obj = new ScriptCompilerVariableIf();
+            var obj = new CompilerVariableIf();
 
             obj.Flags = data.ReadByteValue();
             obj.Variable = data.ReadNullTerminatedAnsiString();
@@ -721,9 +717,9 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <returns>Filled ScriptElseIf on success, null on error</returns>
-        private static ScriptElseIf ParseScriptElseIf(Stream data)
+        private static ElseIfStatement ParseScriptElseIf(Stream data)
         {
-            var obj = new ScriptElseIf();
+            var obj = new ElseIfStatement();
 
             obj.Operator = data.ReadByteValue();
             obj.Variable = data.ReadNullTerminatedAnsiString();

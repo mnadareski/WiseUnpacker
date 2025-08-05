@@ -18,7 +18,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.DllName, "DLL name");
             builder.AppendLine(overlayHeader.DllSize, "DLL size");
             builder.AppendLine($"Flags: {overlayHeader.Flags} (0x{(uint)overlayHeader.Flags:X4})");
-            builder.AppendLine(overlayHeader.Unknown_20, "Unknown");
+            builder.AppendLine(overlayHeader.Unknown_12, "Unknown");
+            builder.AppendLine(overlayHeader.UnknownU32_1, "Unknown");
+            builder.AppendLine(overlayHeader.UnknownU32_2, "Unknown");
             builder.AppendLine(overlayHeader.WiseScriptInflatedSize, "Wise script inflated size");
             builder.AppendLine(overlayHeader.WiseScriptDeflatedSize, "Wise script deflated size");
             builder.AppendLine(overlayHeader.WiseDllDeflatedSize, "Wise DLL deflated size");
