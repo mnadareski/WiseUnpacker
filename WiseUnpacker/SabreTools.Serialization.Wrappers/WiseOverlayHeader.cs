@@ -629,7 +629,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>Extraction status representing the final state</returns>
         /// <remarks>Assumes that the current stream position is where the compressed data lives</remarks>
         public ExtractStatus ExtractStream(Stream data,
-            ref string? filename,
+            ref string filename,
             long expectedBytesRead,
             long expectedBytesWritten,
             uint expectedCrc,
@@ -671,10 +671,8 @@ namespace SabreTools.Serialization.Wrappers
                 // If the filename is [NULL], replace with the zip filename
                 if (zipHeader?.FileName != null)
                 {
-                    if (filename == null)
-                        filename = zipHeader.FileName;
-                    else
-                        filename = filename.Replace("[NULL]", zipHeader.FileName);
+                    filename = filename.Replace("[NULL]", zipHeader.FileName);
+                    if (includeDebug) Console.WriteLine($"Replaced [NULL] with {zipHeader.FileName}");
                 }
 
                 // Debug output
