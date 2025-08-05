@@ -668,6 +668,15 @@ namespace SabreTools.Serialization.Wrappers
                 if (zipHeader != null)
                     expectedCrc = zipHeader.CRC32;
 
+                // If the filename is [NULL], replace with the zip filename
+                if (zipHeader?.FileName != null)
+                {
+                    if (filename == null)
+                        filename = zipHeader.FileName;
+                    else
+                        filename = filename.Replace("[NULL]", zipHeader.FileName);
+                }
+
                 // Debug output
                 if (includeDebug) Console.WriteLine($"PKZIP Filename: {zipHeader?.FileName}, PKZIP Expected Read: {zipHeader?.CompressedSize}, PKZIP Expected Write: {zipHeader?.UncompressedSize}, PKZIP Expected CRC-32: {zipHeader?.CRC32:X4}");
             }
