@@ -198,6 +198,8 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.RenameFileDirectory => ParseRenameFileDirectory(data),
                     OperationCode.CompilerVariableIf => ParseCompilerVariableIf(data),
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
+
+                    // Opcodes past this point are unverified
                     OperationCode.Skip0x24 => null, // No-op
                     OperationCode.Skip0x25 => null, // No-op
                     OperationCode.ReadByteAndStrings => ParseUnknown0x30(data),
@@ -509,7 +511,7 @@ namespace SabreTools.Serialization.Deserializers
             // If the next byte is not a recognized function value,
             // reread the block with a ushort data type.
             // TODO: Determine what flag or header value marks this
-            if (nextByte > 0x25)
+            if (nextByte > 0x23)
             {
                 data.Seek(current, SeekOrigin.Begin);
                 obj = new EditRegistry();
