@@ -39,7 +39,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(header.UnknownBytes_2, "  Unknown");
             builder.AppendLine(header.DateTime, "  Datetime");
             builder.AppendLine(header.Unknown_22, "  Unknown");
-            builder.AppendLine(header.Url, "  URL");
+            builder.AppendLine(header.FTPURL, "  FTP URL");
             builder.AppendLine(header.LogPathname, "  Log pathname");
             builder.AppendLine(header.MessageFont, "  Font");
             builder.AppendLine(header.FontSize, "  Font size");

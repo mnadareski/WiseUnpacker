@@ -58,9 +58,9 @@ namespace SabreTools.Models.WiseInstaller
         public byte[]? Unknown_22 { get; set; }
 
         /// <summary>
-        /// Only seen in glsetup.exe, others just \0
+        /// FTP URL for online downloading
         /// </summary>
-        public string? Url { get; set; }
+        public string? FTPURL { get; set; }
 
         /// <summary>
         /// Log pathname

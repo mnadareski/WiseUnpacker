@@ -99,7 +99,7 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownBytes_2 = data.ReadBytes(4);
             header.DateTime = data.ReadUInt32LittleEndian();
             header.Unknown_22 = data.ReadBytes(22);
-            header.Url = data.ReadNullTerminatedAnsiString();
+            header.FTPURL = data.ReadNullTerminatedAnsiString();
             header.LogPathname = data.ReadNullTerminatedAnsiString();
             header.MessageFont = data.ReadNullTerminatedAnsiString();
 
@@ -116,7 +116,7 @@ namespace SabreTools.Serialization.Deserializers
                 // TODO: Figure out if this maps to existing fields
                 header.Flags = data.ReadByteValue();
                 header.Unknown_22 = data.ReadBytes(17);
-                header.Url = data.ReadNullTerminatedAnsiString();
+                header.FTPURL = data.ReadNullTerminatedAnsiString();
                 header.LogPathname = data.ReadNullTerminatedAnsiString();
                 header.MessageFont = data.ReadNullTerminatedAnsiString();
                 scriptStringsMultiplier = 46;
