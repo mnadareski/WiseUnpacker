@@ -12,6 +12,7 @@ namespace SabreTools.Serialization
             return functionId switch
             {
                 "f1" => "Unknown",
+                "f3" => "Add to SYSTEM.INI",
                 "f8" => "Read INI Value",
                 "f9" => "Get Registry Key Value",
                 "f10" => "Register Font",
@@ -22,7 +23,7 @@ namespace SabreTools.Serialization
                 "f16" => "Set Variable",
                 "f17" => "Get Environment Variable",
                 "f19" => "Check if File/Dir Exists",
-                "f20" => "Set File Attributes(?)",
+                "f20" => "Set File Attributes",
                 "f22" => "Find File in Path",
                 "f23" => "Check Disk Space",
                 "f25" => "Insert Line Into Text File",

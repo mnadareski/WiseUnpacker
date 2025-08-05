@@ -180,7 +180,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, old),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
-                    OperationCode.CallDLLFunction => ParseCallDLLFunction(data, languageCount, old),
+                    OperationCode.CallDllFunction => ParseCallDllFunction(data, languageCount, old),
                     OperationCode.EditRegistry => ParseEditRegistry(data, longDataValue),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
@@ -361,15 +361,15 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a CallDLLFunction
+        /// Parse a Stream into a CallDllFunction
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
         /// <param name="old">Indicates an old install script</param>
-        /// <returns>Filled CallDLLFunction on success, null on error</returns>
-        private static CallDLLFunction ParseCallDLLFunction(Stream data, int languageCount, bool old)
+        /// <returns>Filled CallDllFunction on success, null on error</returns>
+        private static CallDllFunction ParseCallDllFunction(Stream data, int languageCount, bool old)
         {
-            var obj = new CallDLLFunction();
+            var obj = new CallDllFunction();
 
             obj.Flags = data.ReadByteValue();
             obj.DllPath = data.ReadNullTerminatedAnsiString();
@@ -395,13 +395,16 @@ namespace SabreTools.Serialization.Deserializers
                     case "f1":
                         // TODO: Implement
                         // Probably this layout: 
-                        // - Flags (numeric)
-                        // - Unknown string (empty in sample)
-                        // - Executable path (e.g. "%WIN%\hcwSubID.exe")
-                        // - Executable path again (e.g. "%WIN%\hcwSubID.exe")
-                        // - Unknown string (empty in sample)
+                        // - Flags (numeric) (e.g. "12", "8")
+                        // - Unknown string (empty in samples)
+                        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+                        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+                        // - Unknown string (empty in samples)
                         // - Numeric value (e.g. "0")
                         break;
+
+                    // Add to SYSTEM.INI
+                    case "f3": break;
 
                     // Read INI Value
                     case "f8": break;
@@ -433,14 +436,8 @@ namespace SabreTools.Serialization.Deserializers
                     // Check if File/Dir Exists
                     case "f19": break;
 
-                    // Set File Attributes(?)
-                    case "f20":
-                        // TODO: Implement
-                        // Possibly "Set File Attributes"
-                        // Probably this layout: 
-                        // - Flags (numeric) (e.g. "1", )
-                        // - File name (e.g. "%MAINDIR%\ENT.exe", "%MAINDIR%\P8word.hlp", "%MAINDIR%\P8word.cnt")
-                        break;
+                    // Set File Attributes
+                    case "f20": break;
 
                     // Find File in Path
                     case "f22": break;

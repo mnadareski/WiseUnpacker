@@ -54,7 +54,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Call DLL Function
         /// </summary>
-        CallDLLFunction = 0x09,
+        CallDllFunction = 0x09,
 
         /// <summary>
         /// Edit Registry

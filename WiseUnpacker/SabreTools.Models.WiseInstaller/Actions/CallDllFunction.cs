@@ -13,7 +13,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class CallDLLFunction : MachineStateData
+    public class CallDllFunction : MachineStateData
     {
         /// <summary>
         /// Flags, unknown mapping
