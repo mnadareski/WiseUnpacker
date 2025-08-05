@@ -203,8 +203,6 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
 
                     // Opcodes past this point are unverified
-                    OperationCode.Skip0x24 => null, // No-op
-                    OperationCode.Skip0x25 => null, // No-op
                     OperationCode.ReadByteAndStrings => ParseUnknown0x30(data),
 
                     _ => null,

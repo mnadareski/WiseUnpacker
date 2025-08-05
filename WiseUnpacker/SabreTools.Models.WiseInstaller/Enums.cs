@@ -161,16 +161,6 @@ namespace SabreTools.Models.WiseInstaller
         ElseIfStatement = 0x23,
 
         /// <summary>
-        /// Skip this byte? Only seen in RTCW
-        /// </summary>
-        Skip0x24 = 0x24,
-
-        /// <summary>
-        /// Skip this byte? Only seen in RTCW
-        /// </summary>
-        Skip0x25 = 0x25,
-
-        /// <summary>
         /// Read 1 byte and 2 strings, only seen in cuteftp.exe, same
         /// as 0x15? or maybe even 0x23?
         /// </summary>
