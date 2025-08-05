@@ -141,9 +141,8 @@ namespace SabreTools.Serialization.Printers
                     case RenameFileDirectory data: Print(builder, data); break;
                     case OpenCloseInstallLog data: Print(builder, data); break;
                     case ElseIfStatement data: Print(builder, data); break;
-                    case ScriptUnknown0x30 data: Print(builder, data); break;
 
-                    // TODO: Implement printers for all types
+                    // This should never happen
                     default: builder.AppendLine("    Data: [NULL]"); break;
                 }
             }
@@ -495,15 +494,6 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(data.Operator, $"      Operator");
             builder.AppendLine(data.Variable, $"      Variable");
             builder.AppendLine(data.Value, $"      Value");
-            builder.AppendLine();
-        }
-
-        private static void Print(StringBuilder builder, ScriptUnknown0x30 data)
-        {
-            builder.AppendLine($"    Data: ScriptUnknown0x30");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
-            builder.AppendLine(data.Operand_2, $"      Variable name");
-            builder.AppendLine(data.Operand_3, $"      Variable value");
             builder.AppendLine();
         }
     }

@@ -822,21 +822,5 @@ namespace SabreTools.Serialization.Deserializers
 
             return obj;
         }
-
-        /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x30
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x30 on success, null on error</returns>
-        private static ScriptUnknown0x30 ParseUnknown0x30(Stream data)
-        {
-            var obj = new ScriptUnknown0x30();
-
-            obj.Operand_1 = data.ReadByteValue();
-            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
-            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
-
-            return obj;
-        }
     }
 }
