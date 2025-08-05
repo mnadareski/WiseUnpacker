@@ -833,7 +833,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>True if the file extracted successfully, false otherwise</returns>
         public ExtractStatus ExtractFile(Stream data,
             long dataStart,
-            ScriptFileHeader obj,
+            InstallFile obj,
             int index,
             string outputDirectory,
             bool includeDebug)
@@ -844,7 +844,7 @@ namespace SabreTools.Serialization.Wrappers
             uint expectedCrc = obj.Crc32;
 
             // Perform path replacements
-            string filename = obj.DestFile ?? $"WISE{index:X4}";
+            string filename = obj.DestinationPathname ?? $"WISE{index:X4}";
             filename = filename.Replace("%", string.Empty);
             data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
             return ExtractFile(data, filename, outputDirectory, expectedBytesRead, expectedBytesWritten, expectedCrc, includeDebug);
@@ -1090,7 +1090,7 @@ namespace SabreTools.Serialization.Wrappers
                 switch (state.Op)
                 {
                     case OperationCode.InstallFile:
-                        if (state.Data is not ScriptFileHeader fileHeader)
+                        if (state.Data is not InstallFile fileHeader)
                             return false;
 
                         // Try to extract to the output directory

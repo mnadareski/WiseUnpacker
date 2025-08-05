@@ -173,7 +173,7 @@ namespace SabreTools.Serialization.Deserializers
                 var op = (OperationCode)data.ReadByteValue();
                 MachineStateData? stateData = op switch
                 {
-                    OperationCode.InstallFile => ParseScriptFileHeader(data, languageCount),
+                    OperationCode.InstallFile => ParseInstallFile(data, languageCount),
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
@@ -222,15 +222,15 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptFileHeader
+        /// Parse a Stream into a InstallFile
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptFileHeader on success, null on error</returns>
-        private static ScriptFileHeader ParseScriptFileHeader(Stream data, int languageCount)
+        /// <returns>Filled InstallFile on success, null on error</returns>
+        private static InstallFile ParseInstallFile(Stream data, int languageCount)
         {
-            var header = new ScriptFileHeader();
+            var header = new InstallFile();
 
-            header.Operand_1 = data.ReadUInt16LittleEndian();
+            header.Flags = data.ReadUInt16LittleEndian();
             header.DeflateStart = data.ReadUInt32LittleEndian();
             header.DeflateEnd = data.ReadUInt32LittleEndian();
             header.Date = data.ReadUInt16LittleEndian();
@@ -238,7 +238,7 @@ namespace SabreTools.Serialization.Deserializers
             header.InflatedSize = data.ReadUInt32LittleEndian();
             header.Operand_7 = data.ReadBytes(20);
             header.Crc32 = data.ReadUInt32LittleEndian();
-            header.DestFile = data.ReadNullTerminatedAnsiString();
+            header.DestinationPathname = data.ReadNullTerminatedAnsiString();
 
             header.Description = new string[languageCount];
             for (int i = 0; i < header.Description.Length; i++)

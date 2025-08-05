@@ -1,7 +1,10 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
-    /// Information about a file to be installed
+    /// Install File
+    /// 
+    /// This action installs files on the destination computer. Each file or directory to be installed
+    /// must have a separate Install File(s) action.
     /// </summary>
     /// <remarks>
     /// Multiple files can be included in the installer from
@@ -10,12 +13,21 @@ namespace SabreTools.Models.WiseInstaller
     /// entire directories or subdirectories being copied.
     /// </remarks>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptFileHeader : MachineStateData
+    public class InstallFile : MachineStateData
     {
         /// <summary>
         /// Values of 0x8000, 0x8100, 0x0000, 0x9800 0xA100 have been observed
         /// </summary>
-        public ushort Operand_1 { get; set; }
+        /// <remarks>
+        /// Expected flags:
+        /// - Include Sub-Directories (unknown)
+        /// - Shared DLL Counter (unknown)
+        /// - No Progress Bar (unknown)
+        /// - Self-Register OCX/DLL/EXE/TLB (unknown)
+        /// - Replace Existing File [Always, Never, Check File [Doesn't Matter, Same or Older, Older]] (unknown)
+        /// - Retain Duplicates in Path (unknown)
+        /// </remarks>
+        public ushort Flags { get; set; }
 
         /// <summary>
         /// Start of the deflated data
@@ -55,12 +67,12 @@ namespace SabreTools.Models.WiseInstaller
         public uint Crc32 { get; set; }
 
         /// <summary>
-        /// \0 terminated string
+        /// Destination pathname
         /// </summary>
-        public string? DestFile { get; set; }
+        public string? DestinationPathname { get; set; }
 
         /// <summary>
-        /// One file text per language, \0 terminated
+        /// One file text per language
         /// </summary>
         public string[]? Description { get; set; }
 

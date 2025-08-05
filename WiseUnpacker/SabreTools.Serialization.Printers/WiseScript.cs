@@ -113,7 +113,7 @@ namespace SabreTools.Serialization.Printers
                 builder.AppendLine($"    Op: {entry.Op} (0x{(byte)entry.Op:X2})");
                 switch (entry.Data)
                 {
-                    case ScriptFileHeader data: Print(builder, data); break;
+                    case InstallFile data: Print(builder, data); break;
                     case DisplayMessage data: Print(builder, data); break;
                     case UserDefinedActionStep data: Print(builder, data); break;
                     case EditIniFile data: Print(builder, data); break;
@@ -148,10 +148,10 @@ namespace SabreTools.Serialization.Printers
             }
         }
 
-        private static void Print(StringBuilder builder, ScriptFileHeader data)
+        private static void Print(StringBuilder builder, InstallFile data)
         {
-            builder.AppendLine($"    Data: ScriptFileHeader");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine($"    Data: InstallFile");
+            builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.DeflateStart, $"      Deflate start");
             builder.AppendLine(data.DeflateEnd, $"      Deflate end");
             builder.AppendLine(data.Date, $"      Date");
@@ -159,7 +159,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(data.InflatedSize, $"      Inflated size");
             builder.AppendLine(data.Operand_7, $"      Unknown");
             builder.AppendLine(data.Crc32, $"      CRC-32");
-            builder.AppendLine(data.DestFile, $"      Destination file");
+            builder.AppendLine(data.DestinationPathname, $"      Destination pathname");
             builder.AppendLine($"      File texts");
             builder.AppendLine("      -------------------------");
             if (data.Description == null || data.Description.Length == 0)
