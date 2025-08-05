@@ -46,7 +46,15 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>22 bytes</remarks>
+        /// <remarks>
+        /// 22 bytes
+        /// 
+        /// byte[0]
+        ///     0x00 - ????
+        ///     0x40 - ????
+        /// byte[1]
+        ///     0x00 - ????
+        ///     0x10 - EditRegistry data type is 2 bytes
         public byte[]? Unknown_22 { get; set; }
 
         /// <summary>

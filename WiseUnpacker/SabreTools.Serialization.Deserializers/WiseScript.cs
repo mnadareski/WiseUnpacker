@@ -159,6 +159,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             // Extract required information
             byte languageCount = header.LanguageCount;
+            bool longDataValue = header.Unknown_22?[1] == 0x10;
             bool old = header.Unknown_22?.Length != 22;
 
             // Initialize important loop information
@@ -176,11 +177,11 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.FormData => ParseScriptFormData(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
-                    OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount),
+                    OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, old),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
                     OperationCode.FunctionCall => ParseExternalDLLCall(data, languageCount, old),
-                    OperationCode.EditRegistry => ParseEditRegistry(data),
+                    OperationCode.EditRegistry => ParseEditRegistry(data, longDataValue),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
@@ -315,15 +316,19 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
+        /// <param name="old">Indicates an old install script</param>
         /// <returns>Filled ScriptUnknown0x06 on success, null on error</returns>
-        private static ScriptUnknown0x06 ParseUnknown0x06(Stream data, int languageCount)
+        private static ScriptUnknown0x06 ParseUnknown0x06(Stream data, int languageCount, bool old)
         {
             var obj = new ScriptUnknown0x06();
 
             obj.Operand_1 = data.ReadBytes(2);
             obj.Operand_2 = data.ReadUInt32LittleEndian();
             obj.DeflateInfo = ParseScriptDeflateInfoContainer(data, languageCount);
-            obj.Terminator = data.ReadByteValue();
+
+            // Terminator byte does not exist in old scripts
+            if (!old)
+                obj.Terminator = data.ReadByteValue();
 
             return obj;
         }
@@ -485,8 +490,9 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a EditRegistry
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="longDataValue">Indicates an old install script</param>
         /// <returns>Filled EditRegistry on success, null on error</returns>
-        private static EditRegistry ParseEditRegistry(Stream data)
+        private static EditRegistry ParseEditRegistry(Stream data, bool longDataValue)
         {
             // Cache the current offset
             long current = data.Position;
@@ -495,34 +501,15 @@ namespace SabreTools.Serialization.Deserializers
             var obj = new EditRegistry();
 
             obj.Root = data.ReadByteValue();
-            obj.DataType = data.ReadByteValue();
+
+            if (longDataValue)
+                obj.DataType = data.ReadUInt16();
+            else
+                obj.DataType = data.ReadByteValue();
+
             obj.Key = data.ReadNullTerminatedAnsiString();
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
-
-            // If the end of the stream is reached
-            if (data.Position >= data.Length)
-                return obj;
-
-            // Peek at the next byte
-            byte nextByte = data.ReadByteValue();
-            data.Seek(-1, SeekOrigin.Current);
-
-            // The following block is a hack to support script versions
-            // If the next byte is not a recognized function value,
-            // reread the block with a ushort data type.
-            // TODO: Determine what flag or header value marks this
-            if (nextByte > 0x23)
-            {
-                data.Seek(current, SeekOrigin.Begin);
-                obj = new EditRegistry();
-
-                obj.Root = data.ReadByteValue();
-                obj.DataType = data.ReadUInt16();
-                obj.Key = data.ReadNullTerminatedAnsiString();
-                obj.NewValue = data.ReadNullTerminatedAnsiString();
-                obj.ValueName = data.ReadNullTerminatedAnsiString();
-            }
 
             return obj;
         }
