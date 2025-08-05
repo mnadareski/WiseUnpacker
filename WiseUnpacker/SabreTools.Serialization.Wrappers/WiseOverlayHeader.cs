@@ -608,7 +608,7 @@ namespace SabreTools.Serialization.Wrappers
                 Directory.CreateDirectory(directoryName);
 
             // Extract the file
-            ExtractStatus status = ExtractStream(data, filename, expectedBytesRead, expectedBytesWritten, expectedCrc, includeDebug, out var extracted);
+            ExtractStatus status = ExtractStream(data, ref filename, expectedBytesRead, expectedBytesWritten, expectedCrc, includeDebug, out var extracted);
             if (extracted != null)
                 File.WriteAllBytes(filename, extracted.ToArray());
 
@@ -629,7 +629,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>Extraction status representing the final state</returns>
         /// <remarks>Assumes that the current stream position is where the compressed data lives</remarks>
         public ExtractStatus ExtractStream(Stream data,
-            string? filename,
+            ref string? filename,
             long expectedBytesRead,
             long expectedBytesWritten,
             uint expectedCrc,
