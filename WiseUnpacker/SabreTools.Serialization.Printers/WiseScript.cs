@@ -115,7 +115,7 @@ namespace SabreTools.Serialization.Printers
                 {
                     case ScriptFileHeader data: Print(builder, data); break;
                     case DisplayMessage data: Print(builder, data); break;
-                    case ScriptFormData data: Print(builder, data); break;
+                    case UserDefinedActionStep data: Print(builder, data); break;
                     case EditIniFile data: Print(builder, data); break;
                     case ScriptUnknown0x06 data: Print(builder, data); break;
                     case ExecuteProgram data: Print(builder, data); break;
@@ -125,6 +125,8 @@ namespace SabreTools.Serialization.Printers
                     case DeleteFile data: Print(builder, data); break;
                     case IfWhileStatement data: Print(builder, data); break;
                     case ElseStatement data: Print(builder, data); break;
+                    case StartUserDefinedAction data: Print(builder, data); break;
+                    case EndUserDefinedAction data: Print(builder, data); break;
                     case ScriptUnknown0x11 data: Print(builder, data); break;
                     case CopyLocalFile data: Print(builder, data); break;
                     case CustomDialogSet data: Print(builder, data); break;
@@ -198,22 +200,22 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptFormData data)
+        private static void Print(StringBuilder builder, UserDefinedActionStep data)
         {
-            builder.AppendLine($"    Data: ScriptFormData");
-            builder.AppendLine(data.No, $"      No");
-            builder.AppendLine($"      Language strings");
+            builder.AppendLine($"    Data: UserDefinedActionStep");
+            builder.AppendLine(data.Count, $"      Count");
+            builder.AppendLine($"      Script lines");
             builder.AppendLine("      -------------------------");
-            if (data.LangStrings == null || data.LangStrings.Length == 0)
+            if (data.ScriptLines == null || data.ScriptLines.Length == 0)
             {
-                builder.AppendLine("      No language strings");
+                builder.AppendLine("      No script lines");
             }
             else
             {
-                for (int i = 0; i < data.LangStrings.Length; i++)
+                for (int i = 0; i < data.ScriptLines.Length; i++)
                 {
-                    var entry = data.LangStrings[i];
-                    builder.AppendLine($"      Language String {i}: {entry}");
+                    var entry = data.ScriptLines[i];
+                    builder.AppendLine($"      Script Line {i}: {entry}");
                 }
             }
             builder.AppendLine();
@@ -292,7 +294,7 @@ namespace SabreTools.Serialization.Printers
 
         private static void Print(StringBuilder builder, CallDLLFunction data)
         {
-            builder.AppendLine($"    Data: ExternalDLLCall");
+            builder.AppendLine($"    Data: CallDLLFunction");
             builder.AppendLine(data.Flags, $"      Unknown");
             builder.AppendLine(data.DllPath, $"      DLL path");
             builder.AppendLine(data.FunctionName, $"      Function name");
@@ -347,6 +349,18 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, ElseStatement data)
         {
             builder.AppendLine($"    Data: ElseStatement");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, StartUserDefinedAction data)
+        {
+            builder.AppendLine($"    Data: StartUserDefinedAction");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, EndUserDefinedAction data)
+        {
+            builder.AppendLine($"    Data: EndUserDefinedAction");
             builder.AppendLine();
         }
 

@@ -175,18 +175,18 @@ namespace SabreTools.Serialization.Deserializers
                 {
                     OperationCode.InstallFile => ParseScriptFileHeader(data, languageCount),
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
-                    OperationCode.FormData => ParseScriptFormData(data, languageCount),
+                    OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, old),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
-                    OperationCode.CallDLLFunction => ParseExternalDLLCall(data, languageCount, old),
+                    OperationCode.CallDLLFunction => ParseCallDLLFunction(data, languageCount, old),
                     OperationCode.EditRegistry => ParseEditRegistry(data, longDataValue),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
-                    OperationCode.StartFormData => null, // No-op
-                    OperationCode.EndFormData => null, // No-op
+                    OperationCode.StartUserDefinedAction => ParseStartUserDefinedAction(data),
+                    OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
                     OperationCode.Unknown0x11 => ParseUnknown0x11(data),
                     OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
@@ -274,20 +274,20 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptFormData
+        /// Parse a Stream into a UserDefinedActionStep
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <returns>Filled ScriptFormData on success, null on error</returns>
-        private static ScriptFormData ParseScriptFormData(Stream data, int languageCount)
+        /// <returns>Filled UserDefinedActionStep on success, null on error</returns>
+        private static UserDefinedActionStep ParseUserDefinedActionStep(Stream data, int languageCount)
         {
-            var obj = new ScriptFormData();
+            var obj = new UserDefinedActionStep();
 
-            obj.No = data.ReadByteValue();
-            obj.LangStrings = new string[languageCount];
-            for (int i = 0; i < obj.LangStrings.Length; i++)
+            obj.Count = data.ReadByteValue();
+            obj.ScriptLines = new string[languageCount];
+            for (int i = 0; i < obj.ScriptLines.Length; i++)
             {
-                obj.LangStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                obj.ScriptLines[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
             return obj;
@@ -363,13 +363,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ExternalDLLCall
+        /// Parse a Stream into a CallDLLFunction
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
         /// <param name="old">Indicates an old install script</param>
-        /// <returns>Filled ExternalDLLCall on success, null on error</returns>
-        private static CallDLLFunction ParseExternalDLLCall(Stream data, int languageCount, bool old)
+        /// <returns>Filled CallDLLFunction on success, null on error</returns>
+        private static CallDLLFunction ParseCallDLLFunction(Stream data, int languageCount, bool old)
         {
             var obj = new CallDLLFunction();
 
@@ -565,6 +565,26 @@ namespace SabreTools.Serialization.Deserializers
         private static ElseStatement ParseElseStatement(Stream data)
         {
             return new ElseStatement();
+        }
+
+        /// <summary>
+        /// Parse a Stream into an ElseStatement
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled StartUserDefinedAction on success, null on error</returns>
+        private static StartUserDefinedAction ParseStartUserDefinedAction(Stream data)
+        {
+            return new StartUserDefinedAction();
+        }
+
+        /// <summary>
+        /// Parse a Stream into an EndUserDefinedAction
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled EndUserDefinedAction on success, null on error</returns>
+        private static EndUserDefinedAction ParseEndUserDefinedAction(Stream data)
+        {
+            return new EndUserDefinedAction();
         }
 
         /// <summary>

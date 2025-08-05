@@ -27,9 +27,9 @@ namespace SabreTools.Models.WiseInstaller
         DisplayMessage = 0x03,
 
         /// <summary>
-        /// Form data?
+        /// User-Defined Action Step
         /// </summary>
-        FormData = 0x04,
+        UserDefinedActionStep = 0x04,
 
         /// <summary>
         /// Edit INI File
@@ -77,14 +77,14 @@ namespace SabreTools.Models.WiseInstaller
         ElseStatement = 0x0D,
 
         /// <summary>
-        /// Start form data?
+        /// Start User-Defined Action
         /// </summary>
-        StartFormData = 0x0F,
+        StartUserDefinedAction = 0x0F,
 
         /// <summary>
-        /// End form data?
+        /// End User-Defined Action
         /// </summary>
-        EndFormData = 0x10,
+        EndUserDefinedAction = 0x10,
 
         /// <summary>
         /// Unknown
