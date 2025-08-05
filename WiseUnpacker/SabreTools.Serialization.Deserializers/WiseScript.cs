@@ -385,6 +385,7 @@ namespace SabreTools.Serialization.Deserializers
             {
                 // Read and store the entry string
                 obj.Entries[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                string[] parts = obj.Entries[i].Split((char)0x7F);
 
                 // Switch based on the function
                 // TODO: Remove after mapping is complete
@@ -432,33 +433,33 @@ namespace SabreTools.Serialization.Deserializers
                     // Check if File/Dir Exists
                     case "f19": break;
 
-                    // Unknown
-                    case "f22":
+                    // Set File Attributes(?)
+                    case "f20":
                         // TODO: Implement
+                        // Possibly "Set File Attributes"
                         // Probably this layout: 
-                        // - Flags (numeric)
-                        // - Variable name (e.g. "OEMCUST")
-                        // - INI name (e.g. "OEMCUST.INI")
-                        // - INI name again (e.g. "OEMCUST.INI")
-                        // - Unknown string (e.g. ".;..;..\\..;..\\..\\..;..\\..\\..\\..;\\")
+                        // - Flags (numeric) (e.g. "1", )
+                        // - File name (e.g. "%MAINDIR%\ENT.exe", "%MAINDIR%\P8word.hlp", "%MAINDIR%\P8word.cnt")
                         break;
 
+                    // Find File in Path
+                    case "f22": break;
+
                     // Check Disk Space
-                    case "f23":
-                        // TODO: Implement
-                        // Probably this layout:
-                        // - Flags (numeric)
-                        // - Unknown numeric value (e.g. "0")
-                        // - Unknown numeric value (e.g. "0")
-                        // - Locations to search (e.g. "UNINSTALL_PATH MAINDIR PROGRAM_FILES")
-                        // - Tab-separated list of components? Locations? Some numeric?
-                        break;
+                    case "f23": break;
 
                     // Insert Line Into Text File
                     case "f25": break;
 
                     // Parse String
                     case "f27": break;
+
+                    // Unknown
+                    case "f28":
+                        // TODO: Implement
+                        // Probably this layout:
+                        // - Unknown string (empty in samples)
+                        break;
 
                     // Self-Register OCXs/DLLs
                     case "f29": break;
@@ -485,7 +486,6 @@ namespace SabreTools.Serialization.Deserializers
 
                     // External DLL Calls
                     default:
-                        string[] parts = obj.Entries[i].Split((char)0x7F);
                         if (string.IsNullOrEmpty(obj.DllPath))
                             Console.WriteLine($"Unrecognized function: {obj.FunctionName} with parts: {string.Join(", ", parts)}");
 
