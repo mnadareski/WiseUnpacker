@@ -193,7 +193,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
                     OperationCode.Unknown0x17 => ParseUnknown0x17(data),
-                    OperationCode.NewEvent => null, // No-op, handled below
+                    OperationCode.NewEvent => ParseNewEvent(data, ref op0x18skip),
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
                     OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
                     OperationCode.IncludeScript => ParseIncludeScript(data),
@@ -207,12 +207,12 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.Skip0x25 => null, // No-op
                     OperationCode.ReadByteAndStrings => ParseUnknown0x30(data),
 
-                    _ => throw new IndexOutOfRangeException(nameof(op)),
+                    _ => null,
+                    //_ => throw new IndexOutOfRangeException(nameof(op)),
                 };
 
-                // Special handling
-                if (op == OperationCode.NewEvent)
-                    op0x18skip = ParseNewEvent(data, op0x18skip);
+                if (stateData == null)
+                    Console.WriteLine($"Opcode {op} resulted in null data");
 
                 var state = new MachineState
                 {
@@ -660,16 +660,16 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Skip the correct amount of data for 0x18
+        /// Parse a Stream into a NewEvent
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="op0x18skip">Current 0x18 skip value</param>
-        /// <returns>New 0x18 skip value</returns>
-        internal static int ParseNewEvent(Stream data, int op0x18skip)
+        /// <returns>Filled NewEvent on success, null on error</returns>
+        internal static NewEvent ParseNewEvent(Stream data, ref int op0x18skip)
         {
             // If the end of the stream has been reached
             if (data.Position >= data.Length)
-                return -1;
+                return new NewEvent();
 
             // If the skip amount needs to be determined
             if (op0x18skip == -1)
@@ -680,11 +680,13 @@ namespace SabreTools.Serialization.Deserializers
                 op0x18skip = nextByte == 0 || nextByte == 0xFF ? 6 : 0;
             }
 
+            var obj = new NewEvent();
+
             // Skip additional bytes
             if (op0x18skip > 0)
-                _ = data.ReadBytes(op0x18skip);
+                obj.Padding = data.ReadBytes(op0x18skip);
 
-            return op0x18skip;
+            return obj;
         }
 
         /// <summary>

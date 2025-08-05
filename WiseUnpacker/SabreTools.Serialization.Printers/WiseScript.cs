@@ -131,6 +131,7 @@ namespace SabreTools.Serialization.Printers
                     case GetSystemInformation data: Print(builder, data); break;
                     case GetTemporaryFilename data: Print(builder, data); break;
                     case ScriptUnknown0x17 data: Print(builder, data); break;
+                    case NewEvent data: Print(builder, data); break;
                     case ScriptUnknown0x19 data: Print(builder, data); break;
                     case ScriptUnknown0x1A data: Print(builder, data); break;
                     case IncludeScript data: Print(builder, data); break;
@@ -415,6 +416,13 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine(data.Operand_2, $"      Unknown");
             builder.AppendLine(data.Operand_3, $"      Unknown");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, NewEvent data)
+        {
+            builder.AppendLine($"    Data: NewEvent");
+            builder.AppendLine(data.Padding, $"      Padding");
             builder.AppendLine();
         }
 
