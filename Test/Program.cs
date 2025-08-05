@@ -129,6 +129,9 @@ namespace Test
 
                 Console.WriteLine(hBuilder);
                 using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}.txt"));
+                sw.WriteLine(file);
+                sw.WriteLine("-------------------------");
+                sw.WriteLine();
                 sw.WriteLine(hBuilder.ToString());
                 sw.WriteLine();
                 sw.WriteLine(sBuilder.ToString());
