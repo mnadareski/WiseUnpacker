@@ -52,9 +52,9 @@ namespace SabreTools.Models.WiseInstaller
         EndBlock = 0x08,
 
         /// <summary>
-        /// Function call ?
+        /// Call DLL Function
         /// </summary>
-        FunctionCall = 0x09,
+        CallDLLFunction = 0x09,
 
         /// <summary>
         /// Edit Registry
@@ -156,7 +156,7 @@ namespace SabreTools.Models.WiseInstaller
         OpenCloseInstallLog = 0x1E,
 
         /// <summary>
-        /// else if statement (inside if statement branch)
+        /// ElseIf Statement
         /// </summary>
         ElseIfStatement = 0x23,
 

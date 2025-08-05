@@ -1,7 +1,7 @@
 namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
-    /// External DLL Call
+    /// Call DLL Function
     /// 
     /// This action calls a .DLL function from a .DLL on the destination computer. They can be
     /// be .DLLs you have written, .DLLs developed for WiseScript, or Windows .DLLs. You can
@@ -9,13 +9,11 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// Block if Return Value True or Start While Loop.
     /// </summary>
     /// <remarks>
-    /// This action is called through Call DLL Function and is invoked when
-    /// the external DLL path is defined.
     /// This acts like the start of a block if a flag is set.
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ExternalDLLCall : MachineStateData
+    public class CallDLLFunction : MachineStateData
     {
         /// <summary>
         /// Flags, unknown mapping

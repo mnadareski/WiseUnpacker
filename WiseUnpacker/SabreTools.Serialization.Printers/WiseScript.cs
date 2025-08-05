@@ -120,7 +120,7 @@ namespace SabreTools.Serialization.Printers
                     case ScriptUnknown0x06 data: Print(builder, data); break;
                     case ExecuteProgram data: Print(builder, data); break;
                     case EndBlockStatement data: Print(builder, data); break;
-                    case ExternalDLLCall data: Print(builder, data); break;
+                    case CallDLLFunction data: Print(builder, data); break;
                     case EditRegistry data: Print(builder, data); break;
                     case DeleteFile data: Print(builder, data); break;
                     case IfWhileStatement data: Print(builder, data); break;
@@ -290,7 +290,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ExternalDLLCall data)
+        private static void Print(StringBuilder builder, CallDLLFunction data)
         {
             builder.AppendLine($"    Data: ExternalDLLCall");
             builder.AppendLine(data.Flags, $"      Unknown");

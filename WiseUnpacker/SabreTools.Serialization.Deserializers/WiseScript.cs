@@ -180,7 +180,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, old),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
-                    OperationCode.FunctionCall => ParseExternalDLLCall(data, languageCount, old),
+                    OperationCode.CallDLLFunction => ParseExternalDLLCall(data, languageCount, old),
                     OperationCode.EditRegistry => ParseEditRegistry(data, longDataValue),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
@@ -369,9 +369,9 @@ namespace SabreTools.Serialization.Deserializers
         /// <param name="languageCount">Language counter from the header</param>
         /// <param name="old">Indicates an old install script</param>
         /// <returns>Filled ExternalDLLCall on success, null on error</returns>
-        private static ExternalDLLCall ParseExternalDLLCall(Stream data, int languageCount, bool old)
+        private static CallDLLFunction ParseExternalDLLCall(Stream data, int languageCount, bool old)
         {
-            var obj = new ExternalDLLCall();
+            var obj = new CallDLLFunction();
 
             obj.Flags = data.ReadByteValue();
             obj.DllPath = data.ReadNullTerminatedAnsiString();
