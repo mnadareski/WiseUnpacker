@@ -279,7 +279,7 @@ namespace Test
             sw.WriteLine("Flag Counts:");
             for (int i = 0; i < _flags.Length; i++)
             {
-                string bitName = Enum.GetName(typeof(OverlayHeaderFlags), i);
+                string bitName = Enum.GetName(typeof(OverlayHeaderFlags), i) ?? "Undefined";
                 sw.WriteLine($"  Bit {i} ({bitName}): {_flags[i].Count}");
             }
 
