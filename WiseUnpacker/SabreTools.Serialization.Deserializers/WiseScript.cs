@@ -484,6 +484,9 @@ namespace SabreTools.Serialization.Deserializers
                     // Prompt for Filename 
                     case "f35": break;
 
+                    // Start/Stop Service
+                    case "f36": break;
+
                     // External DLL Calls
                     default:
                         if (string.IsNullOrEmpty(obj.DllPath))

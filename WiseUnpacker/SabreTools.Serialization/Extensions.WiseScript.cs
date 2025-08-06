@@ -35,6 +35,7 @@ namespace SabreTools.Serialization
                 "f33" => "Read/Update Text File",
                 "f34" => "Post to HTTP Server",
                 "f35" => "Prompt for Filename",
+                "f36" => "Start/Stop Service",
 
                 // External DLL
                 "ShellLink" => "Create Shortcut",
