@@ -12,12 +12,19 @@ namespace SabreTools.Serialization.Printers
 
         public static void Print(StringBuilder builder, OverlayHeader overlayHeader)
         {
+#if NET20 || NET35
+            bool pkzip = (overlayHeader.Flags & OverlayHeaderFlags.WISE_FLAG_PK_ZIP) != 0;
+#else
+            bool pkzip = overlayHeader.Flags.HasFlag(OverlayHeaderFlags.WISE_FLAG_PK_ZIP);
+#endif
+
             builder.AppendLine("Wise Installer Overlay Header Information:");
             builder.AppendLine("-------------------------");
             builder.AppendLine(overlayHeader.DllNameLen, "DLL name length");
             builder.AppendLine(overlayHeader.DllName, "DLL name");
             builder.AppendLine(overlayHeader.DllSize, "DLL size");
             builder.AppendLine($"Flags: {overlayHeader.Flags} (0x{(uint)overlayHeader.Flags:X4})");
+            builder.AppendLine(pkzip, "Uses PKZIP containers");
             builder.AppendLine(overlayHeader.UnknownBytes_1, "Unknown");
             builder.AppendLine(overlayHeader.StartGradient, "Start gradient");
             builder.AppendLine(overlayHeader.EndGradient, "End gradient");
