@@ -202,8 +202,8 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.OpenCloseInstallLog => ParseOpenCloseInstallLog(data),
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
 
-                    _ => null,
-                    //_ => throw new IndexOutOfRangeException(nameof(op)),
+                    //_ => null,
+                    _ => throw new IndexOutOfRangeException(nameof(op)),
                 };
 
                 // Debug statement

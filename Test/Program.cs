@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.Serialization;
@@ -8,6 +9,30 @@ namespace Test
 {
     class Program
     {
+        #region Statistics
+
+        /// <summary>
+        /// All paths that threw an exception during parsing
+        /// </summary>
+        private static readonly List<string> _erroredPaths = [];
+
+        /// <summary>
+        /// All paths that failed to extract all items
+        /// </summary>
+        private static readonly List<string> _failedExtractPaths = [];
+
+        /// <summary>
+        /// Counts for each of the flags
+        /// </summary>
+        private static readonly int[] _flagCounts = new int[32];
+
+        /// <summary>
+        /// All paths that were marked as invalid
+        /// </summary>
+        private static readonly List<string> _invalidPaths = [];
+
+        #endregion
+
         static void Main(string[] args)
         {
             // Get the options from the arguments
@@ -25,6 +50,10 @@ namespace Test
             {
                 ProcessPath(inputPath, options);
             }
+
+            // Export statistics
+            if (options.Info)
+                ExportStatistics();
         }
 
         /// <summary>
@@ -72,6 +101,8 @@ namespace Test
                 ExtractFile(file, options.OutputPath, options.Debug);
         }
 
+        #region Info
+
         /// <summary>
         /// Wrapper to print overlay and script information for a single file
         /// </summary>
@@ -81,8 +112,9 @@ namespace Test
         private static void PrintFileInfo(string file, string outputDirectory, bool includeDebug)
         {
             // Get the base info output name
-            string filenameBase = Path.Combine(outputDirectory,
-                $"{Path.GetFileName(file)}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}");
+            string filenameBase = $"{file}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}";
+            if (!string.IsNullOrEmpty(outputDirectory))
+                filenameBase = Path.Combine(outputDirectory, filenameBase);
 
             Console.WriteLine($"Attempting to print info for {file}");
 
@@ -93,9 +125,13 @@ namespace Test
                 // Try to find the overlay header
                 if (!WiseOverlayHeader.FindOverlayHeader(stream, includeDebug, out var header) || header == null)
                 {
+                    _invalidPaths.Add(file);
                     Console.WriteLine($"No valid header could be found in {file}, skipping...");
                     return;
                 }
+
+                // Process header statistics
+                ProcessStatistics(header);
 
                 // Create the header output data
                 var hBuilder = header.ExportStringBuilderExt();
@@ -116,6 +152,7 @@ namespace Test
                 var script = WiseScript.Create(extracted);
                 if (script == null)
                 {
+                    _erroredPaths.Add(file);
                     Console.WriteLine($"No valid script could be extracted from {file}, skipping...");
                     return;
                 }
@@ -137,10 +174,85 @@ namespace Test
             }
             catch (Exception ex)
             {
+                _erroredPaths.Add(file);
                 Console.WriteLine(includeDebug ? ex : "[Exception opening file, please try again]");
                 Console.WriteLine();
             }
         }
+
+        /// <summary>
+        /// Process statistics for a WiseOverlayHeader
+        /// </summary>
+        private static void ProcessStatistics(WiseOverlayHeader header)
+        {
+            // Flags
+            for (int i = 0; i < 32; i++)
+            {
+                int flags = (int)header.Flags;
+                if ((flags & (1 << i)) == (1 << i))
+                    _flagCounts[i]++;
+            }
+        }
+
+        /// <summary>
+        /// Write all capture statistics to file
+        /// </summary>
+        private static void ExportStatistics()
+        {
+            using var sw = new StreamWriter(File.OpenWrite($"stats-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}.txt"));
+
+            // Invalid Paths
+            if (_invalidPaths.Count > 0)
+            {
+                sw.WriteLine("Invalid Paths:");
+                foreach (string path in _invalidPaths)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Errored Paths
+            if (_erroredPaths.Count > 0)
+            {
+                sw.WriteLine("Errored Paths:");
+                foreach (string path in _erroredPaths)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Failed Extract Paths
+            if (_failedExtractPaths.Count > 0)
+            {
+                sw.WriteLine("Failed Extract Paths:");
+                foreach (string path in _failedExtractPaths)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Flag Counts
+            sw.WriteLine("Flag Counts");
+
+            for (int i = 0; i < 32; i++)
+            {
+                sw.WriteLine($"  Bit {i}: {_flagCounts[i]}");
+            }
+
+            sw.WriteLine();
+
+            sw.Flush();
+        }
+
+        #endregion
+
+        #region Extract
 
         /// <summary>
         /// Wrapper to extract all files from the input
@@ -151,9 +263,16 @@ namespace Test
         private static void ExtractFile(string file, string outputDirectory, bool includeDebug)
         {
             if (WiseOverlayHeader.ExtractAll(file, outputDirectory, includeDebug))
+            {
                 Console.WriteLine($"Extracted {file} to {outputDirectory}");
+            }
             else
+            {
                 Console.WriteLine(value: $"Failed to extract {file}!");
+                _failedExtractPaths.Add(file);
+            }
         }
+
+        #endregion
     }
 }

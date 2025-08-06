@@ -100,9 +100,12 @@ namespace Test
             }
 
             // Validate the output path
-            bool validPath = ValidateExtractionPath(options);
-            if (!validPath)
-                return null;
+            if (options.Extract)
+            {
+                bool validPath = ValidateExtractionPath(options);
+                if (!validPath)
+                    return null;
+            }
 
             return options;
         }
