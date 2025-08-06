@@ -14,34 +14,14 @@ namespace Test
         #region Statistics
 
         /// <summary>
-        /// All paths that contain an Unknown0x06 opcode
+        /// Mapping of found DLL function calls
         /// </summary>
-        private static readonly List<string> _contains0x06 = [];
+        private static readonly Dictionary<string, List<string>> _functions = [];
 
         /// <summary>
-        /// All paths that contain an Unknown0x19 opcode
+        /// Mapping of found opcodes
         /// </summary>
-        private static readonly List<string> _contains0x19 = [];
-
-        /// <summary>
-        /// All paths that contain a Function "f1"
-        /// </summary>
-        private static readonly List<string> _containsFunction1 = [];
-
-        /// <summary>
-        /// All paths that contain a Function "f28"
-        /// </summary>
-        private static readonly List<string> _containsFunction28 = [];
-
-        /// <summary>
-        /// All paths that contain a Function "f30"
-        /// </summary>
-        private static readonly List<string> _containsFunction30 = [];
-
-        /// <summary>
-        /// All paths that contain an unknown Function"
-        /// </summary>
-        private static readonly List<string> _containsUnknownFunction = [];
+        private static readonly Dictionary<OperationCode, List<string>> _opcodes = [];
 
         /// <summary>
         /// All paths that threw an exception during parsing
@@ -243,35 +223,40 @@ namespace Test
             if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
                 _shortHeaders.Add(file);
 
-            // Unknown0x06
-            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.UnknownDeflatedFile0x06))
-                _contains0x06.Add(file);
+            // Actions
+            if (script.States != null)
+            {
+                foreach (var state in script.States)
+                {
+                    // Ensure the key
+                    if (!_opcodes.ContainsKey(state.Op))
+                        _opcodes[state.Op] = [];
 
-            // Unknown0x19
-            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.Unknown0x19))
-                _contains0x19.Add(file);
+                    // Store each file only once
+                    if (!_opcodes[state.Op].Contains(file))
+                        _opcodes[state.Op].Add(file);
+                }
+            }
 
             // Function Calls
             if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.CallDllFunction))
             {
                 var states = Array.FindAll(script.States, s => s.Op == OperationCode.CallDllFunction);
-                var functions = Array.ConvertAll(states, f => f.Data is CallDllFunction ? f.Data as CallDllFunction : null);
+                foreach (var state in states)
+                {
+                    // Get the function as an item
+                    if (state.Data is not CallDllFunction function)
+                        continue;
 
-                // f1
-                if (Array.Exists(functions, f => f != null && f.FunctionName == "f1"))
-                    _containsFunction1.Add(file);
+                    // Ensure the key
+                    string functionName = function.FunctionName ?? "INVALID";
+                    if (!_functions.ContainsKey(functionName))
+                        _functions[functionName] = [];
 
-                // f28
-                if (Array.Exists(functions, f => f != null && f.FunctionName == "f28"))
-                    _containsFunction28.Add(file);
-
-                // f30
-                if (Array.Exists(functions, f => f != null && f.FunctionName == "f30"))
-                    _containsFunction30.Add(file);
-                    
-                // Unknown
-                if (Array.Exists(functions, f => f != null && f.FunctionName.FromWiseFunctionId() == null))
-                    _containsUnknownFunction.Add(file);
+                    // Store each file only once
+                    if (!_functions[functionName].Contains(file))
+                        _functions[functionName].Add(file);
+                }
             }
         }
 
@@ -340,10 +325,10 @@ namespace Test
             }
 
             // Contains Unknown0x06
-            if (_contains0x06.Count > 0)
+            if (_opcodes.TryGetValue(OperationCode.UnknownDeflatedFile0x06, out var contains0x06) && contains0x06.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x06:");
-                foreach (string path in _contains0x06)
+                foreach (string path in contains0x06)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -352,10 +337,10 @@ namespace Test
             }
 
             // Contains Unknown0x19
-            if (_contains0x19.Count > 0)
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x19, out var contains0x19) && contains0x19.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x19:");
-                foreach (string path in _contains0x19)
+                foreach (string path in contains0x19)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -364,10 +349,10 @@ namespace Test
             }
 
             // Contains f1
-            if (_containsFunction1.Count > 0)
+            if (_functions.TryGetValue("f1", out var containsFunction1) && containsFunction1.Count > 0)
             {
                 sw.WriteLine("Contains Function f1:");
-                foreach (string path in _containsFunction1)
+                foreach (string path in containsFunction1)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -376,10 +361,10 @@ namespace Test
             }
 
             // Contains f28
-            if (_containsFunction28.Count > 0)
+            if (_functions.TryGetValue("f28", out var containsFunction28) && containsFunction28.Count > 0)
             {
                 sw.WriteLine("Contains Function f28:");
-                foreach (string path in _containsFunction28)
+                foreach (string path in containsFunction28)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -388,10 +373,10 @@ namespace Test
             }
 
             // Contains f30
-            if (_containsFunction30.Count > 0)
+            if (_functions.TryGetValue("f30", out var containsFunction30) && containsFunction30.Count > 0)
             {
                 sw.WriteLine("Contains Function f30:");
-                foreach (string path in _containsFunction30)
+                foreach (string path in containsFunction30)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -399,11 +384,23 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains Unknown Function
-            if (_containsUnknownFunction.Count > 0)
+            // Contains Unmapped Function
+            var unmappedFunctions = Array.FindAll([.. _functions.Keys], k => k.FromWiseFunctionId() == null);
+            if (unmappedFunctions.Length > 0)
             {
-                sw.WriteLine("Contains Unknown Function:");
-                foreach (string path in _containsUnknownFunction)
+                // Build unique file path list
+                List<string> containsUnmappedFunction = [];
+                foreach (string function in unmappedFunctions)
+                {
+                    foreach (string path in _functions[function])
+                    {
+                        if (!containsUnmappedFunction.Contains(path))
+                            containsUnmappedFunction.Add(path);
+                    }
+                }
+
+                sw.WriteLine("Contains Unmapped Function:");
+                foreach (string path in containsUnmappedFunction)
                 {
                     sw.WriteLine($"  {path}");
                 }
