@@ -81,7 +81,8 @@ namespace Test
         private static void PrintFileInfo(string file, string outputDirectory, bool includeDebug)
         {
             // Get the base info output name
-            string filenameBase = Path.Combine(outputDirectory, $"{file}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}");
+            string filenameBase = Path.Combine(outputDirectory,
+                $"{Path.GetFileName(file)}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}");
 
             Console.WriteLine($"Attempting to print info for {file}");
 
