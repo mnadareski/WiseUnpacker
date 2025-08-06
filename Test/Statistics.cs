@@ -52,6 +52,7 @@ namespace Test
         /// <summary>
         /// Add an errored file path
         /// </summary>
+        /// <param name="file">Path of the file that was errored</param>
         public void AddErroredPath(string file)
         {
             if (!_erroredPaths.Contains(file))
@@ -61,6 +62,7 @@ namespace Test
         /// <summary>
         /// Add a failed extract file path
         /// </summary>
+        /// <param name="file">Path of the file that was failed extraction</param>
         public void AddFailedExtractPath(string file)
         {
             if (!_failedExtractPaths.Contains(file))
@@ -70,6 +72,7 @@ namespace Test
         /// <summary>
         /// Add an invalid file path
         /// </summary>
+        /// <param name="file">Path of the file that was invalid</param>
         public void AddInvalidPath(string file)
         {
             if (!_invalidPaths.Contains(file))
@@ -79,6 +82,8 @@ namespace Test
         /// <summary>
         /// Process statistics for a WiseOverlayHeader
         /// </summary>
+        /// <param name="file">Path of the file that contained the header</param>
+        /// <param name="header">WiseOverlayHeader to gather statistics from</param>
         public void ProcessStatistics(string file, WiseOverlayHeader header)
         {
             // Flags
@@ -103,6 +108,8 @@ namespace Test
         /// <summary>
         /// Process statistics for a WiseScript
         /// </summary>
+        /// <param name="file">Path of the file that contained the script</param>
+        /// <param name="script">WiseScript to gather statistics from</param>
         public void ProcessStatistics(string file, WiseScript script)
         {
             // Short Header
