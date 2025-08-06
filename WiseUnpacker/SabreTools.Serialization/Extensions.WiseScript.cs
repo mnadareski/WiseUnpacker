@@ -52,8 +52,8 @@ namespace SabreTools.Serialization
                 "f32" => $"UNDEFINED {functionId}",
 
                 // External DLL
-                "ShellLink" => "Create Shortcut",
-                _ => null,
+                null => null,
+                _ => functionId.StartsWith("f") ? $"UNDEFINED {functionId}" : $"External: {functionId}",
             };
         }
     }
