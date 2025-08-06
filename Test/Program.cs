@@ -399,13 +399,16 @@ namespace Test
                     }
                 }
 
-                sw.WriteLine("Contains Unmapped Function:");
-                foreach (string path in containsUnmappedFunction)
+                if (containsUnmappedFunction.Count > 0)
                 {
-                    sw.WriteLine($"  {path}");
-                }
+                    sw.WriteLine("Contains Unmapped Function:");
+                    foreach (string path in containsUnmappedFunction)
+                    {
+                        sw.WriteLine($"  {path}");
+                    }
 
-                sw.WriteLine();
+                    sw.WriteLine();
+                }
             }
 
             sw.Flush();
