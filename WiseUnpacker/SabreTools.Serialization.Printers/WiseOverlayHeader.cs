@@ -24,7 +24,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.DllName, "DLL name");
             builder.AppendLine(overlayHeader.DllSize, "DLL size");
             builder.AppendLine($"Flags: {overlayHeader.Flags} (0x{(uint)overlayHeader.Flags:X4})");
-            builder.AppendLine(pkzip, "Uses PKZIP containers");
+            builder.AppendLine(pkzip, "  Uses PKZIP containers");
             builder.AppendLine(overlayHeader.UnknownBytes_1, "Unknown");
             builder.AppendLine(overlayHeader.StartGradient, "Start gradient");
             builder.AppendLine(overlayHeader.EndGradient, "End gradient");
