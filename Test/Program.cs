@@ -94,7 +94,7 @@ namespace Test
             // Get the base info output name
             string filenameBase = $"{file}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}";
             if (!string.IsNullOrEmpty(outputDirectory))
-                filenameBase = Path.Combine(outputDirectory, filenameBase);
+                filenameBase = Path.Combine(outputDirectory, Path.GetFileName(filenameBase));
 
             Console.WriteLine($"Attempting to print info for {file}");
 
