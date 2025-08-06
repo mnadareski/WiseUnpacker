@@ -128,9 +128,9 @@ namespace SabreTools.Models.WiseInstaller
         Unknown0x19 = 0x19,
 
         /// <summary>
-        /// Unknown
+        /// Config ODBC Data Source
         /// </summary>
-        Unknown0x1A = 0x1A,
+        ConfigODBCDataSource = 0x1A,
 
         /// <summary>
         /// Include Script

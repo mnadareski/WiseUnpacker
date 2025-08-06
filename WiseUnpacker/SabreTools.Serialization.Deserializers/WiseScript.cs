@@ -195,7 +195,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.PlayMultimediaFile => ParsePlayMultimediaFile(data),
                     OperationCode.NewEvent => ParseNewEvent(data, ref op0x18skip),
                     OperationCode.Unknown0x19 => ParseUnknown0x19(data),
-                    OperationCode.Unknown0x1A => ParseUnknown0x1A(data),
+                    OperationCode.ConfigODBCDataSource => ParseConfigODBCDataSource(data),
                     OperationCode.IncludeScript => ParseIncludeScript(data),
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
                     OperationCode.RenameFileDirectory => ParseRenameFileDirectory(data),
@@ -741,17 +741,17 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x1A
+        /// Parse a Stream into a ConfigODBCDataSource
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x1A on success, null on error</returns>
-        private static ScriptUnknown0x1A ParseUnknown0x1A(Stream data)
+        /// <returns>Filled ConfigODBCDataSource on success, null on error</returns>
+        private static ConfigODBCDataSource ParseConfigODBCDataSource(Stream data)
         {
-            var obj = new ScriptUnknown0x1A();
+            var obj = new ConfigODBCDataSource();
 
-            obj.Operand_1 = data.ReadByteValue();
-            obj.Operand_2 = data.ReadNullTerminatedAnsiString();
-            obj.Operand_3 = data.ReadNullTerminatedAnsiString();
+            obj.Flags = data.ReadByteValue();
+            obj.FileFormat = data.ReadNullTerminatedAnsiString();
+            obj.ConnectionString = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }

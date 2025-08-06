@@ -135,7 +135,7 @@ namespace SabreTools.Serialization.Printers
                     case PlayMultimediaFile data: Print(builder, data); break;
                     case NewEvent data: Print(builder, data); break;
                     case ScriptUnknown0x19 data: Print(builder, data); break;
-                    case ScriptUnknown0x1A data: Print(builder, data); break;
+                    case ConfigODBCDataSource data: Print(builder, data); break;
                     case IncludeScript data: Print(builder, data); break;
                     case AddTextToInstallLog data: Print(builder, data); break;
                     case RenameFileDirectory data: Print(builder, data); break;
@@ -450,12 +450,12 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptUnknown0x1A data)
+        private static void Print(StringBuilder builder, ConfigODBCDataSource data)
         {
-            builder.AppendLine($"    Data: ScriptUnknown0x1A");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
-            builder.AppendLine(data.Operand_2, $"      Unknown");
-            builder.AppendLine(data.Operand_3, $"      Unknown");
+            builder.AppendLine($"    Data: ConfigODBCDataSource");
+            builder.AppendLine(data.Flags, $"      Flags");
+            builder.AppendLine(data.FileFormat, $"      File format");
+            builder.AppendLine(data.ConnectionString, $"      Connection string");
             builder.AppendLine();
         }
 
