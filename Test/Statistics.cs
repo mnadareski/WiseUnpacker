@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using SabreTools.Models.WiseInstaller;
 using SabreTools.Models.WiseInstaller.Actions;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
-using OperationCode = SabreTools.Models.WiseInstaller.OperationCode;
 
 namespace Test
 {
@@ -12,15 +12,7 @@ namespace Test
     {
         #region Internal State
 
-        /// <summary>
-        /// Mapping of found DLL function calls
-        /// </summary>
-        private readonly Dictionary<string, List<string>> _functions = [];
-
-        /// <summary>
-        /// Mapping of found opcodes
-        /// </summary>
-        private readonly Dictionary<OperationCode, List<string>> _opcodes = [];
+        #region File Errors
 
         /// <summary>
         /// All paths that threw an exception during parsing
@@ -33,14 +25,37 @@ namespace Test
         private readonly List<string> _failedExtractPaths = [];
 
         /// <summary>
+        /// All paths that were marked as invalid
+        /// </summary>
+        private readonly List<string> _invalidPaths = [];
+
+        #endregion
+
+        #region Overlay Header
+
+        /// <summary>
         /// Mapping of found header flags
         /// </summary>
         private readonly List<string>[] _flags = new List<string>[32];
 
         /// <summary>
-        /// All paths that were marked as invalid
+        /// Mapping for files that should be contained
         /// </summary>
-        private readonly List<string> _invalidPaths = [];
+        private readonly List<string>[] _shouldContainFile = new List<string>[13];
+
+        #endregion
+
+        #region Script
+
+        /// <summary>
+        /// Mapping of found DLL function calls
+        /// </summary>
+        private readonly Dictionary<string, List<string>> _functions = [];
+
+        /// <summary>
+        /// Mapping of found opcodes
+        /// </summary>
+        private readonly Dictionary<OperationCode, List<string>> _opcodes = [];
 
         /// <summary>
         /// All paths that have "short" headers
@@ -48,6 +63,21 @@ namespace Test
         private readonly List<string> _shortHeaders = [];
 
         #endregion
+
+        #endregion
+
+        public Statistics()
+        {
+            for (int i = 0; i < _flags.Length; i++)
+            {
+                _flags[i] = [];
+            }
+
+            for (int i = 0; i < _shouldContainFile.Length; i++)
+            {
+                _shouldContainFile[i] = [];
+            }
+        }
 
         /// <summary>
         /// Add an errored file path
@@ -103,6 +133,34 @@ namespace Test
                         _flags[i].Add(file);
                 }
             }
+
+            // Contained Files
+            if (header.DibDeflatedSize > 0)
+                _shouldContainFile[0].Add(file);
+            if (header.WiseScriptDeflatedSize > 0)
+                _shouldContainFile[1].Add(file);
+            if (header.WiseDllDeflatedSize > 0)
+                _shouldContainFile[2].Add(file);
+            if (header.Ctl3d32DeflatedSize > 0)
+                _shouldContainFile[3].Add(file);
+            if (header.SomeData4DeflatedSize > 0)
+                _shouldContainFile[4].Add(file);
+            if (header.RegToolDeflatedSize > 0)
+                _shouldContainFile[5].Add(file);
+            if (header.ProgressDllDeflatedSize > 0)
+                _shouldContainFile[6].Add(file);
+            if (header.SomeData7DeflatedSize > 0)
+                _shouldContainFile[7].Add(file);
+            if (header.SomeData8DeflatedSize > 0)
+                _shouldContainFile[8].Add(file);
+            if (header.SomeData9DeflatedSize > 0)
+                _shouldContainFile[9].Add(file);
+            if (header.SomeData10DeflatedSize > 0)
+                _shouldContainFile[10].Add(file);
+            if (header.InstallScriptDeflatedSize > 0)
+                _shouldContainFile[11].Add(file);
+            if (header.FinalFileDeflatedSize > 0)
+                _shouldContainFile[12].Add(file);
         }
 
         /// <summary>
@@ -160,6 +218,20 @@ namespace Test
         {
             using var sw = new StreamWriter(File.OpenWrite($"stats-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}.txt"));
 
+            ExportErrorStatistics(sw);
+            ExportOverlayHeaderStatistics(sw);
+            ExportScriptStatistics(sw);
+        }
+
+        /// <summary>
+        /// Export file error statistics
+        /// </summary>
+        /// <param name="sw">StreamWriter representing the output</param>
+        private void ExportErrorStatistics(StreamWriter sw)
+        {
+            sw.WriteLine("File Errors");
+            sw.WriteLine("-------------------------");
+
             // Invalid Paths
             if (_invalidPaths.Count > 0)
             {
@@ -168,8 +240,6 @@ namespace Test
                 {
                     sw.WriteLine($"  {path}");
                 }
-
-                sw.WriteLine();
             }
 
             // Errored Paths
@@ -180,8 +250,6 @@ namespace Test
                 {
                     sw.WriteLine($"  {path}");
                 }
-
-                sw.WriteLine();
             }
 
             // Failed Extract Paths
@@ -192,18 +260,48 @@ namespace Test
                 {
                     sw.WriteLine($"  {path}");
                 }
-
-                sw.WriteLine();
-            }
-
-            // Flag Counts
-            sw.WriteLine("Flag Counts");
-            for (int i = 0; i < 32; i++)
-            {
-                sw.WriteLine($"  Bit {i}: {_flags[i].Count}");
             }
 
             sw.WriteLine();
+            sw.Flush();
+        }
+
+        /// <summary>
+        /// Export overlay header statistics
+        /// </summary>
+        /// <param name="sw">StreamWriter representing the output</param>
+        private void ExportOverlayHeaderStatistics(StreamWriter sw)
+        {
+            sw.WriteLine("Overlay Header");
+            sw.WriteLine("-------------------------");
+
+            // Flag Counts
+            sw.WriteLine("Flag Counts:");
+            for (int i = 0; i < _flags.Length; i++)
+            {
+                string bitName = Enum.GetName(typeof(OverlayHeaderFlags), i);
+                sw.WriteLine($"  Bit {i} ({bitName}): {_flags[i].Count}");
+            }
+
+            // Should Contain File
+            for (int i = 0; i < _shouldContainFile.Length; i++)
+            {
+                string filename = MapFileIndexToName(i);
+                sw.WriteLine($"  {filename} ({i}): {_shouldContainFile[i].Count}");
+            }
+
+            sw.WriteLine();
+            sw.Flush();
+        }
+
+        /// <summary>
+        /// Export script statistics
+        /// </summary>
+        /// <param name="sw">StreamWriter representing the output</param>
+        private void ExportScriptStatistics(StreamWriter sw)
+        {
+            sw.WriteLine("Script");
+            sw.WriteLine("-------------------------");
 
             // Short Headers
             if (_shortHeaders.Count > 0)
@@ -304,7 +402,34 @@ namespace Test
                 }
             }
 
+            sw.WriteLine();
             sw.Flush();
+        }
+
+        /// <summary>
+        /// Map a file index to the output name
+        /// </summary>
+        /// <param name="index">File index to map</param>
+        /// <returns>Mapped name, if possible</returns>
+        private string MapFileIndexToName(int index)
+        {
+            return index switch
+            {
+                0 => "WiseColors.dib",
+                1 => "WiseScript.bin",
+                2 => "WISE0001.DLL",
+                3 => "CTL3D32.DLL",
+                4 => "FILE0004",
+                5 => "Ocxreg32.EXE",
+                6 => "PROGRESS.DLL",
+                7 => "FILE0007",
+                8 => "FILE0008",
+                9 => "FILE0009",
+                10 => "FILE000A",
+                11 => "INSTALL_SCRIPT",
+                12 => "FILE0XX.DAT",
+                _ => $"Unknown File {index}",
+            };
         }
     }
 }
