@@ -236,6 +236,7 @@ namespace Test
             if (_invalidPaths.Count > 0)
             {
                 sw.WriteLine("Invalid Paths:");
+                _invalidPaths.Sort();
                 foreach (string path in _invalidPaths)
                 {
                     sw.WriteLine($"  {path}");
@@ -246,6 +247,7 @@ namespace Test
             if (_erroredPaths.Count > 0)
             {
                 sw.WriteLine("Errored Paths:");
+                _erroredPaths.Sort();
                 foreach (string path in _erroredPaths)
                 {
                     sw.WriteLine($"  {path}");
@@ -256,6 +258,7 @@ namespace Test
             if (_failedExtractPaths.Count > 0)
             {
                 sw.WriteLine("Failed Extract Paths:");
+                _failedExtractPaths.Sort();
                 foreach (string path in _failedExtractPaths)
                 {
                     sw.WriteLine($"  {path}");
@@ -309,6 +312,7 @@ namespace Test
             if (_shortHeaders.Count > 0)
             {
                 sw.WriteLine("Short Header:");
+                _shortHeaders.Sort();
                 foreach (string path in _shortHeaders)
                 {
                     sw.WriteLine($"  {path}");
@@ -321,6 +325,7 @@ namespace Test
             if (_opcodes.TryGetValue(OperationCode.UnknownDeflatedFile0x06, out var contains0x06) && contains0x06.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x06:");
+                contains0x06.Sort();
                 foreach (string path in contains0x06)
                 {
                     sw.WriteLine($"  {path}");
@@ -333,6 +338,7 @@ namespace Test
             if (_opcodes.TryGetValue(OperationCode.Unknown0x19, out var contains0x19) && contains0x19.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x19:");
+                contains0x19.Sort();
                 foreach (string path in contains0x19)
                 {
                     sw.WriteLine($"  {path}");
@@ -345,6 +351,7 @@ namespace Test
             if (_functions.TryGetValue("f1", out var containsFunction1) && containsFunction1.Count > 0)
             {
                 sw.WriteLine("Contains Function f1:");
+                containsFunction1.Sort();
                 foreach (string path in containsFunction1)
                 {
                     sw.WriteLine($"  {path}");
@@ -357,6 +364,7 @@ namespace Test
             if (_functions.TryGetValue("f28", out var containsFunction28) && containsFunction28.Count > 0)
             {
                 sw.WriteLine("Contains Function f28:");
+                containsFunction28.Sort();
                 foreach (string path in containsFunction28)
                 {
                     sw.WriteLine($"  {path}");
@@ -369,6 +377,7 @@ namespace Test
             if (_functions.TryGetValue("f30", out var containsFunction30) && containsFunction30.Count > 0)
             {
                 sw.WriteLine("Contains Function f30:");
+                containsFunction30.Sort();
                 foreach (string path in containsFunction30)
                 {
                     sw.WriteLine($"  {path}");
@@ -395,6 +404,7 @@ namespace Test
                 if (containsUnmappedFunction.Count > 0)
                 {
                     sw.WriteLine("Contains Unmapped Function:");
+                    containsUnmappedFunction.Sort();
                     foreach (string path in containsUnmappedFunction)
                     {
                         sw.WriteLine($"  {path}");
