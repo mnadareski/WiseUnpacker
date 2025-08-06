@@ -34,9 +34,9 @@ namespace Test
         private static readonly List<string> _failedExtractPaths = [];
 
         /// <summary>
-        /// Counts for each of the flags
+        /// Mapping of found header flags
         /// </summary>
-        private static readonly int[] _flagCounts = new int[32];
+        private static readonly List<string>[] _flags = new List<string>[32];
 
         /// <summary>
         /// All paths that were marked as invalid
@@ -148,7 +148,7 @@ namespace Test
                 }
 
                 // Process header statistics
-                ProcessStatistics(header);
+                ProcessStatistics(file, header);
 
                 // Create the header output data
                 var hBuilder = header.ExportStringBuilderExt();
@@ -203,14 +203,24 @@ namespace Test
         /// <summary>
         /// Process statistics for a WiseOverlayHeader
         /// </summary>
-        private static void ProcessStatistics(WiseOverlayHeader header)
+        private static void ProcessStatistics(string file, WiseOverlayHeader header)
         {
             // Flags
             for (int i = 0; i < 32; i++)
             {
                 int flags = (int)header.Flags;
-                if ((flags & (1 << i)) == (1 << i))
-                    _flagCounts[i]++;
+                int compare = 1 << i;
+
+                if ((flags & compare) == compare)
+                {
+                    // Ensure the key
+                    if (_flags[i] == null)
+                        _flags[i] = [];
+
+                    // Store each file only once
+                    if (!_flags[i].Contains(file))
+                        _flags[i].Add(file);
+                }
             }
         }
 
@@ -307,7 +317,7 @@ namespace Test
             sw.WriteLine("Flag Counts");
             for (int i = 0; i < 32; i++)
             {
-                sw.WriteLine($"  Bit {i}: {_flagCounts[i]}");
+                sw.WriteLine($"  Bit {i}: {_flags[i].Count}");
             }
 
             sw.WriteLine();
