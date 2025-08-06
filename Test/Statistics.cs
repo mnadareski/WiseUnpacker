@@ -285,6 +285,7 @@ namespace Test
             }
 
             // Should Contain File
+            sw.WriteLine("Should Contain File:");
             for (int i = 0; i < _shouldContainFile.Length; i++)
             {
                 string filename = MapFileIndexToName(i);
