@@ -22,7 +22,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// Encoded as a string, binary representation in script file.
         /// Expected flags:
-        /// - Transfer Direction (unknown) [Maybe 0x00 == Read]
+        /// - Transfer Direction [0x00 == Read, 0x01 == Write]
         /// - Null Terminated (unknown)
         /// </remarks>
         public byte DataFlags { get; set; }

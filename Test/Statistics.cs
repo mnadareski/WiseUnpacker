@@ -347,7 +347,20 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains f1
+            // Contains f0 -- Fully unmapped, present in WISE0001.DLL
+            if (_functions.TryGetValue("f0", out var containsFunction0) && containsFunction0.Count > 0)
+            {
+                sw.WriteLine("Contains Function f0:");
+                containsFunction0.Sort();
+                foreach (string path in containsFunction0)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains f1 -- Known but need samples for data layout
             if (_functions.TryGetValue("f1", out var containsFunction1) && containsFunction1.Count > 0)
             {
                 sw.WriteLine("Contains Function f1:");
@@ -360,12 +373,12 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains f28
-            if (_functions.TryGetValue("f28", out var containsFunction28) && containsFunction28.Count > 0)
+            // Contains f2 -- Known but need samples for data layout
+            if (_functions.TryGetValue("f2", out var containsFunction2) && containsFunction2.Count > 0)
             {
-                sw.WriteLine("Contains Function f28:");
-                containsFunction28.Sort();
-                foreach (string path in containsFunction28)
+                sw.WriteLine("Contains Function f2:");
+                containsFunction2.Sort();
+                foreach (string path in containsFunction2)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -373,7 +386,7 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains f30
+            // Contains f30 -- Layout unmapped, present in WISE0001.DLL
             if (_functions.TryGetValue("f30", out var containsFunction30) && containsFunction30.Count > 0)
             {
                 sw.WriteLine("Contains Function f30:");
@@ -387,7 +400,11 @@ namespace Test
             }
 
             // Contains Unmapped Function
-            var unmappedFunctions = Array.FindAll([.. _functions.Keys], k => k.FromWiseFunctionId() == null);
+            var unmappedFunctions = Array.FindAll([.. _functions.Keys], k =>
+            {
+                string? functionName = k.FromWiseFunctionId();
+                return functionName == null || functionName.StartsWith("UNDEFINED");
+            });
             if (unmappedFunctions.Length > 0)
             {
                 // Build unique file path list

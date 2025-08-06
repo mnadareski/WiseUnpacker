@@ -18,7 +18,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// Encoded as a string, binary representation in script file.
         /// Expected flags:
-        /// - Remove File Name (unknown)
+        /// - Remove File Name (nonzero value)
         /// </remarks>
         public byte DataFlags { get; set; }
 

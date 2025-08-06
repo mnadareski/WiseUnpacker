@@ -39,8 +39,8 @@ namespace SabreTools.Models.WiseInstaller.Actions
         public string? Pathname { get; set; }
 
         /// <summary>
-        /// Unknown data, 0x20-filled in sample calls
+        /// Language Strings
         /// </summary>
-        public string? Unknown { get; set; }
+        public string? LanguageStrings { get; set; }
     }
 }

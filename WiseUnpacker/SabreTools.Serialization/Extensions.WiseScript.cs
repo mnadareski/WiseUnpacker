@@ -11,7 +11,9 @@ namespace SabreTools.Serialization
         {
             return functionId switch
             {
-                "f1" => "Unknown",
+                "f0" => "Unknown",
+                "f1" => "Add to AUTOEXEC.BAT",
+                "f2" => "Add to CONFIG.SYS",
                 "f3" => "Add to SYSTEM.INI",
                 "f8" => "Read INI Value",
                 "f9" => "Get Registry Key Value",
@@ -24,11 +26,12 @@ namespace SabreTools.Serialization
                 "f17" => "Get Environment Variable",
                 "f19" => "Check if File/Dir Exists",
                 "f20" => "Set File Attributes",
+                "f21" => "Set Files/Buffers",
                 "f22" => "Find File in Path",
                 "f23" => "Check Disk Space",
                 "f25" => "Insert Line Into Text File",
                 "f27" => "Parse String",
-                "f28" => "Unknown",
+                "f28" => "Exit Installation",
                 "f29" => "Self-Register OCXs/DLLs",
                 "f30" => "Unknown",
                 "f31" => "Wizard Block",
@@ -36,6 +39,17 @@ namespace SabreTools.Serialization
                 "f34" => "Post to HTTP Server",
                 "f35" => "Prompt for Filename",
                 "f36" => "Start/Stop Service",
+
+                // Undefined function IDs
+                "f4" => $"UNDEFINED {functionId}",
+                "f5" => $"UNDEFINED {functionId}",
+                "f6" => $"UNDEFINED {functionId}",
+                "f7" => $"UNDEFINED {functionId}",
+                "f14" => $"UNDEFINED {functionId}",
+                "f18" => $"UNDEFINED {functionId}",
+                "f24" => $"UNDEFINED {functionId}",
+                "f26" => $"UNDEFINED {functionId}",
+                "f32" => $"UNDEFINED {functionId}",
 
                 // External DLL
                 "ShellLink" => "Create Shortcut",

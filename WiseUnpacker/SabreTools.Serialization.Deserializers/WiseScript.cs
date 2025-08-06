@@ -422,7 +422,27 @@ namespace SabreTools.Serialization.Deserializers
                 switch (obj.FunctionName)
                 {
                     // Unknown
+                    case "f0":
+                        // TODO: Implement
+                        // Could be either:
+                        // - Set Control Text
+                        // - Set Current Control
+                        break;
+
+                    // Add to AUTOEXEC.BAT
                     case "f1":
+                        // TODO: Implement
+                        // Probably this layout: 
+                        // - Flags (numeric) (e.g. "12", "8")
+                        // - Unknown string (empty in samples)
+                        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+                        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+                        // - Unknown string (empty in samples)
+                        // - Numeric value (e.g. "0")
+                        break;
+
+                    // Add to CONFIG.SYS
+                    case "f2":
                         // TODO: Implement
                         // Probably this layout: 
                         // - Flags (numeric) (e.g. "12", "8")
@@ -469,6 +489,9 @@ namespace SabreTools.Serialization.Deserializers
                     // Set File Attributes
                     case "f20": break;
 
+                    // Set Files/Buffers
+                    case "f21": break;
+
                     // Find File in Path
                     case "f22": break;
 
@@ -481,17 +504,13 @@ namespace SabreTools.Serialization.Deserializers
                     // Parse String
                     case "f27": break;
 
-                    // Unknown
-                    case "f28":
-                        // TODO: Implement
-                        // Probably this layout:
-                        // - Unknown string (empty in samples)
-                        break;
+                    // Exit Installation
+                    case "f28": break;
 
                     // Self-Register OCXs/DLLs
                     case "f29": break;
 
-                    // Unknown
+                    // Unknown DirectX
                     case "f30":
                         // TODO: Implement
                         // Maybe "Modify Component Size"?
@@ -499,7 +518,7 @@ namespace SabreTools.Serialization.Deserializers
                         // - Flags (numeric)
                         // - Directory name (e.g. "%INST%\..\DirectX")
                         // - File name (e.g. "%INST%\..\DirectX\DSETUP.DLL")
-                        // - Size? (e.g. "2623")
+                        // - Offset? (e.g. "2623")
                         break;
 
                     // Wizard Block

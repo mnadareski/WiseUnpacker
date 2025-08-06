@@ -31,6 +31,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// Direction variable name
         /// </summary>
+        /// </remarks>"B" == Previous, "N" == Next</remarks>
         public string? DirectionVariable { get; set; }
 
         /// <summary>
@@ -39,19 +40,19 @@ namespace SabreTools.Models.WiseInstaller.Actions
         public string? DisplayVariable { get; set; }
 
         /// <summary>
-        /// X Position, numeric
+        /// X Position
         /// </summary>
-        public string? XPosition { get; set; }
+        public int? XPosition { get; set; }
 
         /// <summary>
         /// Y Position, numeric
         /// </summary>
-        public string? YPosition { get; set; }
+        public int? YPosition { get; set; }
 
         /// <summary>
         /// Filler Color, numeric
         /// </summary>
-        public string? FillerColor { get; set; }
+        public int? FillerColor { get; set; }
 
         /// <summary>
         /// Unknown, numeric
