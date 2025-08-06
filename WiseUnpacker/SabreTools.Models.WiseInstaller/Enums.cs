@@ -22,6 +22,16 @@ namespace SabreTools.Models.WiseInstaller
         InstallFile = 0x00,
 
         /// <summary>
+        /// Unknown, possibly empty?
+        /// </summary>
+        Unknown0x01 = 0x01,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x02 = 0x02,
+
+        /// <summary>
         /// Display Message
         /// </summary>
         DisplayMessage = 0x03,

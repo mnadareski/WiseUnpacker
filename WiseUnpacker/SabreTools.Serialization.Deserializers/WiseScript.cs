@@ -143,6 +143,34 @@ namespace SabreTools.Serialization.Deserializers
             for (int i = 0; i < header.ScriptStrings.Length; i++)
             {
                 header.ScriptStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+
+                // Try to handle invalid string lengths
+                if (header.ScriptStrings[i].Length > 0)
+                {
+                    string str = header.ScriptStrings[i];
+                    char firstChar = str[0];
+
+                    // Control code blocks
+                    bool controlChar = false;
+                    if (firstChar < (char)0x0A)
+                        controlChar = true;
+                    else if (firstChar == (char)0x0A && str.Length == 1)
+                        controlChar = true;
+                    else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
+                        controlChar = true;
+                    else if (firstChar == (char)0x0D && str.Length == 1)
+                        controlChar = true;
+                    else if (firstChar > (char)0x0D && firstChar < (char)0x20)
+                        controlChar = true;
+
+                    // Rewind so state can be parsed
+                    if (controlChar)
+                    {
+                        header.ScriptStrings[i] = string.Empty;
+                        data.Seek(-str.Length - 1, SeekOrigin.Current);
+                        break;
+                    }
+                }
             }
 
             return header;
@@ -174,6 +202,8 @@ namespace SabreTools.Serialization.Deserializers
                 MachineStateData? stateData = op switch
                 {
                     OperationCode.InstallFile => ParseInstallFile(data, languageCount),
+                    OperationCode.Unknown0x01 => null, // No information known, empty?
+                    OperationCode.Unknown0x02 => null, // No information known
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
