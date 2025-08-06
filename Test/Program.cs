@@ -81,7 +81,7 @@ namespace Test
         private static void PrintFileInfo(string file, string outputDirectory, bool includeDebug)
         {
             // Get the base info output name
-            string filenameBase = Path.Combine(outputDirectory, $"info-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}");
+            string filenameBase = Path.Combine(outputDirectory, $"{file}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}");
 
             Console.WriteLine($"Attempting to print info for {file}");
 
@@ -129,9 +129,6 @@ namespace Test
 
                 Console.WriteLine(hBuilder);
                 using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}.txt"));
-                sw.WriteLine(file);
-                sw.WriteLine("-------------------------");
-                sw.WriteLine();
                 sw.WriteLine(hBuilder.ToString());
                 sw.WriteLine();
                 sw.WriteLine(sBuilder.ToString());
