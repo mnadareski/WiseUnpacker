@@ -215,10 +215,12 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
+                    OperationCode.Unknown0x0E => null, // No information known
                     OperationCode.StartUserDefinedAction => ParseStartUserDefinedAction(data),
                     OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
                     OperationCode.IgnoreOutputFiles => ParseIgnoreOutputFiles(data),
                     OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
+                    OperationCode.Unknown0x13 => null, // No information known
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
@@ -230,6 +232,10 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
                     OperationCode.RenameFileDirectory => ParseRenameFileDirectory(data),
                     OperationCode.OpenCloseInstallLog => ParseOpenCloseInstallLog(data),
+                    OperationCode.Unknown0x1F => null, // No information known
+                    OperationCode.Unknown0x20 => null, // No information known
+                    OperationCode.Unknown0x21 => null, // No information known
+                    OperationCode.Unknown0x22 => null, // No information known
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
 
                     //_ => null,

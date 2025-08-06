@@ -87,6 +87,11 @@ namespace SabreTools.Models.WiseInstaller
         ElseStatement = 0x0D,
 
         /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x0E = 0x0E,
+
+        /// <summary>
         /// Start User-Defined Action
         /// </summary>
         StartUserDefinedAction = 0x0F,
@@ -106,6 +111,11 @@ namespace SabreTools.Models.WiseInstaller
         /// Copy Local File
         /// </summary>
         CopyLocalFile = 0x12,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x13 = 0x13,
 
         /// <summary>
         /// Custom Dialog Set
@@ -165,6 +175,26 @@ namespace SabreTools.Models.WiseInstaller
         /// Open/Close Install.log
         /// </summary>
         OpenCloseInstallLog = 0x1E,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x1F = 0x1F,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x20 = 0x20,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x21 = 0x21,
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        Unknown0x22 = 0x22,
 
         /// <summary>
         /// ElseIf Statement

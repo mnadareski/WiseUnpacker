@@ -321,6 +321,32 @@ namespace Test
                 sw.WriteLine();
             }
 
+            // Contains Unknown0x01
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x01, out var contains0x01) && contains0x01.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x01:");
+                contains0x01.Sort();
+                foreach (string path in contains0x01)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x02
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x01, out var contains0x02) && contains0x02.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x02:");
+                contains0x02.Sort();
+                foreach (string path in contains0x02)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
             // Contains Unknown0x06
             if (_opcodes.TryGetValue(OperationCode.UnknownDeflatedFile0x06, out var contains0x06) && contains0x06.Count > 0)
             {
@@ -334,12 +360,90 @@ namespace Test
                 sw.WriteLine();
             }
 
+            // Contains Unknown0x0E
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x0E, out var contains0x0E) && contains0x0E.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x0E:");
+                contains0x0E.Sort();
+                foreach (string path in contains0x0E)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x13
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x13, out var contains0x13) && contains0x13.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x13:");
+                contains0x13.Sort();
+                foreach (string path in contains0x13)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
             // Contains Unknown0x19
             if (_opcodes.TryGetValue(OperationCode.Unknown0x19, out var contains0x19) && contains0x19.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x19:");
                 contains0x19.Sort();
                 foreach (string path in contains0x19)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x1F
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x1F, out var contains0x1F) && contains0x1F.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x1F:");
+                contains0x1F.Sort();
+                foreach (string path in contains0x1F)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x20
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x20, out var contains0x20) && contains0x20.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x20:");
+                contains0x20.Sort();
+                foreach (string path in contains0x20)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x21
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x21, out var contains0x21) && contains0x21.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x21:");
+                contains0x21.Sort();
+                foreach (string path in contains0x21)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x22
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x22, out var contains0x22) && contains0x22.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x22:");
+                contains0x22.Sort();
+                foreach (string path in contains0x22)
                 {
                     sw.WriteLine($"  {path}");
                 }
