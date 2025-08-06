@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
+using SabreTools.Models.WiseInstaller.Actions;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
 using OperationCode = SabreTools.Models.WiseInstaller.OperationCode;
@@ -21,6 +22,26 @@ namespace Test
         /// All paths that contain an Unknown0x19 opcode
         /// </summary>
         private static readonly List<string> _contains0x19 = [];
+
+        /// <summary>
+        /// All paths that contain a Function "f1"
+        /// </summary>
+        private static readonly List<string> _containsFunction1 = [];
+
+        /// <summary>
+        /// All paths that contain a Function "f28"
+        /// </summary>
+        private static readonly List<string> _containsFunction28 = [];
+
+        /// <summary>
+        /// All paths that contain a Function "f30"
+        /// </summary>
+        private static readonly List<string> _containsFunction30 = [];
+
+        /// <summary>
+        /// All paths that contain an unknown Function"
+        /// </summary>
+        private static readonly List<string> _containsUnknownFunction = [];
 
         /// <summary>
         /// All paths that threw an exception during parsing
@@ -229,6 +250,29 @@ namespace Test
             // Unknown0x19
             if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.Unknown0x19))
                 _contains0x19.Add(file);
+
+            // Function Calls
+            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.CallDllFunction))
+            {
+                var states = Array.FindAll(script.States, s => s.Op == OperationCode.CallDllFunction);
+                var functions = Array.ConvertAll(states, f => f.Data is CallDllFunction ? f.Data as CallDllFunction : null);
+
+                // f1
+                if (Array.Exists(functions, f => f != null && f.FunctionName == "f1"))
+                    _containsFunction1.Add(file);
+
+                // f28
+                if (Array.Exists(functions, f => f != null && f.FunctionName == "f28"))
+                    _containsFunction28.Add(file);
+
+                // f30
+                if (Array.Exists(functions, f => f != null && f.FunctionName == "f30"))
+                    _containsFunction30.Add(file);
+                    
+                // Unknown
+                if (Array.Exists(functions, f => f != null && f.FunctionName.FromWiseFunctionId() == null))
+                    _containsUnknownFunction.Add(file);
+            }
         }
 
         /// <summary>
@@ -312,6 +356,54 @@ namespace Test
             {
                 sw.WriteLine("Contains Unknown0x19:");
                 foreach (string path in _contains0x19)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains f1
+            if (_containsFunction1.Count > 0)
+            {
+                sw.WriteLine("Contains Function f1:");
+                foreach (string path in _containsFunction1)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains f28
+            if (_containsFunction28.Count > 0)
+            {
+                sw.WriteLine("Contains Function f28:");
+                foreach (string path in _containsFunction28)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains f30
+            if (_containsFunction30.Count > 0)
+            {
+                sw.WriteLine("Contains Function f30:");
+                foreach (string path in _containsFunction30)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown Function
+            if (_containsUnknownFunction.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown Function:");
+                foreach (string path in _containsUnknownFunction)
                 {
                     sw.WriteLine($"  {path}");
                 }
