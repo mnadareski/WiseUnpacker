@@ -4,12 +4,23 @@ using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
+using OperationCode = SabreTools.Models.WiseInstaller.OperationCode;
 
 namespace Test
 {
     class Program
     {
         #region Statistics
+
+        /// <summary>
+        /// All paths that contain an Unknown0x06 opcode
+        /// </summary>
+        private static readonly List<string> _contains0x06 = [];
+
+        /// <summary>
+        /// All paths that contain an Unknown0x19 opcode
+        /// </summary>
+        private static readonly List<string> _contains0x19 = [];
 
         /// <summary>
         /// All paths that threw an exception during parsing
@@ -30,6 +41,11 @@ namespace Test
         /// All paths that were marked as invalid
         /// </summary>
         private static readonly List<string> _invalidPaths = [];
+
+        /// <summary>
+        /// All paths that have "short" headers
+        /// </summary>
+        private static readonly List<string> _shortHeaders = [];
 
         #endregion
 
@@ -157,6 +173,9 @@ namespace Test
                     return;
                 }
 
+                // Process script statistics
+                ProcessStatistics(file, script);
+
                 // Create script output data
                 var sBuilder = script.ExportStringBuilderExt();
                 if (sBuilder == null)
@@ -192,6 +211,24 @@ namespace Test
                 if ((flags & (1 << i)) == (1 << i))
                     _flagCounts[i]++;
             }
+        }
+
+        /// <summary>
+        /// Process statistics for a WiseScript
+        /// </summary>
+        private static void ProcessStatistics(string file, WiseScript script)
+        {
+            // Short Header
+            if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
+                _shortHeaders.Add(file);
+
+            // Unknown0x06
+            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.UnknownDeflatedFile0x06))
+                _contains0x06.Add(file);
+
+            // Unknown0x19
+            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.Unknown0x19))
+                _contains0x19.Add(file);
         }
 
         /// <summary>
@@ -239,13 +276,48 @@ namespace Test
 
             // Flag Counts
             sw.WriteLine("Flag Counts");
-
             for (int i = 0; i < 32; i++)
             {
                 sw.WriteLine($"  Bit {i}: {_flagCounts[i]}");
             }
 
             sw.WriteLine();
+
+            // Short Headers
+            if (_shortHeaders.Count > 0)
+            {
+                sw.WriteLine("Short Header:");
+                foreach (string path in _shortHeaders)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x06
+            if (_contains0x06.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x06:");
+                foreach (string path in _contains0x06)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x19
+            if (_contains0x19.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x19:");
+                foreach (string path in _contains0x19)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
 
             sw.Flush();
         }
