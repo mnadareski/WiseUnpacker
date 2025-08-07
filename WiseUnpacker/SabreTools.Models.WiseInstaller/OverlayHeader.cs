@@ -27,26 +27,29 @@ namespace SabreTools.Models.WiseInstaller
         public OverlayHeaderFlags Flags { get; set; }
 
         /// <summary>
-        /// Unknown
+        /// Graphics data
         /// </summary>
-        /// <remarks>2 bytes</remarks>
-        public byte[]? UnknownBytes_1 { get; set; }
-
-        /// <summary>
-        /// Start Gradient
-        /// </summary>
-        public byte[]? StartGradient { get; set; }
-
-        /// <summary>
-        /// End Gradient
-        /// </summary>
-        public byte[]? EndGradient { get; set; }
-
-        /// <summary>
-        /// Unknown
-        /// </summary>
-        /// <remarks>4 bytes</remarks>
-        public byte[]? UnknownBytes_2 { get; set; }
+        /// <remarks>
+        /// 12 bytes
+        /// 
+        /// When the data is processed, it does the following:
+        /// 
+        /// ushort[] colors = new ushort[3];
+        /// int colorsPtr = 0;
+        /// 
+        /// for (int i = 0; i < 3; i++)
+        /// {
+        ///     uint color = (GraphicsData[i + 3] * <mult>) / 0x5F + GraphicsData[i];
+        ///     colors[colorsPtr] = color;
+        ///     if (color < 0)
+        ///         colors[colorsPtr] = 0;
+        ///     if (colors[colorsPtr] > 0xFF)
+        ///         colors[colorsPtr] = 0xFF
+        /// 
+        ///     colorsPtr++;
+        /// }
+        /// </remarks>
+        public byte[]? GraphicsData { get; set; }
 
         /// <summary>
         /// Points to the Exit event in the script, if it exists

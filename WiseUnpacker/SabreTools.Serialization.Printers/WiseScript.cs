@@ -114,6 +114,7 @@ namespace SabreTools.Serialization.Printers
                 switch (entry.Data)
                 {
                     case InstallFile data: Print(builder, data); break;
+                    case NoOp data: Print(builder, data); break;
                     case DisplayMessage data: Print(builder, data); break;
                     case UserDefinedActionStep data: Print(builder, data); break;
                     case EditIniFile data: Print(builder, data); break;
@@ -127,7 +128,7 @@ namespace SabreTools.Serialization.Printers
                     case ElseStatement data: Print(builder, data); break;
                     case StartUserDefinedAction data: Print(builder, data); break;
                     case EndUserDefinedAction data: Print(builder, data); break;
-                    case IgnoreOutputFiles data: Print(builder, data); break;
+                    case CreateDirectory data: Print(builder, data); break;
                     case CopyLocalFile data: Print(builder, data); break;
                     case CustomDialogSet data: Print(builder, data); break;
                     case GetSystemInformation data: Print(builder, data); break;
@@ -178,6 +179,12 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
+        private static void Print(StringBuilder builder, NoOp data)
+        {
+            builder.AppendLine($"    Data: NoOp");
+            builder.AppendLine();
+        }
+
         private static void Print(StringBuilder builder, DisplayMessage data)
         {
             builder.AppendLine($"    Data: DisplayMessage");
@@ -202,7 +209,7 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, UserDefinedActionStep data)
         {
             builder.AppendLine($"    Data: UserDefinedActionStep");
-            builder.AppendLine(data.Count, $"      Count");
+            builder.AppendLine(data.Flags, $"      Count");
             builder.AppendLine($"      Script lines");
             builder.AppendLine("      -------------------------");
             if (data.ScriptLines == null || data.ScriptLines.Length == 0)
@@ -363,9 +370,9 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, IgnoreOutputFiles data)
+        private static void Print(StringBuilder builder, CreateDirectory data)
         {
-            builder.AppendLine($"    Data: IgnoreOutputFiles");
+            builder.AppendLine($"    Data: CreateDirectory");
             builder.AppendLine(data.Pathname, $"      Pathname");
             builder.AppendLine();
         }
@@ -373,10 +380,9 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, CopyLocalFile data)
         {
             builder.AppendLine($"    Data: CopyLocalFile");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
-            builder.AppendLine(data.Operand_2, $"      Unknown");
+            builder.AppendLine(data.Flags, $"      Flags");
+            builder.AppendLine(data.Padding, $"      Padding");
             builder.AppendLine(data.Source, $"      Source");
-            builder.AppendLine(data.Operand_4, $"      Unknown");
             builder.AppendLine($"      Descriptions");
             builder.AppendLine("      -------------------------");
             if (data.Description == null || data.Description.Length == 0)

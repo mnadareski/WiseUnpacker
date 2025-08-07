@@ -13,26 +13,24 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// Unknown, 0x0C
         /// </summary>
-        public byte Operand_1 { get; set; }
+        public ushort Flags { get; set; } // 0x00 - 0x01
 
         /// <summary>
-        /// Unknown
+        /// Padding
         /// </summary>
-        /// <remarks>41 bytes</remarks>
-        public byte[]? Operand_2 { get; set; }
+        /// <remarks>
+        /// 40 bytes, padding because structure is internally
+        /// shared with <see cref="InstallFile"/> 
+        /// </remarks>
+        public byte[]? Padding { get; set; } // 0x02 - 0x2A
 
         /// <summary>
         /// Source file
         /// </summary>
-        public string? Source { get; set; }
+        public string? Source { get; set; } // 0x2B - ?
 
         /// <summary>
-        /// Unknown
-        /// </summary>
-        public string? Operand_4 { get; set; }
-
-        /// <summary>
-        /// Description, one per language
+        /// Description, one per language + 1
         /// </summary>
         public string[]? Description { get; set; }
 

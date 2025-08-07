@@ -57,13 +57,17 @@ namespace SabreTools.Serialization.Deserializers
                 header.DllSize = data.ReadUInt32LittleEndian();
             }
 
+            // Read as a single block
             header.Flags = (OverlayHeaderFlags)data.ReadUInt32LittleEndian();
-            header.UnknownBytes_1 = data.ReadBytes(2);
-            header.StartGradient = data.ReadBytes(3);
-            header.EndGradient = data.ReadBytes(3);
-            header.UnknownBytes_2 = data.ReadBytes(4);
+
+            // Read as a single block
+            header.GraphicsData = data.ReadBytes(12);
+            
+            // Read as a single block
             header.WiseScriptExitEventOffset = data.ReadUInt32LittleEndian();
             header.WiseScriptCancelEventOffset = data.ReadUInt32LittleEndian();
+
+            // Read as a single block
             header.WiseScriptInflatedSize = data.ReadUInt32LittleEndian();
             header.WiseScriptDeflatedSize = data.ReadUInt32LittleEndian();
             header.WiseDllDeflatedSize = data.ReadUInt32LittleEndian();
@@ -78,6 +82,8 @@ namespace SabreTools.Serialization.Deserializers
             header.FinalFileDeflatedSize = data.ReadUInt32LittleEndian();
             header.FinalFileInflatedSize = data.ReadUInt32LittleEndian();
             header.EOF = data.ReadUInt32LittleEndian();
+            
+            // Newer installers read this and DibInflatedSize in the above block
             header.DibDeflatedSize = data.ReadUInt32LittleEndian();
 
             // Handle older overlay data
@@ -89,6 +95,8 @@ namespace SabreTools.Serialization.Deserializers
             }
 
             header.DibInflatedSize = data.ReadUInt32LittleEndian();
+
+            // Endianness and init text len are read in a single block
             header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
             if (header.Endianness != Endianness.BigEndian && header.Endianness != Endianness.LittleEndian)
             {

@@ -144,33 +144,33 @@ namespace SabreTools.Serialization.Deserializers
             {
                 header.ScriptStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
 
-                // Try to handle invalid string lengths
-                if (header.ScriptStrings[i].Length > 0)
-                {
-                    string str = header.ScriptStrings[i];
-                    char firstChar = str[0];
+                // // Try to handle invalid string lengths
+                // if (header.ScriptStrings[i].Length > 0)
+                // {
+                //     string str = header.ScriptStrings[i];
+                //     char firstChar = str[0];
 
-                    // Control code blocks
-                    bool controlChar = false;
-                    if (firstChar < (char)0x0A)
-                        controlChar = true;
-                    else if (firstChar == (char)0x0A && str.Length == 1)
-                        controlChar = true;
-                    else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
-                        controlChar = true;
-                    else if (firstChar == (char)0x0D && str.Length == 1)
-                        controlChar = true;
-                    else if (firstChar > (char)0x0D && firstChar < (char)0x20)
-                        controlChar = true;
+                //     // Control code blocks
+                //     bool controlChar = false;
+                //     if (firstChar < (char)0x0A)
+                //         controlChar = true;
+                //     else if (firstChar == (char)0x0A && str.Length == 1)
+                //         controlChar = true;
+                //     else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
+                //         controlChar = true;
+                //     else if (firstChar == (char)0x0D && str.Length == 1)
+                //         controlChar = true;
+                //     else if (firstChar > (char)0x0D && firstChar < (char)0x20)
+                //         controlChar = true;
 
-                    // Rewind so state can be parsed
-                    if (controlChar)
-                    {
-                        header.ScriptStrings[i] = string.Empty;
-                        data.Seek(-str.Length - 1, SeekOrigin.Current);
-                        break;
-                    }
-                }
+                //     // Rewind so state can be parsed
+                //     if (controlChar)
+                //     {
+                //         header.ScriptStrings[i] = string.Empty;
+                //         data.Seek(-str.Length - 1, SeekOrigin.Current);
+                //         break;
+                //     }
+                // }
             }
 
             return header;
@@ -203,7 +203,7 @@ namespace SabreTools.Serialization.Deserializers
                 {
                     OperationCode.InstallFile => ParseInstallFile(data, languageCount),
                     OperationCode.Unknown0x01 => null, // No information known, empty?
-                    OperationCode.Unknown0x02 => null, // No information known
+                    OperationCode.NoOp => ParseNoOp(data), // No information known
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
@@ -218,7 +218,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.Unknown0x0E => null, // No information known
                     OperationCode.StartUserDefinedAction => ParseStartUserDefinedAction(data),
                     OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
-                    OperationCode.IgnoreOutputFiles => ParseIgnoreOutputFiles(data),
+                    OperationCode.CreateDirectory => ParseCreateDirectory(data),
                     OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
                     OperationCode.Unknown0x13 => null, // No information known
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
@@ -288,6 +288,16 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
+        /// Parse a Stream into a NoOp
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled NoOp on success, null on error</returns>
+        private static NoOp ParseNoOp(Stream data)
+        {
+            return new NoOp();
+        }
+
+        /// <summary>
         /// Parse a Stream into a DisplayMessage
         /// </summary>
         /// <param name="data">Stream to parse</param>
@@ -317,7 +327,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new UserDefinedActionStep();
 
-            obj.Count = data.ReadByteValue();
+            obj.Flags = data.ReadByteValue();
             obj.ScriptLines = new string[languageCount];
             for (int i = 0; i < obj.ScriptLines.Length; i++)
             {
@@ -354,8 +364,9 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new ScriptUnknown0x06();
 
-            obj.Operand_1 = data.ReadBytes(2);
-            obj.Operand_2 = data.ReadUInt32LittleEndian();
+            obj.Operand_1 = data.ReadUInt16LittleEndian();
+            obj.Operand_2 = data.ReadUInt16LittleEndian();
+            obj.Operand_3 = data.ReadUInt16LittleEndian();
             obj.DeflateInfo = ParseScriptDeflateInfoContainer(data, languageCount);
 
             // Terminator byte does not exist in old scripts
@@ -644,13 +655,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a IgnoreOutputFiles
+        /// Parse a Stream into a CreateDirectory
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled IgnoreOutputFiles on success, null on error</returns>
-        private static IgnoreOutputFiles ParseIgnoreOutputFiles(Stream data)
+        /// <returns>Filled CreateDirectory on success, null on error</returns>
+        private static CreateDirectory ParseCreateDirectory(Stream data)
         {
-            var obj = new IgnoreOutputFiles();
+            var obj = new CreateDirectory();
 
             obj.Pathname = data.ReadNullTerminatedAnsiString();
 
@@ -667,12 +678,11 @@ namespace SabreTools.Serialization.Deserializers
         {
             var obj = new CopyLocalFile();
 
-            obj.Operand_1 = data.ReadByteValue();
-            obj.Operand_2 = data.ReadBytes(41);
+            obj.Flags = data.ReadUInt16LittleEndian();
+            obj.Padding = data.ReadBytes(40);
             obj.Source = data.ReadNullTerminatedAnsiString();
-            obj.Operand_4 = data.ReadNullTerminatedAnsiString();
 
-            obj.Description = new string[languageCount];
+            obj.Description = new string[languageCount + 1];
             for (int i = 0; i < obj.Description.Length; i++)
             {
                 obj.Description[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;

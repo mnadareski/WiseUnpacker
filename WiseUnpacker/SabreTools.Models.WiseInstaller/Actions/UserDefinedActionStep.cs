@@ -12,15 +12,18 @@ namespace SabreTools.Models.WiseInstaller.Actions
     public class UserDefinedActionStep : MachineStateData
     {
         /// <summary>
-        /// Indicates the number of lines in the script
+        /// Flags for writing out
         /// </summary>
-        /// <remarks>Always 0 after the first step</remarks>
-        public byte Count { get; set; }
+        /// <remarks>
+        /// Values:
+        /// - 0x01 - Used as value appended to the end of the selected line
+        /// - 0x02 - Indicates if the string should be formatted(?)
+        /// </remarks>
+        public byte Flags { get; set; }
 
         /// <summary>
         /// Script lines
         /// </summary>
-        /// <remarks>One string per language</remarks>
         public string[]? ScriptLines { get; set; }
     }
 }

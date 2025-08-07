@@ -18,6 +18,11 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// Flags, unknown mapping
         /// </summary>
+        /// <remarks>
+        /// Expected Values:
+        /// - Start block if function returns true (0x02 or 0x03)
+        /// - Loop while function returns true (0x02 or 0x03)
+        /// </remarks>
         public byte Flags { get; set; }
 
         /// <summary>

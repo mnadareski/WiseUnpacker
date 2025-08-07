@@ -1,5 +1,10 @@
 namespace SabreTools.Models.WiseInstaller
 {
+    /// <summary>
+    /// Display Billboard
+    /// 
+    /// 
+    /// </summary>
     /// <remarks>
     /// This is likely compressed Billboard data, though it is
     /// very difficult to determine what the format of the extracted
@@ -12,20 +17,39 @@ namespace SabreTools.Models.WiseInstaller
     public class ScriptUnknown0x06 : MachineStateData
     {
         /// <summary>
-        /// Unknown
+        /// Flags(?)
         /// </summary>
-        /// <remarks>2 bytes</remarks>
-        public byte[]? Operand_1 { get; set; }
+        /// <remarks>
+        /// Values from WISE0001.DLL
+        /// - & 0x4000 != 0 -> FUN_1000bb6a
+        /// - & 0x3805 != 0 -> 
+        /// </remarks>
+        public ushort Operand_1 { get; set; } // 0x01 - 0x02
+
+        /// <summary>
+        /// Flags(?)
+        /// </summary>
+        /// <remarks>
+        /// Values from WISE0001.DLL
+        /// - >> 0x0F -> piVar3[10]
+        /// - & 0x4000 -> uVar8 = Operand_2 & 0x3FFF
+        /// - [0x04] & 0x80 != 0 -> 
+        /// </remarks>
+        public ushort Operand_2 { get; set; } // 0x03 - 0x04
 
         /// <summary>
         /// Unknown
         /// </summary>
-        public uint Operand_2 { get; set; }
+        /// <remarks>
+        /// Values from WISE0001.DLL
+        /// - & 0x4000 -> uVar8 = Operand_3 & 0x3FFF
+        /// </remarks>
+        public ushort Operand_3 { get; set; } // 0x05 - 0x06
 
         /// <summary>
         /// Deflate information
         /// </summary>
-        public ScriptDeflateInfoContainer? DeflateInfo { get; set; }
+        public ScriptDeflateInfoContainer? DeflateInfo { get; set; } // 0x07 - 
 
         /// <summary>
         /// Terminator?

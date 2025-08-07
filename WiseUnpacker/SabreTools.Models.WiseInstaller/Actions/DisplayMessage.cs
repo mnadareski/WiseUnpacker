@@ -17,7 +17,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// Expected flags:
         /// - Message icon(?)
-        /// - Start If Block (unknown)
+        /// - Start If Block (0x01)
         /// - No Cancel (unknown)
         /// </remarks>
         public byte Flags { get; set; }

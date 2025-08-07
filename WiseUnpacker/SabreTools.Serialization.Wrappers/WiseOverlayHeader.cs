@@ -868,7 +868,7 @@ namespace SabreTools.Serialization.Wrappers
             bool includeDebug)
         {
             // Get the generated base name
-            string baseName = $"WISE_0x06_{obj.Operand_1.ToHexString()}";
+            string baseName = $"WISE_0x06_{obj.Operand_1:X4}";
 
             // If there are no deflate objects
             if (obj.DeflateInfo?.Info == null)

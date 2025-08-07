@@ -18,14 +18,17 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// Encoded as a string, binary representation in script file.
         /// Expected flags:
-        /// - Nothing (unknown)
-        /// - Increment (unknown)
-        /// - Decrement (unknown)
-        /// - Remove trailing backslashes (unknown)
-        /// - Convert to long filename (unknown)
-        /// - Convert to short filename (unknown)
-        /// - Convert to uppercase (unknown)
-        /// - Convert to lowercase (unknown)
+        /// (flags >> 2 & 0x0F)
+        /// - Nothing (0x00)
+        /// - Increment (0x04)
+        /// - Decrement (0x08)
+        /// - Remove trailing backslashes (0x0C)
+        /// - Convert to long filename (0x10)
+        /// - Convert to short filename (0x14)
+        /// - Convert to uppercase (0x18)
+        /// - Convert to lowercase (0x1C)
+        /// 
+        /// One of the following is case 0x20:
         /// - Evaluate Expression (unknown)
         /// - Append to Existing Value (unknown)
         /// - Remove File Name (unknown)

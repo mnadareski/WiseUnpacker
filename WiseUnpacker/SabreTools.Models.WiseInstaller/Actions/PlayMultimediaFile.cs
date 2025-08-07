@@ -17,9 +17,9 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// Flags
         /// </summary>
-        /// Expected flags:
-        /// - File Type (WAV or AVI) (Maybe 0x01 == WAV)
-        /// - Loop Continuously (unknown)
+        /// Values:
+        /// - Loop Continuously (0x01)
+        /// - File Type (WAV or AVI) (0x02 == AVI)
         /// </remarks>
         public byte Flags { get; set; }
 
