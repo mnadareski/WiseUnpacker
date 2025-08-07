@@ -22,9 +22,9 @@ namespace SabreTools.Models.WiseInstaller
         InstallFile = 0x00,
 
         /// <summary>
-        /// Unknown, possibly empty?
+        /// Invalid case
         /// </summary>
-        Unknown0x01 = 0x01,
+        Invalid0x01 = 0x01,
 
         /// <summary>
         /// No-op
@@ -88,9 +88,9 @@ namespace SabreTools.Models.WiseInstaller
         ElseStatement = 0x0D,
 
         /// <summary>
-        /// Unknown
+        /// Invalid case
         /// </summary>
-        Unknown0x0E = 0x0E,
+        Invalid0x0E = 0x0E,
 
         /// <summary>
         /// Start User-Defined Action

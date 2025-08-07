@@ -202,8 +202,8 @@ namespace SabreTools.Serialization.Deserializers
                 MachineStateData? stateData = op switch
                 {
                     OperationCode.InstallFile => ParseInstallFile(data, languageCount),
-                    OperationCode.Unknown0x01 => null, // No information known, empty?
-                    OperationCode.NoOp => ParseNoOp(data), // No information known
+                    OperationCode.Invalid0x01 => ParseInvalid0x01(data),
+                    OperationCode.NoOp => ParseNoOp(data),
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
@@ -215,7 +215,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
-                    OperationCode.Unknown0x0E => null, // No information known
+                    OperationCode.Invalid0x0E => ParseInvalid0x0E(data),
                     OperationCode.StartUserDefinedAction => ParseStartUserDefinedAction(data),
                     OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
                     OperationCode.CreateDirectory => ParseCreateDirectory(data),
@@ -285,6 +285,16 @@ namespace SabreTools.Serialization.Deserializers
             header.Operand_11 = data.ReadNullTerminatedAnsiString();
 
             return header;
+        }
+
+        /// <summary>
+        /// Parse a Stream into a Invalid0x01
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled Invalid0x01 on success, null on error</returns>
+        private static Invalid0x01 ParseInvalid0x01(Stream data)
+        {
+            return new Invalid0x01();
         }
 
         /// <summary>
@@ -632,6 +642,16 @@ namespace SabreTools.Serialization.Deserializers
         private static ElseStatement ParseElseStatement(Stream data)
         {
             return new ElseStatement();
+        }
+
+        /// <summary>
+        /// Parse a Stream into a Invalid0x0E
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled Invalid0x0E on success, null on error</returns>
+        private static Invalid0x0E ParseInvalid0x0E(Stream data)
+        {
+            return new Invalid0x0E();
         }
 
         /// <summary>

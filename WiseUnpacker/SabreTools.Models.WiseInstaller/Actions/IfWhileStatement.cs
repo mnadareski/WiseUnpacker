@@ -22,8 +22,38 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// Encoded as a string, binary representation in script file.
         /// Expected flags:
-        /// - If or While loop (unknown)
-        /// - Perform While loop at least once (unknown)
+        /// - If or While loop (Possibly 0x10 == While, 0x20 == If)
+        /// - Perform While loop at least once (Possibly 0x40)
+        /// - Operation (Between 0x00 and 0x0F)
+        ///     + Addition (unknown)
+        ///     + Subtraction (unknown)
+        ///     + Multiplication (unknown)
+        ///     + Division (unknown)
+        ///     + Left (unknown)
+        ///     + Right (unknown)
+        ///     + Mid (unknown)
+        ///     + Concat (unknown)
+        ///     + Instr (unknown)
+        ///     + Before (unknown)
+        ///     + After (unknown)
+        ///     + Len (Possibly 0x0D)
+        ///     + Lcase (unknown)
+        ///     + Ucase (unknown)
+        ///     + Ltrim (unknown)
+        ///     + Rtrim (unknown)
+        ///     + And (unknown)
+        ///     + Or (unknown)
+        ///     + Not (unknown)
+        ///     + > (unknown)
+        ///     + < (unknown)
+        ///     + >= (unknown)
+        ///     + <= (unknown)
+        ///     + = (unknown)
+        ///     + <> (unknown)
+        /// 
+        /// If the Flags & 0x20 == 0 and Flags & 0x10 == 0,
+        /// the flag value in the stack is set back to
+        /// Flags ^ 0x60. 
         /// </remarks>
         public byte Flags { get; set; }
 

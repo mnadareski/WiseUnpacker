@@ -114,6 +114,7 @@ namespace SabreTools.Serialization.Printers
                 switch (entry.Data)
                 {
                     case InstallFile data: Print(builder, data); break;
+                    case Invalid0x01 data: Print(builder, data); break;
                     case NoOp data: Print(builder, data); break;
                     case DisplayMessage data: Print(builder, data); break;
                     case UserDefinedActionStep data: Print(builder, data); break;
@@ -126,6 +127,7 @@ namespace SabreTools.Serialization.Printers
                     case DeleteFile data: Print(builder, data); break;
                     case IfWhileStatement data: Print(builder, data); break;
                     case ElseStatement data: Print(builder, data); break;
+                    case Invalid0x0E data: Print(builder, data); break;
                     case StartUserDefinedAction data: Print(builder, data); break;
                     case EndUserDefinedAction data: Print(builder, data); break;
                     case CreateDirectory data: Print(builder, data); break;
@@ -176,6 +178,12 @@ namespace SabreTools.Serialization.Printers
                 }
             }
             builder.AppendLine(data.Operand_11, $"      Unknown");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, Invalid0x01 data)
+        {
+            builder.AppendLine($"    Data: Invalid0x01");
             builder.AppendLine();
         }
 
@@ -355,6 +363,12 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, ElseStatement data)
         {
             builder.AppendLine($"    Data: ElseStatement");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, Invalid0x0E data)
+        {
+            builder.AppendLine($"    Data: Invalid0x0E");
             builder.AppendLine();
         }
 

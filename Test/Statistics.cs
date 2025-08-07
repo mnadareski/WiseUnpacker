@@ -321,25 +321,12 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains Unknown0x01
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x01, out var contains0x01) && contains0x01.Count > 0)
+            // Contains Invalid0x01
+            if (_opcodes.TryGetValue(OperationCode.Invalid0x01, out var contains0x01) && contains0x01.Count > 0)
             {
-                sw.WriteLine("Contains Unknown0x01:");
+                sw.WriteLine("Contains Invalid0x01:");
                 contains0x01.Sort();
                 foreach (string path in contains0x01)
-                {
-                    sw.WriteLine($"  {path}");
-                }
-
-                sw.WriteLine();
-            }
-
-            // Contains Unknown0x02
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x01, out var contains0x02) && contains0x02.Count > 0)
-            {
-                sw.WriteLine("Contains Unknown0x02:");
-                contains0x02.Sort();
-                foreach (string path in contains0x02)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -360,10 +347,10 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains Unknown0x0E
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x0E, out var contains0x0E) && contains0x0E.Count > 0)
+            // Contains Invalid0x0E
+            if (_opcodes.TryGetValue(OperationCode.Invalid0x0E, out var contains0x0E) && contains0x0E.Count > 0)
             {
-                sw.WriteLine("Contains Unknown0x0E:");
+                sw.WriteLine("Contains Invalid0x0E:");
                 contains0x0E.Sort();
                 foreach (string path in contains0x0E)
                 {
