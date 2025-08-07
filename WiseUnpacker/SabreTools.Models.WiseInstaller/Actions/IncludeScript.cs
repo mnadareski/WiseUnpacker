@@ -17,6 +17,9 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     public class IncludeScript : MachineStateData
     {
-        // There is no data
+        /// <summary>
+        /// Count of sequential 0x1B bytes, excluding the original opcode
+        /// </summary>
+        public int Count { get; set; }
     }
 }

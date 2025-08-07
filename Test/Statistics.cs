@@ -360,10 +360,10 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains Unknown0x13
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x13, out var contains0x13) && contains0x13.Count > 0)
+            // Contains Invalid0x13
+            if (_opcodes.TryGetValue(OperationCode.Invalid0x13, out var contains0x13) && contains0x13.Count > 0)
             {
-                sw.WriteLine("Contains Unknown0x13:");
+                sw.WriteLine("Contains Invalid0x13:");
                 contains0x13.Sort();
                 foreach (string path in contains0x13)
                 {

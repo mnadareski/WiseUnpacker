@@ -220,7 +220,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
                     OperationCode.CreateDirectory => ParseCreateDirectory(data),
                     OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
-                    OperationCode.Unknown0x13 => null, // No information known
+                    OperationCode.Invalid0x13 => ParseInvalid0x13(data),
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
@@ -714,6 +714,16 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
+        /// Parse a Stream into a Invalid0x13
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled Invalid0x13 on success, null on error</returns>
+        private static Invalid0x13 ParseInvalid0x13(Stream data)
+        {
+            return new Invalid0x13();
+        }
+
+        /// <summary>
         /// Parse a Stream into a CustomDialogSet
         /// </summary>
         /// <param name="data">Stream to parse</param>
@@ -848,7 +858,16 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled IncludeScript on success, null on error</returns>
         private static IncludeScript ParseIncludeScript(Stream data)
         {
-            return new IncludeScript();
+            var obj = new IncludeScript();
+
+            obj.Count = 0;
+            while (data.Position < data.Length && data.ReadByteValue() == 0x1B)
+            {
+                obj.Count++;
+            }
+
+            data.Seek(-1, SeekOrigin.Current);
+            return obj;
         }
 
         /// <summary>

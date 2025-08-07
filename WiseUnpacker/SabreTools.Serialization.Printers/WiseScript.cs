@@ -132,6 +132,7 @@ namespace SabreTools.Serialization.Printers
                     case EndUserDefinedAction data: Print(builder, data); break;
                     case CreateDirectory data: Print(builder, data); break;
                     case CopyLocalFile data: Print(builder, data); break;
+                    case Invalid0x13 data: Print(builder, data); break;
                     case CustomDialogSet data: Print(builder, data); break;
                     case GetSystemInformation data: Print(builder, data); break;
                     case GetTemporaryFilename data: Print(builder, data); break;
@@ -416,6 +417,12 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
+        private static void Print(StringBuilder builder, Invalid0x13 data)
+        {
+            builder.AppendLine($"    Data: Invalid0x13");
+            builder.AppendLine();
+        }
+
         private static void Print(StringBuilder builder, CustomDialogSet data)
         {
             builder.AppendLine($"    Data: CustomDialogSet");
@@ -482,6 +489,7 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, IncludeScript data)
         {
             builder.AppendLine($"    Data: IncludeScript");
+            builder.AppendLine(data.Count, $"      Count");
             builder.AppendLine();
         }
 

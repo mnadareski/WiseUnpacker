@@ -113,12 +113,9 @@ namespace SabreTools.Models.WiseInstaller
         CopyLocalFile = 0x12,
 
         /// <summary>
-        /// Unknown
+        /// Invalid case
         /// </summary>
-        /// <remarks>
-        /// Aborts installation and returns 0xfffffffe in WISE0001.DLL
-        /// </remarks>
-        Unknown0x13 = 0x13,
+        Invalid0x13 = 0x13,
 
         /// <summary>
         /// Custom Dialog Set
