@@ -373,10 +373,10 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains Unknown0x19
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x19, out var contains0x19) && contains0x19.Count > 0)
+            // Contains InstallODBCDriver
+            if (_opcodes.TryGetValue(OperationCode.InstallODBCDriver, out var contains0x19) && contains0x19.Count > 0)
             {
-                sw.WriteLine("Contains Unknown0x19:");
+                sw.WriteLine("Contains InstallODBCDriver:");
                 contains0x19.Sort();
                 foreach (string path in contains0x19)
                 {

@@ -144,13 +144,15 @@ namespace SabreTools.Models.WiseInstaller
         NewEvent = 0x18,
 
         /// <summary>
-        /// Unknown
+        /// Install ODBC Driver
         /// </summary>
         /// <remarks>
-        /// Appears identical to ConfigODBCDataSource except without
-        /// installer name validation.
+        /// Available documentation does not mention this action,
+        /// instead saying that the driver needs to be installed
+        /// before configuration. This may be a holdover from
+        /// older versions that required driver installation.
         /// </remarks>
-        Unknown0x19 = 0x19,
+        InstallODBCDriver = 0x19,
 
         /// <summary>
         /// Config ODBC Data Source

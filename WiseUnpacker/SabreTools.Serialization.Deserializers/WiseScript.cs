@@ -226,7 +226,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
                     OperationCode.PlayMultimediaFile => ParsePlayMultimediaFile(data),
                     OperationCode.NewEvent => ParseNewEvent(data, ref op0x18skip),
-                    OperationCode.Unknown0x19 => ParseUnknown0x19(data),
+                    OperationCode.InstallODBCDriver => ParseUnknown0x19(data),
                     OperationCode.ConfigODBCDataSource => ParseConfigODBCDataSource(data),
                     OperationCode.IncludeScript => ParseIncludeScript(data),
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
