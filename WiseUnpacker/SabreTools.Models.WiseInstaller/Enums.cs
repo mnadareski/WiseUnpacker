@@ -372,6 +372,18 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// If enabled, sets the same flag as /M4 commandline
         /// </summary>
+        /// <remarks>
+        /// The /M4 commandline parameter, this flag, and then
+        /// some value (DAT_00404270) being 0 all lead to the
+        /// same outcome. The set of installers that include
+        /// this flag need to be further analyzed to see what
+        /// possible files are omitted if this flag is set.
+        /// 
+        /// Preliminary inspection of output files does not
+        /// show any notable missing files. It is very possible
+        /// that this represents a file that is not currently
+        /// extracted.
+        /// </remarks>
         WISE_FLAG_FORCE_M4 = 0x40000000,
 
         WISE_FLAG_UNKNOWN_31 = 0x80000000,
