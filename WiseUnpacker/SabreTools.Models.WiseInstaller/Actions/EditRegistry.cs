@@ -17,9 +17,15 @@ namespace SabreTools.Models.WiseInstaller.Actions
     public class EditRegistry : MachineStateData
     {
         /// <summary>
-        /// Root
+        /// Flags and Root
         /// </summary>
-        public byte Root { get; set; }
+        /// <remarks>
+        /// To get the root value, do (FlagsAndRoot & 0x1F)
+        /// Flag values:
+        /// - 0x40 - Delete? (If root is not 0?)
+        /// - 0x80 - Unknown
+        /// </remarks>
+        public byte FlagsAndRoot { get; set; }
 
         /// <summary>
         /// Data type, defaults to 0 if not defined
@@ -31,6 +37,10 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// It is unknown if this is version-controlled or
         /// flag-controlled, but it is difficult to tell what uses
         /// which format.
+        /// 
+        /// One version of WISE0001.DLL has the length as 2 bytes,
+        /// notably from an installer that is not that old. In the
+        /// final check, it only seems to check the first byte.
         /// </remarks>
         public ushort DataType { get; set; }
 

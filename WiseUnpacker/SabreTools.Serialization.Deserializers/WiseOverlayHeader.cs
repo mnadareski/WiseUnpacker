@@ -102,7 +102,7 @@ namespace SabreTools.Serialization.Deserializers
             {
                 data.Seek(-2, SeekOrigin.Current);
                 header.InstallScriptDeflatedSize = data.ReadUInt32LittleEndian();
-                header.UnknownU32_4 = data.ReadUInt32LittleEndian();
+                header.CharacterSet = (CharacterSet)data.ReadUInt32LittleEndian();
                 header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
             }
 

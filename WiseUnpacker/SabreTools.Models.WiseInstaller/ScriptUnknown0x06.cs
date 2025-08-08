@@ -23,6 +23,7 @@ namespace SabreTools.Models.WiseInstaller
         /// Values from WISE0001.DLL
         /// - & 0x4000 != 0 -> FUN_1000bb6a
         /// - & 0x3805 != 0 -> 
+        /// 
         /// </remarks>
         public ushort Operand_1 { get; set; } // 0x01 - 0x02
 

@@ -45,7 +45,10 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(overlayHeader.DibDeflatedSize, "DIB deflated size");
             builder.AppendLine(overlayHeader.DibInflatedSize, "DIB inflated size");
             builder.AppendLine(overlayHeader.InstallScriptDeflatedSize, "Install script deflated size");
-            builder.AppendLine(overlayHeader.UnknownU32_4, "Unknown");
+            if (overlayHeader.CharacterSet != null)
+                builder.AppendLine($"Character set: {overlayHeader.CharacterSet} (0x{(uint)overlayHeader.CharacterSet:X4})");
+            else
+                builder.AppendLine((uint?)null, $"Character set");
             builder.AppendLine($"Endianness: {overlayHeader.Endianness} (0x{(uint)overlayHeader.Endianness:X4})");
             builder.AppendLine(overlayHeader.InitTextLen, "Init text length");
             builder.AppendLine(overlayHeader.InitText, "Init text");

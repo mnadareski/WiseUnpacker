@@ -336,7 +336,7 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, EditRegistry data)
         {
             builder.AppendLine($"    Data: EditRegistry");
-            builder.AppendLine(data.Root, $"      Root");
+            builder.AppendLine(data.FlagsAndRoot, $"      Flags and root");
             builder.AppendLine(data.DataType, $"      Data type");
             builder.AppendLine(data.Key, $"      Key");
             builder.AppendLine(data.NewValue, $"      New value");

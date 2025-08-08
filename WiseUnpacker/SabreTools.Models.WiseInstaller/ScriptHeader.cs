@@ -9,13 +9,13 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Flags, unknown mapping
         /// </summary>
-        public byte Flags { get; set; }
+        public byte Flags { get; set; } // 0x00
 
         /// <summary>
         /// Unknown
         /// </summary>
         /// <remarks>4 bytes</remarks>
-        public byte[]? UnknownBytes_1 { get; set; }
+        public byte[]? UnknownBytes_1 { get; set; } // 0x01 - 0x04
 
         /// <summary>
         /// Total deflated size of OP 0x00 files?
@@ -24,24 +24,38 @@ namespace SabreTools.Models.WiseInstaller
         /// This seems to match the offset we can do filesize - SomeOffset1
         /// to get to the script file deflate offset, but not on all
         /// installers..
+        /// 
+        /// Values from WISE0001.DLL
+        /// - 0x400 - Breaks a loop?
+        /// - 0x800 - Returns 0?
         /// </remarks>
-        public uint SomeOffset1 { get; set; }
+        public uint SomeOffset1 { get; set; } // 0x05 - 0x08
 
         /// <summary>
         /// Unknown
         /// </summary>
-        public uint SomeOffset2 { get; set; }
+        /// <remarks>
+        /// Used as a size to allocate memory in WISE0001.DLL
+        /// </remarks>
+        public uint SomeOffset2 { get; set; } // 0x09 - 0x0C
 
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>4 bytes</remarks>
-        public byte[]? UnknownBytes_2 { get; set; }
+        /// <remarks>
+        /// 4 bytes
+        /// 
+        /// In WISE0001.DLL, the first byte of this array is checked
+        /// to be 0x00. If it's not 0x00, then it skips a string, ending
+        /// at the next null terminator. The string at that offset is
+        /// then comapred to ...
+        /// </remarks>
+        public byte[]? UnknownBytes_2 { get; set; } // 0x0D - 0x10
 
         /// <summary>
         /// Creation of this WiseScript.bin since UNIX epoch
         /// </summary>
-        public uint DateTime { get; set; }
+        public uint DateTime { get; set; } // 0x11 - 0x014
 
         /// <summary>
         /// Unknown
@@ -55,12 +69,12 @@ namespace SabreTools.Models.WiseInstaller
         /// byte[1]
         ///     0x00 - ????
         ///     0x10 - EditRegistry data type is 2 bytes
-        public byte[]? Unknown_22 { get; set; }
+        public byte[]? Unknown_22 { get; set; } // 0x15 - 0x2B
 
         /// <summary>
         /// FTP URL for online downloading
         /// </summary>
-        public string? FTPURL { get; set; }
+        public string? FTPURL { get; set; } // 0x2C -
 
         /// <summary>
         /// Log pathname

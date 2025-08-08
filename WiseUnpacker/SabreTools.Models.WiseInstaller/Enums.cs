@@ -1,6 +1,34 @@
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>
+    /// The CharacterSet Enumeration defines the possible sets of
+    /// character glyphs that are defined in fonts for graphics output.
+    /// </summary>
+    /// <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wmf/0d0b32ac-a836-4bd2-a112-b6000a1b4fc9"/> 
+    public enum CharacterSet : uint
+    {
+        ANSI_CHARSET = 0x00000000,
+        DEFAULT_CHARSET = 0x00000001,
+        SYMBOL_CHARSET = 0x00000002,
+        MAC_CHARSET = 0x0000004D,
+        SHIFTJIS_CHARSET = 0x00000080,
+        HANGUL_CHARSET = 0x00000081,
+        JOHAB_CHARSET = 0x00000082,
+        GB2312_CHARSET = 0x00000086,
+        CHINESEBIG5_CHARSET = 0x00000088,
+        GREEK_CHARSET = 0x000000A1,
+        TURKISH_CHARSET = 0x000000A2,
+        VIETNAMESE_CHARSET = 0x000000A3,
+        HEBREW_CHARSET = 0x000000B1,
+        ARABIC_CHARSET = 0x000000B2,
+        BALTIC_CHARSET = 0x000000BA,
+        RUSSIAN_CHARSET = 0x000000CC,
+        THAI_CHARSET = 0x000000DE,
+        EASTEUROPE_CHARSET = 0x000000EE,
+        OEM_CHARSET = 0x000000FF
+    }
+
+    /// <summary>
     /// Endianness of the file(?)
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wiseoverlay.h"/> 
@@ -342,7 +370,7 @@ namespace SabreTools.Models.WiseInstaller
         WISE_FLAG_UNKNOWN_29 = 0x20000000,
 
         /// <summary>
-        /// If enabled, sets an internal flag
+        /// If enabled, sets the same flag as /M4 commandline
         /// </summary>
         WISE_FLAG_UNKNOWN_30 = 0x40000000,
 

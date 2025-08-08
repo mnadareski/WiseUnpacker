@@ -589,7 +589,7 @@ namespace SabreTools.Serialization.Deserializers
             // Read as standard first
             var obj = new EditRegistry();
 
-            obj.Root = data.ReadByteValue();
+            obj.FlagsAndRoot = data.ReadByteValue();
 
             if (longDataValue)
                 obj.DataType = data.ReadUInt16();
