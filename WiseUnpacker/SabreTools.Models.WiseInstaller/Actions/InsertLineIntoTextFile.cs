@@ -19,10 +19,10 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// Encoded as a string, binary representation in script file.
         /// Expected flags:
+        /// - Case Sensitive (0x01)
         /// - Insert Action (unknown)
         /// - Match Criteria (unknown)
         /// - Ignore White Space (unknown)
-        /// - Case Sensitive (unknown)
         /// - Make Backup File (unknown)
         /// </remarks>
         public byte DataFlags { get; set; }
@@ -38,14 +38,14 @@ namespace SabreTools.Models.WiseInstaller.Actions
         public string? TextToInsert { get; set; }
 
         /// <summary>
-        /// Search for Text / Comment Text
+        /// Search for Text
         /// </summary>
-        public string? UnknownString_1 { get; set; }
+        public string? SearchForText { get; set; }
 
         /// <summary>
-        /// Search for Text / Comment Text
+        /// Comment Text
         /// </summary>
-        public string? UnknownString_2 { get; set; }
+        public string? CommentText { get; set; }
 
         /// <summary>
         /// Line number to insert text at, 0 for append to end
