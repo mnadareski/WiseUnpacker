@@ -372,7 +372,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// If enabled, sets the same flag as /M4 commandline
         /// </summary>
-        WISE_FLAG_UNKNOWN_30 = 0x40000000,
+        WISE_FLAG_FORCE_M4 = 0x40000000,
 
         WISE_FLAG_UNKNOWN_31 = 0x80000000,
 
