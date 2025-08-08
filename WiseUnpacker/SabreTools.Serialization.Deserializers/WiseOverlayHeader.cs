@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text;
 using SabreTools.IO.Extensions;
@@ -96,16 +97,24 @@ namespace SabreTools.Serialization.Deserializers
 
             header.DibInflatedSize = data.ReadUInt32LittleEndian();
 
-            // Endianness and init text len are read in a single block
-            header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
-            if (header.Endianness != Endianness.BigEndian && header.Endianness != Endianness.LittleEndian)
+            // Peek at the next 2 bytes
+            uint peek = data.ReadUInt16LittleEndian();
+            data.Seek(-2, SeekOrigin.Current);
+
+            // If the next value is a known Endianness
+            if (Enum.IsDefined(typeof(Endianness), peek))
             {
-                data.Seek(-2, SeekOrigin.Current);
+                header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
+            }
+            else
+            {
+                // The first two values are part of the sizes block above
                 header.InstallScriptDeflatedSize = data.ReadUInt32LittleEndian();
                 header.CharacterSet = (CharacterSet)data.ReadUInt32LittleEndian();
                 header.Endianness = (Endianness)data.ReadUInt16LittleEndian();
             }
 
+            // Endianness and init text len are read in a single block
             header.InitTextLen = data.ReadByteValue();
             if (header.InitTextLen > 0)
             {
