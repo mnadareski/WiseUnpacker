@@ -548,7 +548,7 @@ namespace SabreTools.Serialization.Wrappers
                 string nextPart = longDigits ? $"{filePattern}{fileno:X3}" : $"{filePattern}{fileno:X2}";
                 if (!File.Exists(nextPart))
                 {
-                    if (includeDebug) Console.WriteLine($"Part {filename} was not found");
+                    if (includeDebug) Console.WriteLine($"Part {nextPart} was not found");
                     break;
                 }
 
