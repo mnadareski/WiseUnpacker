@@ -1175,6 +1175,55 @@ namespace SabreTools.Serialization.Wrappers
                         ExtractFile(data, dataStart, unknown0x06, ++normalFileCount, outputDirectory, includeDebug);
                         break;
 
+                    case OperationCode.DeleteFile:
+                        if (state.Data is not DeleteFile deleteFile)
+                            return false;
+
+                        if (includeDebug) Console.WriteLine($"File {deleteFile.Pathname} is supposed to be deleted");
+                        break;
+
+                    case OperationCode.CreateDirectory:
+                        if (state.Data is not CreateDirectory createDirectory)
+                            return false;
+                        if (createDirectory.Pathname == null)
+                            return false;
+
+                        try
+                        {
+                            if (includeDebug) Console.WriteLine($"Directory {createDirectory.Pathname} is being created");
+                            string newDirectoryName = Path.Combine(outputDirectory, createDirectory.Pathname);
+                            Directory.CreateDirectory(newDirectoryName);
+                        }
+                        catch
+                        {
+                            if (includeDebug) Console.WriteLine($"Directory {createDirectory.Pathname} could not be created!");
+                        }
+                        break;
+
+                    case OperationCode.CopyLocalFile:
+                        if (state.Data is not CopyLocalFile copyLocalFile)
+                            return false;
+                        if (copyLocalFile.Source == null)
+                            return false;
+
+                        if (!File.Exists(copyLocalFile.Source))
+                        {
+                            if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} is supposed to be copied to {copyLocalFile.Destination}, but it does not exist!");
+                            break;
+                        }
+
+                        try
+                        {
+                            if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} should be copied to {copyLocalFile.Destination}");
+                            // TODO: Implement file copying
+                        }
+                        catch
+                        {
+                            if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} could not be copied!");
+                        }
+
+                        break;
+
                     case OperationCode.CustomDialogSet:
                         if (state.Data is not CustomDialogSet customDialogSet)
                             return false;
@@ -1189,6 +1238,20 @@ namespace SabreTools.Serialization.Wrappers
 
                         if (getTemporaryFilename.Variable != null)
                             environment[getTemporaryFilename.Variable] = Guid.NewGuid().ToString();
+                        break;
+
+                    case OperationCode.AddTextToInstallLog:
+                        if (state.Data is not AddTextToInstallLog addTextToInstallLog)
+                            return false;
+
+                        // TODO: Write to the install log if enabled
+                        break;
+
+                    case OperationCode.OpenCloseInstallLog:
+                        if (state.Data is not OpenCloseInstallLog openCloseInstallLog)
+                            return false;
+
+                        // TODO: Enable/disable install log
                         break;
 
                     default:

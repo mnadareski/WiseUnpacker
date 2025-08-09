@@ -384,7 +384,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine($"    Data: CopyLocalFile");
             builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.Padding, $"      Padding");
-            builder.AppendLine(data.Source, $"      Source");
+            builder.AppendLine(data.Destination, $"      Destination");
             builder.AppendLine($"      Descriptions");
             builder.AppendLine("      -------------------------");
             if (data.Description == null || data.Description.Length == 0)
@@ -400,7 +400,7 @@ namespace SabreTools.Serialization.Printers
                 }
             }
             builder.AppendLine();
-            builder.AppendLine(data.Destination, $"      Destination");
+            builder.AppendLine(data.Source, $"      Source");
             builder.AppendLine();
         }
 

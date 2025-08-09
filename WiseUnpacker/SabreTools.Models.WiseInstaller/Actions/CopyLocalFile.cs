@@ -25,9 +25,9 @@ namespace SabreTools.Models.WiseInstaller.Actions
         public byte[]? Padding { get; set; } // 0x02 - 0x2A
 
         /// <summary>
-        /// Source file
+        /// Destination path
         /// </summary>
-        public string? Source { get; set; } // 0x2B - ?
+        public string? Destination { get; set; } // 0x2B - ?
 
         /// <summary>
         /// Description, one per language + 1
@@ -35,8 +35,8 @@ namespace SabreTools.Models.WiseInstaller.Actions
         public string[]? Description { get; set; }
 
         /// <summary>
-        /// Destination file
+        /// Source file
         /// </summary>
-        public string? Destination { get; set; }
+        public string? Source { get; set; }
     }
 }

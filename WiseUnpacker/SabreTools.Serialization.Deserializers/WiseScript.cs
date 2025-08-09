@@ -559,7 +559,7 @@ namespace SabreTools.Serialization.Deserializers
 
             obj.Flags = data.ReadUInt16LittleEndian();
             obj.Padding = data.ReadBytes(40);
-            obj.Source = data.ReadNullTerminatedAnsiString();
+            obj.Destination = data.ReadNullTerminatedAnsiString();
 
             obj.Description = new string[languageCount + 1];
             for (int i = 0; i < obj.Description.Length; i++)
@@ -567,7 +567,7 @@ namespace SabreTools.Serialization.Deserializers
                 obj.Description[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
-            obj.Destination = data.ReadNullTerminatedAnsiString();
+            obj.Source = data.ReadNullTerminatedAnsiString();
 
             return obj;
         }
