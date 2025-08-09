@@ -47,40 +47,6 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptDeflateInfo
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptDeflateInfo on success, null on error</returns>
-        private static ScriptDeflateInfo ParseScriptDeflateInfo(Stream data)
-        {
-            var obj = new ScriptDeflateInfo();
-
-            obj.DeflateStart = data.ReadUInt32LittleEndian();
-            obj.DeflateEnd = data.ReadUInt32LittleEndian();
-            obj.InflatedSize = data.ReadUInt32LittleEndian();
-
-            return obj;
-        }
-
-        /// <summary>
-        /// Parse a Stream into a ScriptDeflateInfoContainer
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptDeflateInfoContainer on success, null on error</returns>
-        private static ScriptDeflateInfoContainer ParseScriptDeflateInfoContainer(Stream data, int languageCount)
-        {
-            var obj = new ScriptDeflateInfoContainer();
-
-            obj.Info = new ScriptDeflateInfo[languageCount];
-            for (int i = 0; i < obj.Info.Length; i++)
-            {
-                obj.Info[i] = ParseScriptDeflateInfo(data);
-            }
-
-            return obj;
-        }
-
-        /// <summary>
         /// Parse a Stream into a ScriptHeader
         /// </summary>
         /// <param name="data">Stream to parse</param>
@@ -257,6 +223,8 @@ namespace SabreTools.Serialization.Deserializers
             return [.. states];
         }
 
+        #region State Actions
+
         /// <summary>
         /// Parse a Stream into a InstallFile
         /// </summary>
@@ -431,135 +399,49 @@ namespace SabreTools.Serialization.Deserializers
             for (int i = 0; i < obj.Entries.Length; i++)
             {
                 // Read and store the entry string
-                obj.Entries[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
-                string[] parts = obj.Entries[i].Split((char)0x7F);
+                string entry = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                obj.Entries[i] = entry;
 
                 // Switch based on the function
-                // TODO: Remove after mapping is complete
-                switch (obj.FunctionName)
+                FunctionData? functionData = obj.FunctionName switch
                 {
-                    // Unknown
-                    case "f0":
-                        // TODO: Implement
-                        // Could be either:
-                        // - Set Control Text
-                        // - Set Current Control
-                        break;
+                    "f0" => null, // TODO: Implement
+                    "f1" => null, // TODO: Implement
+                    "f2" => null, // TODO: Implement
+                    "f3" => ParseAddToSystemIni(entry),
+                    "f8" => ParseReadIniValue(entry),
+                    "f9" => ParseGetRegistryKeyValue(entry),
+                    "f10" => ParseRegisterFont(entry),
+                    "f11" => ParseWin32SystemDirectory(entry),
+                    "f12" => ParseCheckConfiguration(entry),
+                    "f13" => ParseSearchForFile(entry),
+                    "f15" => ParseReadWriteBinaryFile(entry),
+                    "f16" => ParseSetVariable(entry),
+                    "f17" => ParseGetEnvironmentVariable(entry),
+                    "f19" => ParseCheckIfFileDirExists(entry),
+                    "f20" => ParseSetFileAttributes(entry),
+                    "f21" => ParseSetFilesBuffers(entry),
+                    "f22" => ParseFindFileInPath(entry),
+                    "f23" => ParseCheckDiskSpace(entry),
+                    "f25" => ParseInsertLineIntoTextFile(entry),
+                    "f27" => ParseParseString(entry),
+                    "f28" => ParseExitInstallation(entry),
+                    "f29" => ParseSelfRegisterOCXsDLLs(entry),
+                    "f30" => null, // TODO: Implement
+                    "f31" => ParseWizardBlockLoop(entry),
+                    "f33" => ParseReadUpdateTextFile(entry),
+                    "f34" => ParsePostToHttpServer(entry),
+                    "f35" => ParsePromptForFilename(entry),
+                    "f36" => ParseStartStopService(entry),
 
-                    // Add to AUTOEXEC.BAT
-                    case "f1":
-                        // TODO: Implement
-                        // Probably this layout: 
-                        // - Flags (numeric) (e.g. "12", "8")
-                        // - Unknown string (empty in samples)
-                        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-                        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-                        // - Unknown string (empty in samples)
-                        // - Numeric value (e.g. "0")
-                        break;
+                    // External and unrecognized functions
+                    _ => ParseExternalDllCall(entry),
+                };
 
-                    // Add to CONFIG.SYS
-                    case "f2":
-                        // TODO: Implement
-                        // Probably this layout: 
-                        // - Flags (numeric) (e.g. "12", "8")
-                        // - Unknown string (empty in samples)
-                        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-                        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-                        // - Unknown string (empty in samples)
-                        // - Numeric value (e.g. "0")
-                        break;
+                // Log if a truely unknown function is found
+                if (functionData is ExternalDllCall edc && string.IsNullOrEmpty(obj.DllPath))
+                    Console.WriteLine($"Unrecognized function: {obj.FunctionName} with parts: {string.Join(", ", edc.Args ?? [])}");
 
-                    // Add to SYSTEM.INI
-                    case "f3": break;
-
-                    // Read INI Value
-                    case "f8": break;
-
-                    // Get Registry Key Value
-                    case "f9": break;
-
-                    // Register Font
-                    case "f10": break;
-
-                    // Win32 System Directory
-                    case "f11": break;
-
-                    // Check Configuration
-                    case "f12": break;
-
-                    // Search for File
-                    case "f13": break;
-
-                    // Read/Write Binary File
-                    case "f15": break;
-
-                    // Set Variable
-                    case "f16": break;
-
-                    // Get Environment Variable
-                    case "f17": break;
-
-                    // Check if File/Dir Exists
-                    case "f19": break;
-
-                    // Set File Attributes
-                    case "f20": break;
-
-                    // Set Files/Buffers
-                    case "f21": break;
-
-                    // Find File in Path
-                    case "f22": break;
-
-                    // Check Disk Space
-                    case "f23": break;
-
-                    // Insert Line Into Text File
-                    case "f25": break;
-
-                    // Parse String
-                    case "f27": break;
-
-                    // Exit Installation
-                    case "f28": break;
-
-                    // Self-Register OCXs/DLLs
-                    case "f29": break;
-
-                    // Unknown DirectX
-                    case "f30":
-                        // TODO: Implement
-                        // Maybe "Modify Component Size"?
-                        // Probably this layout:
-                        // - Flags (numeric)
-                        // - Directory name (e.g. "%INST%\..\DirectX")
-                        // - File name (e.g. "%INST%\..\DirectX\DSETUP.DLL")
-                        // - Offset? (e.g. "2623")
-                        break;
-
-                    // Wizard Block
-                    case "f31": break;
-
-                    // Read/Update Text File
-                    case "f33": break;
-
-                    // Post to HTTP Server
-                    case "f34": break;
-
-                    // Prompt for Filename 
-                    case "f35": break;
-
-                    // Start/Stop Service
-                    case "f36": break;
-
-                    // External DLL Calls
-                    default:
-                        if (string.IsNullOrEmpty(obj.DllPath))
-                            Console.WriteLine($"Unrecognized function: {obj.FunctionName} with parts: {string.Join(", ", parts)}");
-
-                        break;
-                }
             }
 
             return obj;
@@ -905,9 +787,712 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <returns>Filled InvalidOperation on success, null on error</returns>
+        /// <remarks>
+        /// This represents a placeholder. The operations that result in this
+        /// type being parsed should never happen in the state machine.
+        /// </remarks>
         private static InvalidOperation ParseInvalidOperation(Stream data)
         {
             return new InvalidOperation();
         }
+
+        #endregion
+
+        #region Function Actions
+
+        // TODO: Implement f0
+        // Unknown
+        // Could be either:
+        // - Set Control Text
+        // - Set Current Control
+
+        // TODO: Implement f1
+        // Add to AUTOEXEC.BAT
+        // Probably this layout: 
+        // - Flags (numeric) (e.g. "12", "8")
+        // - Unknown string (empty in samples)
+        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+        // - Unknown string (empty in samples)
+        // - Numeric value (e.g. "0")
+
+        // TODO: Implement f2
+        // Add to CONFIG.SYS
+        // Probably this layout: 
+        // - Flags (numeric) (e.g. "12", "8")
+        // - Unknown string (empty in samples)
+        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
+        // - Unknown string (empty in samples)
+        // - Numeric value (e.g. "0")
+
+        /// <summary>
+        /// Parse a string into a AddToSystemIni
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled AddToSystemIni on success, null on error</returns>
+        private static AddToSystemIni ParseAddToSystemIni(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new AddToSystemIni();
+
+            if (parts.Length > 0)
+                obj.DeviceName = parts[0];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a ReadIniValue
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled ReadIniValue on success, null on error</returns>
+        private static ReadIniValue ParseReadIniValue(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new ReadIniValue();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Variable = parts[1];
+
+            if (parts.Length > 2)
+                obj.Pathname = parts[2];
+
+            if (parts.Length > 3)
+                obj.Section = parts[3];
+
+            if (parts.Length > 4)
+                obj.Item = parts[4];
+
+            if (parts.Length > 5)
+                obj.DefaultValue = parts[5];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a GetRegistryKeyValue
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled GetRegistryKeyValue on success, null on error</returns>
+        private static GetRegistryKeyValue ParseGetRegistryKeyValue(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new GetRegistryKeyValue();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Variable = parts[1];
+
+            if (parts.Length > 2)
+                obj.Key = parts[2];
+
+            if (parts.Length > 3)
+                obj.Default = parts[3];
+
+            if (parts.Length > 4)
+                obj.ValueName = parts[4];
+
+            if (parts.Length > 5)
+                obj.Root = parts[5];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a RegisterFont
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled RegisterFont on success, null on error</returns>
+        private static RegisterFont ParseRegisterFont(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new RegisterFont();
+
+            if (parts.Length > 0)
+                obj.FontFileName = parts[0];
+
+            if (parts.Length > 1)
+                obj.FontName = parts[1];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a Win32SystemDirectory
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled Win32SystemDirectory on success, null on error</returns>
+        private static Win32SystemDirectory ParseWin32SystemDirectory(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new Win32SystemDirectory();
+
+            if (parts.Length > 0)
+                obj.VariableName = parts[0];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a CheckConfiguration
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled CheckConfiguration on success, null on error</returns>
+        private static CheckConfiguration ParseCheckConfiguration(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new CheckConfiguration();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Message = parts[1];
+
+            if (parts.Length > 2)
+                obj.Title = parts[2];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a SearchForFile
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled SearchForFile on success, null on error</returns>
+        private static SearchForFile ParseSearchForFile(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new SearchForFile();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Variable = parts[1];
+
+            if (parts.Length > 2)
+                obj.FileName = parts[2];
+
+            if (parts.Length > 3)
+                obj.FileName = parts[3];
+
+            if (parts.Length > 4)
+                obj.MessageText = parts[4];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a ReadWriteBinaryFile
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled ReadWriteBinaryFile on success, null on error</returns>
+        private static ReadWriteBinaryFile ParseReadWriteBinaryFile(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new ReadWriteBinaryFile();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.FilePathname = parts[1];
+
+            if (parts.Length > 2)
+                obj.VariableName = parts[2];
+
+            if (parts.Length > 3 && int.TryParse(parts[3], out int fileOffset))
+                obj.FileOffset = fileOffset;
+
+            if (parts.Length > 4 && int.TryParse(parts[4], out int maxLength))
+                obj.MaxLength = maxLength;
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a SetVariable
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled SetVariable on success, null on error</returns>
+        private static SetVariable ParseSetVariable(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new SetVariable();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Variable = parts[1];
+
+            if (parts.Length > 2)
+                obj.Value = parts[2];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a GetEnvironmentVariable
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled GetEnvironmentVariable on success, null on error</returns>
+        private static GetEnvironmentVariable ParseGetEnvironmentVariable(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new GetEnvironmentVariable();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Variable = parts[1];
+
+            if (parts.Length > 2)
+                obj.Environment = parts[2];
+
+            if (parts.Length > 3)
+                obj.DefaultValue = parts[3];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a CheckIfFileDirExists
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled CheckIfFileDirExists on success, null on error</returns>
+        private static CheckIfFileDirExists ParseCheckIfFileDirExists(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new CheckIfFileDirExists();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Pathname = parts[1];
+
+            if (parts.Length > 2)
+                obj.Message = parts[2];
+
+            if (parts.Length > 3)
+                obj.Title = parts[3];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a SetFileAttributes
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled SetFileAttributes on success, null on error</returns>
+        private static SetFileAttributes ParseSetFileAttributes(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new SetFileAttributes();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.FilePathname = parts[1];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a SetFilesBuffers
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled SetFilesBuffers on success, null on error</returns>
+        private static SetFilesBuffers ParseSetFilesBuffers(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new SetFilesBuffers();
+
+            if (parts.Length > 0)
+                obj.MinimumFiles = parts[0];
+
+            if (parts.Length > 1)
+                obj.MinimumBuffers = parts[1];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a FindFileInPath
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled FindFileInPath on success, null on error</returns>
+        private static FindFileInPath ParseFindFileInPath(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new FindFileInPath();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.VariableName = parts[1];
+
+            if (parts.Length > 2)
+                obj.FileName = parts[2];
+
+            if (parts.Length > 3)
+                obj.DefaultValue = parts[3];
+
+            if (parts.Length > 4)
+                obj.SearchDirectories = parts[4];
+
+            if (parts.Length > 5)
+                obj.Description = parts[5];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a CheckDiskSpace
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled CheckDiskSpace on success, null on error</returns>
+        private static CheckDiskSpace ParseCheckDiskSpace(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new CheckDiskSpace();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.ReserveSpace = parts[1];
+
+            if (parts.Length > 2)
+                obj.StatusVariable = parts[2];
+
+            if (parts.Length > 3)
+                obj.ComponentVariables = parts[3];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a InsertLineIntoTextFile
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled InsertLineIntoTextFile on success, null on error</returns>
+        private static InsertLineIntoTextFile ParseInsertLineIntoTextFile(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new InsertLineIntoTextFile();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.FileToEdit = parts[1];
+
+            if (parts.Length > 2)
+                obj.TextToInsert = parts[2];
+
+            if (parts.Length > 3)
+                obj.SearchForText = parts[3];
+
+            if (parts.Length > 4)
+                obj.CommentText = parts[4];
+
+            if (parts.Length > 5 && int.TryParse(parts[5], out int lineNumber))
+                obj.LineNumber = lineNumber;
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a ParseString
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled ParseString on success, null on error</returns>
+        private static ParseString ParseParseString(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new ParseString();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Source = parts[1];
+
+            if (parts.Length > 2)
+                obj.PatternPosition = parts[2];
+
+            if (parts.Length > 3)
+                obj.DestinationVariable1 = parts[3];
+
+            if (parts.Length > 4)
+                obj.DestinationVariable2 = parts[4];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a ExitInstallation
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled ExitInstallation on success, null on error</returns>
+        private static ExitInstallation ParseExitInstallation(string data)
+        {
+            return new ExitInstallation();
+        }
+
+        /// <summary>
+        /// Parse a string into a SelfRegisterOCXsDLLs
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled SelfRegisterOCXsDLLs on success, null on error</returns>
+        private static SelfRegisterOCXsDLLs ParseSelfRegisterOCXsDLLs(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new SelfRegisterOCXsDLLs();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Description = parts[1];
+
+            return obj;
+        }
+
+        // TODO: Implement f30
+        // Maybe "Modify Component Size"?
+        // Probably this layout:
+        // - Flags (numeric)
+        // - Directory name (e.g. "%INST%\..\DirectX")
+        // - File name (e.g. "%INST%\..\DirectX\DSETUP.DLL")
+        // - Offset? (e.g. "2623")
+
+        /// <summary>
+        /// Parse a string into a WizardBlockLoop
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled WizardBlockLoop on success, null on error</returns>
+        private static WizardBlockLoop ParseWizardBlockLoop(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new WizardBlockLoop();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            // TODO: This needs to be fixed when the model is updated
+
+            if (parts.Length > 1)
+                obj.DirectionVariable = parts[1];
+
+            if (parts.Length > 2)
+                obj.DisplayVariable = parts[2];
+
+            if (parts.Length > 3 && int.TryParse(parts[3], out int xPosition))
+                obj.XPosition = xPosition;
+
+            if (parts.Length > 4 && int.TryParse(parts[4], out int yPosition))
+                obj.YPosition = yPosition;
+
+            if (parts.Length > 5 && int.TryParse(parts[5], out int fillerColor))
+                obj.FillerColor = fillerColor;
+
+            if (parts.Length > 6)
+                obj.Operand_6 = parts[6];
+
+            if (parts.Length > 7)
+                obj.Operand_7 = parts[7];
+
+            if (parts.Length > 8)
+                obj.Operand_8 = parts[8];
+
+            if (parts.Length > 9)
+                obj.DialogVariableValueCompare = parts[9];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a ReadUpdateTextFile
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled ReadUpdateTextFile on success, null on error</returns>
+        private static ReadUpdateTextFile ParseReadUpdateTextFile(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new ReadUpdateTextFile();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Variable = parts[1];
+
+            if (parts.Length > 2)
+                obj.Pathname = parts[2];
+
+            if (parts.Length > 3)
+                obj.LanguageStrings = parts[3];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a PostToHttpServer
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled PostToHttpServer on success, null on error</returns>
+        private static PostToHttpServer ParsePostToHttpServer(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new PostToHttpServer();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.URL = parts[1];
+
+            if (parts.Length > 2)
+                obj.PostData = parts[2];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a PromptForFilename
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled PromptForFilename on success, null on error</returns>
+        private static PromptForFilename ParsePromptForFilename(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new PromptForFilename();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.DestinationVariable = parts[1];
+
+            if (parts.Length > 2)
+                obj.DefaultExtension = parts[2];
+
+            if (parts.Length > 3)
+                obj.DialogTitle = parts[3];
+
+            if (parts.Length > 4)
+                obj.FilterList = parts[4];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a StartStopService
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled StartStopService on success, null on error</returns>
+        private static StartStopService ParseStartStopService(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new StartStopService();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte operation))
+                obj.Operation = operation;
+
+            if (parts.Length > 1)
+                obj.ServiceName = parts[1];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a ExternalDllCall
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled ExternalDllCall on success, null on error</returns>
+        private static ExternalDllCall ParseExternalDllCall(string data)
+        {
+            var obj = new ExternalDllCall();
+
+            obj.Args = data.Split((char)0x7F);
+
+            return obj;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Parse a Stream into a ScriptDeflateInfo
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled ScriptDeflateInfo on success, null on error</returns>
+        private static ScriptDeflateInfo ParseScriptDeflateInfo(Stream data)
+        {
+            var obj = new ScriptDeflateInfo();
+
+            obj.DeflateStart = data.ReadUInt32LittleEndian();
+            obj.DeflateEnd = data.ReadUInt32LittleEndian();
+            obj.InflatedSize = data.ReadUInt32LittleEndian();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into a ScriptDeflateInfoContainer
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled ScriptDeflateInfoContainer on success, null on error</returns>
+        private static ScriptDeflateInfoContainer ParseScriptDeflateInfoContainer(Stream data, int languageCount)
+        {
+            var obj = new ScriptDeflateInfoContainer();
+
+            obj.Info = new ScriptDeflateInfo[languageCount];
+            for (int i = 0; i < obj.Info.Length; i++)
+            {
+                obj.Info[i] = ParseScriptDeflateInfo(data);
+            }
+
+            return obj;
+        }
+
+        #endregion
     }
 }

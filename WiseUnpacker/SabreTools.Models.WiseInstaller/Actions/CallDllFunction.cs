@@ -22,6 +22,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// Expected Values:
         /// - Start block if function returns true (0x02 or 0x03)
         /// - Loop while function returns true (0x02 or 0x03)
+        /// - Internal function? (0x04)
         /// </remarks>
         public byte Flags { get; set; }
 
