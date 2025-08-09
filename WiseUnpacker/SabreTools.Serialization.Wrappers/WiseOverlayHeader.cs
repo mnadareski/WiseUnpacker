@@ -1253,12 +1253,6 @@ namespace SabreTools.Serialization.Wrappers
                         if (copyLocalFile.Destination == null)
                             return false;
 
-                        if (!File.Exists(copyLocalFile.Source))
-                        {
-                            if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} is supposed to be copied to {copyLocalFile.Destination}, but it does not exist!");
-                            break;
-                        }
-
                         try
                         {
                             if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} is being copied to {copyLocalFile.Destination}");
@@ -1277,6 +1271,13 @@ namespace SabreTools.Serialization.Wrappers
                             }
 
                             oldFilePath = oldFilePath.Replace("%", string.Empty);
+
+                            // Sanity check
+                            if (!File.Exists(oldFilePath))
+                            {
+                                if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} is supposed to be copied to {copyLocalFile.Destination}, but it does not exist!");
+                                break;
+                            }
 
                             // Ensure directory separators are consistent
                             string newFilePath = Path.Combine(outputDirectory, copyLocalFile.Destination);
