@@ -1294,6 +1294,11 @@ namespace SabreTools.Serialization.Wrappers
 
                             newFilePath = newFilePath.Replace("%", string.Empty);
 
+                            // Sanity check
+                            string? newFileDirectory = Path.GetDirectoryName(newFilePath);
+                            if (newFileDirectory != null && !Directory.Exists(newFileDirectory))
+                                Directory.CreateDirectory(newFileDirectory);
+
                             File.Copy(oldFilePath, newFilePath);
                         }
                         catch
