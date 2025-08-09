@@ -488,6 +488,9 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
+            // Strip the extension for pattern matching
+            name = Path.GetFileNameWithoutExtension(name);
+
             // Get the pattern for file naming
             string filePattern;
             bool longDigits;

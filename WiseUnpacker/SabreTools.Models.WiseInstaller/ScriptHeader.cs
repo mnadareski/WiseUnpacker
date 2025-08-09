@@ -26,6 +26,7 @@ namespace SabreTools.Models.WiseInstaller
         /// installers..
         /// 
         /// Values from WISE0001.DLL
+        /// - < 0   - Display abort installation message and return 1?
         /// - 0x400 - Breaks a loop?
         /// - 0x800 - Returns 0?
         /// </remarks>
@@ -55,7 +56,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Creation of this WiseScript.bin since UNIX epoch
         /// </summary>
-        public uint DateTime { get; set; } // 0x11 - 0x014
+        public uint DateTime { get; set; } // 0x11 - 0x14
 
         /// <summary>
         /// Unknown
