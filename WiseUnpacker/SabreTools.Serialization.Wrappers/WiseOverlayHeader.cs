@@ -508,30 +508,42 @@ namespace SabreTools.Serialization.Wrappers
             }
 
             // Get the pattern for file naming
-            string filePattern;
-            bool longDigits;
-            if (File.Exists($"{filename}.W02"))
+            string filePattern = string.Empty;
+            bool longDigits = false;
+
+            byte firstIndex = 0;
+            bool foundStart = false;
+            for (; firstIndex < 3; firstIndex++)
             {
-                filePattern = $"{filename}.W";
-                longDigits = false;
-            }
-            else if (File.Exists($"{filename}.w02"))
-            {
-                filePattern = $"{filename}.w";
-                longDigits = false;
-            }
-            else if (File.Exists($"{filename}.002"))
-            {
-                filePattern = $"{filename}.";
-                longDigits = true;
-            }
-            else
-            {
-                return true;
+                if (File.Exists($"{filename}.W0{firstIndex}"))
+                {
+                    foundStart = true;
+                    filePattern = $"{filename}.W";
+                    longDigits = false;
+                    break;
+                }
+                else if (File.Exists($"{filename}.w0{firstIndex}"))
+                {
+                    foundStart = true;
+                    filePattern = $"{filename}.w";
+                    longDigits = false;
+                    break;
+                }
+                else if (File.Exists($"{filename}.00{firstIndex}"))
+                {
+                    foundStart = true;
+                    filePattern = $"{filename}.";
+                    longDigits = true;
+                    break;
+                }
             }
 
+            // If no starting part has been found
+            if (!foundStart)
+                return true;
+
             // Loop through and try to read all additional files
-            for (byte fileno = 2; ; fileno++)
+            for (byte fileno = firstIndex; ; fileno++)
             {
                 string nextPart = longDigits ? $"{filePattern}{fileno:X3}" : $"{filePattern}{fileno:X2}";
                 if (!File.Exists(nextPart))
@@ -541,7 +553,7 @@ namespace SabreTools.Serialization.Wrappers
                 }
 
                 // Debug statement
-                    if (includeDebug) Console.WriteLine($"Part {nextPart} was found and appended");
+                if (includeDebug) Console.WriteLine($"Part {nextPart} was found and appended");
 
                 var fileStream = File.Open(nextPart, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream.AddStream(fileStream);
