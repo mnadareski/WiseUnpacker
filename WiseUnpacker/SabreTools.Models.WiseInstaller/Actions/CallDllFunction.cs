@@ -51,11 +51,6 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// One entry per language count
         /// </summary>
-        /// <remarks>
-        /// TODO: Figure out if it's more appropriate to store
-        /// the string data in its unparsed form or as the concrete
-        /// class data, where possible.
-        /// </remarks>
-        public string[]? Entries { get; set; }
+        public FunctionData?[]? Entries { get; set; }
     }
 }

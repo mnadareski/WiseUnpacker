@@ -142,7 +142,7 @@ namespace SabreTools.Serialization.Printers
                     case RenameFileDirectory data: Print(builder, data); break;
                     case OpenCloseInstallLog data: Print(builder, data); break;
                     case ElseIfStatement data: Print(builder, data); break;
-                    
+
 
                     // Should never happen
                     case InvalidOperation data: Print(builder, data); break;
@@ -150,6 +150,8 @@ namespace SabreTools.Serialization.Printers
                 }
             }
         }
+
+        #region State Actions
 
         private static void Print(StringBuilder builder, InstallFile data)
         {
@@ -247,42 +249,6 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, ScriptDeflateInfoContainer? data, int indent)
-        {
-            string padding = string.Empty.PadLeft(indent, ' ');
-
-            builder.AppendLine($"{padding}Deflate info container:");
-            builder.AppendLine($"{padding}-------------------------");
-            builder.AppendLine($"{padding}Info:");
-            if (data?.Info == null || data.Info.Length == 0)
-            {
-                builder.AppendLine("  No deflate info items");
-                return;
-            }
-
-            for (int i = 0; i < data.Info.Length; i++)
-            {
-                var entry = data.Info[i];
-                Print(builder, entry, indent + 2, i);
-            }
-        }
-
-        private static void Print(StringBuilder builder, ScriptDeflateInfo data, int indent, int index = -1)
-        {
-            string padding = string.Empty.PadLeft(indent, ' ');
-
-            if (index >= 0)
-                builder.AppendLine($"{padding}Deflate info {index}");
-            else
-                builder.AppendLine($"{padding}Deflate info");
-
-            builder.AppendLine($"{padding}-------------------------");
-            builder.AppendLine(data.DeflateStart, $"{padding}  Deflate start");
-            builder.AppendLine(data.DeflateEnd, $"{padding}  Deflate end");
-            builder.AppendLine(data.InflatedSize, $"{padding}  Inflated size");
-            builder.AppendLine();
-        }
-
         private static void Print(StringBuilder builder, ExecuteProgram data)
         {
             builder.AppendLine($"    Data: ExecuteProgram");
@@ -313,14 +279,44 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine("      -------------------------");
             if (data.Entries == null || data.Entries.Length == 0)
             {
-                builder.AppendLine("      No entry strings");
+                builder.AppendLine("      No entry data");
             }
             else
             {
                 for (int i = 0; i < data.Entries.Length; i++)
                 {
                     var entry = data.Entries[i];
-                    builder.AppendLine($"      Entry {i}: {entry}");
+                    switch (entry)
+                    {
+                        case AddToSystemIni args: Print(builder, args, i); break;
+                        case ReadIniValue args: Print(builder, args, i); break;
+                        case GetRegistryKeyValue args: Print(builder, args, i); break;
+                        case RegisterFont args: Print(builder, args, i); break;
+                        case Win32SystemDirectory args: Print(builder, args, i); break;
+                        case CheckConfiguration args: Print(builder, args, i); break;
+                        case SearchForFile args: Print(builder, args, i); break;
+                        case ReadWriteBinaryFile args: Print(builder, args, i); break;
+                        case SetVariable args: Print(builder, args, i); break;
+                        case GetEnvironmentVariable args: Print(builder, args, i); break;
+                        case CheckIfFileDirExists args: Print(builder, args, i); break;
+                        case SetFileAttributes args: Print(builder, args, i); break;
+                        case SetFilesBuffers args: Print(builder, args, i); break;
+                        case FindFileInPath args: Print(builder, args, i); break;
+                        case CheckDiskSpace args: Print(builder, args, i); break;
+                        case InsertLineIntoTextFile args: Print(builder, args, i); break;
+                        case ParseString args: Print(builder, args, i); break;
+                        case ExitInstallation args: Print(builder, args, i); break;
+                        case SelfRegisterOCXsDLLs args: Print(builder, args, i); break;
+                        case WizardBlockLoop args: Print(builder, args, i); break;
+                        case ReadUpdateTextFile args: Print(builder, args, i); break;
+                        case PostToHttpServer args: Print(builder, args, i); break;
+                        case PromptForFilename args: Print(builder, args, i); break;
+                        case StartStopService args: Print(builder, args, i); break;
+                        case ExternalDllCall args: Print(builder, args, i); break;
+
+                        // Should never happen
+                        default: builder.AppendLine($"      Entry {i}: [NULL]"); break;
+                    }
                 }
             }
             builder.AppendLine();
@@ -511,5 +507,297 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine($"    Data: InvalidOperation");
             builder.AppendLine();
         }
+
+        #endregion
+
+        #region Function Actions
+
+        private static void Print(StringBuilder builder, AddToSystemIni data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: AddToSystemIni");
+            builder.AppendLine(data.DeviceName, $"        Device name");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ReadIniValue data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: ReadIniValue");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Variable, $"        Variable");
+            builder.AppendLine(data.Pathname, $"        Pathname");
+            builder.AppendLine(data.Section, $"        Section");
+            builder.AppendLine(data.Item, $"        Item");
+            builder.AppendLine(data.DefaultValue, $"        Default value");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, GetRegistryKeyValue data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: GetRegistryKeyValue");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Variable, $"        Variable");
+            builder.AppendLine(data.Key, $"        Key");
+            builder.AppendLine(data.Default, $"        Default");
+            builder.AppendLine(data.ValueName, $"        Value name");
+            builder.AppendLine(data.Root, $"        Root");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, RegisterFont data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: RegisterFont");
+            builder.AppendLine(data.FontFileName, $"        Font file name");
+            builder.AppendLine(data.FontName, $"        Font name");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, Win32SystemDirectory data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: Win32SystemDirectory");
+            builder.AppendLine(data.VariableName, $"        Variable name");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, CheckConfiguration data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: CheckConfiguration");
+            builder.AppendLine(data.DataFlags, $"Data flags");
+            builder.AppendLine(data.Message, $"        Message");
+            builder.AppendLine(data.Title, $"        Title");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, SearchForFile data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: SearchForFile");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Variable, $"        Variable");
+            builder.AppendLine(data.FileName, $"        File name");
+            builder.AppendLine(data.DefaultValue, $"        Default value");
+            builder.AppendLine(data.MessageText, $"        Message text");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ReadWriteBinaryFile data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: ReadWriteBinaryFile");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.FilePathname, $"        File pathname");
+            builder.AppendLine(data.VariableName, $"        Variable name");
+            builder.AppendLine(data.FileOffset, $"        File offset");
+            builder.AppendLine(data.MaxLength, $"        Max length");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, SetVariable data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: SetVariable");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Variable, $"        Variable");
+            builder.AppendLine(data.Value, $"        Value");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, GetEnvironmentVariable data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: GetEnvironmentVariable");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Variable, $"        Variable");
+            builder.AppendLine(data.Environment, $"        Environment");
+            builder.AppendLine(data.DefaultValue, $"        Default value");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, CheckIfFileDirExists data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: CheckIfFileDirExists");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Pathname, $"        Pathname");
+            builder.AppendLine(data.Message, $"        Message");
+            builder.AppendLine(data.Title, $"        Title");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, SetFileAttributes data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: SetFileAttributes");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.FilePathname, $"        File pathname");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, SetFilesBuffers data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: SetFilesBuffers");
+            builder.AppendLine(data.MinimumFiles, $"        Minimum files");
+            builder.AppendLine(data.MinimumBuffers, $"        Minimum buffers");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, FindFileInPath data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: FindFileInPath");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.VariableName, $"        Variable name");
+            builder.AppendLine(data.FileName, $"        File name");
+            builder.AppendLine(data.DefaultValue, $"        Default value");
+            builder.AppendLine(data.SearchDirectories, $"        Search directories");
+            builder.AppendLine(data.Description, $"        Description");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, CheckDiskSpace data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: CheckDiskSpace");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.ReserveSpace, $"        Reserve space");
+            builder.AppendLine(data.StatusVariable, $"        Status variable");
+            builder.AppendLine(data.ComponentVariables, $"        Component variables");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, InsertLineIntoTextFile data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: InsertLineIntoTextFile");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.FileToEdit, $"        File to edit");
+            builder.AppendLine(data.TextToInsert, $"        Text to insert");
+            builder.AppendLine(data.SearchForText, $"        Search for text");
+            builder.AppendLine(data.CommentText, $"        Comment text");
+            builder.AppendLine(data.LineNumber, $"        Line number");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ParseString data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: ParseString");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Source, $"        Source");
+            builder.AppendLine(data.PatternPosition, $"        Pattern position");
+            builder.AppendLine(data.DestinationVariable1, $"        Destination variable 1");
+            builder.AppendLine(data.DestinationVariable2, $"        Destination variable 2");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ExitInstallation data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: ExitInstallation");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, SelfRegisterOCXsDLLs data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: SelfRegisterOCXsDLLs");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Description, $"        Description");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, WizardBlockLoop data, int i)
+        {
+            // TODO: Fix this when the model is updated
+            builder.AppendLine($"      Entry {i}: WizardBlockLoop");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.DirectionVariable, $"        Direction variable");
+            builder.AppendLine(data.DisplayVariable, $"        Display variable");
+            builder.AppendLine(data.XPosition, $"        X position");
+            builder.AppendLine(data.YPosition, $"        Y position");
+            builder.AppendLine(data.FillerColor, $"        Filler color");
+            builder.AppendLine(data.Operand_6, $"        Operand 6");
+            builder.AppendLine(data.Operand_7, $"        Operand 7");
+            builder.AppendLine(data.Operand_8, $"        Operand 8");
+            builder.AppendLine(data.DialogVariableValueCompare, $"        Dialog variable value compare");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ReadUpdateTextFile data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: ReadUpdateTextFile");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Variable, $"        Variable");
+            builder.AppendLine(data.Pathname, $"        Pathname");
+            builder.AppendLine(data.LanguageStrings, $"        Language strings");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, PostToHttpServer data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: PostToHttpServer");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.URL, $"        URL");
+            builder.AppendLine(data.PostData, $"        POST data");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, PromptForFilename data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: PromptForFilename");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.DestinationVariable, $"        Destination variable");
+            builder.AppendLine(data.DefaultExtension, $"        Default extension");
+            builder.AppendLine(data.DialogTitle, $"        Dialog title");
+            builder.AppendLine(data.FilterList, $"        Filter list");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, StartStopService data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: StartStopService");
+            builder.AppendLine(data.Operation, $"        Operation");
+            builder.AppendLine(data.ServiceName, $"        Service name");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, ExternalDllCall data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: ExternalDllCall");
+            if (data.Args == null)
+                builder.AppendLine((string?)null, $"        Args");
+            else
+                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine();
+        }
+
+        #endregion
+
+        #region Additional
+
+        private static void Print(StringBuilder builder, ScriptDeflateInfoContainer? data, int indent)
+        {
+            string padding = string.Empty.PadLeft(indent, ' ');
+
+            builder.AppendLine($"{padding}Deflate info container:");
+            builder.AppendLine($"{padding}-------------------------");
+            builder.AppendLine($"{padding}Info:");
+            if (data?.Info == null || data.Info.Length == 0)
+            {
+                builder.AppendLine("  No deflate info items");
+                return;
+            }
+
+            for (int i = 0; i < data.Info.Length; i++)
+            {
+                var entry = data.Info[i];
+                Print(builder, entry, indent + 2, i);
+            }
+        }
+
+        private static void Print(StringBuilder builder, ScriptDeflateInfo data, int indent, int index = -1)
+        {
+            string padding = string.Empty.PadLeft(indent, ' ');
+
+            if (index >= 0)
+                builder.AppendLine($"{padding}Deflate info {index}");
+            else
+                builder.AppendLine($"{padding}Deflate info");
+
+            builder.AppendLine($"{padding}-------------------------");
+            builder.AppendLine(data.DeflateStart, $"{padding}  Deflate start");
+            builder.AppendLine(data.DeflateEnd, $"{padding}  Deflate end");
+            builder.AppendLine(data.InflatedSize, $"{padding}  Inflated size");
+            builder.AppendLine();
+        }
+
+        #endregion
     }
 }

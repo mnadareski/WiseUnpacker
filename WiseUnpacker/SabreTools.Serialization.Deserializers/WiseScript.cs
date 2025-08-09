@@ -395,51 +395,48 @@ namespace SabreTools.Serialization.Deserializers
                 obj.ReturnVariable = data.ReadNullTerminatedAnsiString();
             }
 
-            obj.Entries = new string[languageCount];
+            obj.Entries = new FunctionData?[languageCount];
             for (int i = 0; i < obj.Entries.Length; i++)
             {
-                // Read and store the entry string
-                string entry = data.ReadNullTerminatedAnsiString() ?? string.Empty;
-                obj.Entries[i] = entry;
-
                 // Switch based on the function
-                FunctionData? functionData = obj.FunctionName switch
+                string entryString = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                obj.Entries[i] = obj.FunctionName switch
                 {
                     "f0" => null, // TODO: Implement
                     "f1" => null, // TODO: Implement
                     "f2" => null, // TODO: Implement
-                    "f3" => ParseAddToSystemIni(entry),
-                    "f8" => ParseReadIniValue(entry),
-                    "f9" => ParseGetRegistryKeyValue(entry),
-                    "f10" => ParseRegisterFont(entry),
-                    "f11" => ParseWin32SystemDirectory(entry),
-                    "f12" => ParseCheckConfiguration(entry),
-                    "f13" => ParseSearchForFile(entry),
-                    "f15" => ParseReadWriteBinaryFile(entry),
-                    "f16" => ParseSetVariable(entry),
-                    "f17" => ParseGetEnvironmentVariable(entry),
-                    "f19" => ParseCheckIfFileDirExists(entry),
-                    "f20" => ParseSetFileAttributes(entry),
-                    "f21" => ParseSetFilesBuffers(entry),
-                    "f22" => ParseFindFileInPath(entry),
-                    "f23" => ParseCheckDiskSpace(entry),
-                    "f25" => ParseInsertLineIntoTextFile(entry),
-                    "f27" => ParseParseString(entry),
-                    "f28" => ParseExitInstallation(entry),
-                    "f29" => ParseSelfRegisterOCXsDLLs(entry),
+                    "f3" => ParseAddToSystemIni(entryString),
+                    "f8" => ParseReadIniValue(entryString),
+                    "f9" => ParseGetRegistryKeyValue(entryString),
+                    "f10" => ParseRegisterFont(entryString),
+                    "f11" => ParseWin32SystemDirectory(entryString),
+                    "f12" => ParseCheckConfiguration(entryString),
+                    "f13" => ParseSearchForFile(entryString),
+                    "f15" => ParseReadWriteBinaryFile(entryString),
+                    "f16" => ParseSetVariable(entryString),
+                    "f17" => ParseGetEnvironmentVariable(entryString),
+                    "f19" => ParseCheckIfFileDirExists(entryString),
+                    "f20" => ParseSetFileAttributes(entryString),
+                    "f21" => ParseSetFilesBuffers(entryString),
+                    "f22" => ParseFindFileInPath(entryString),
+                    "f23" => ParseCheckDiskSpace(entryString),
+                    "f25" => ParseInsertLineIntoTextFile(entryString),
+                    "f27" => ParseParseString(entryString),
+                    "f28" => ParseExitInstallation(entryString),
+                    "f29" => ParseSelfRegisterOCXsDLLs(entryString),
                     "f30" => null, // TODO: Implement
-                    "f31" => ParseWizardBlockLoop(entry),
-                    "f33" => ParseReadUpdateTextFile(entry),
-                    "f34" => ParsePostToHttpServer(entry),
-                    "f35" => ParsePromptForFilename(entry),
-                    "f36" => ParseStartStopService(entry),
+                    "f31" => ParseWizardBlockLoop(entryString),
+                    "f33" => ParseReadUpdateTextFile(entryString),
+                    "f34" => ParsePostToHttpServer(entryString),
+                    "f35" => ParsePromptForFilename(entryString),
+                    "f36" => ParseStartStopService(entryString),
 
                     // External and unrecognized functions
-                    _ => ParseExternalDllCall(entry),
+                    _ => ParseExternalDllCall(entryString),
                 };
 
                 // Log if a truely unknown function is found
-                if (functionData is ExternalDllCall edc && string.IsNullOrEmpty(obj.DllPath))
+                if (obj.Entries[i] is ExternalDllCall edc && string.IsNullOrEmpty(obj.DllPath))
                     Console.WriteLine($"Unrecognized function: {obj.FunctionName} with parts: {string.Join(", ", edc.Args ?? [])}");
 
             }
