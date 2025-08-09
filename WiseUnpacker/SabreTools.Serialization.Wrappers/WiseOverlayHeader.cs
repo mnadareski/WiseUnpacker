@@ -1215,7 +1215,18 @@ namespace SabreTools.Serialization.Wrappers
                         try
                         {
                             if (includeDebug) Console.WriteLine($"Directory {createDirectory.Pathname} is being created");
+
+                            // Ensure directory separators are consistent
                             string newDirectoryName = Path.Combine(outputDirectory, createDirectory.Pathname);
+                            if (Path.DirectorySeparatorChar == '\\')
+                                newDirectoryName = newDirectoryName.Replace('/', '\\');
+                            else if (Path.DirectorySeparatorChar == '/')
+                                newDirectoryName = newDirectoryName.Replace('\\', '/');
+
+                            // Remove wildcards from end of the path
+                            if (newDirectoryName.EndsWith("*.*"))
+                                newDirectoryName = newDirectoryName.Substring(0, newDirectoryName.Length - 4);
+
                             Directory.CreateDirectory(newDirectoryName);
                         }
                         catch
@@ -1241,11 +1252,24 @@ namespace SabreTools.Serialization.Wrappers
                         try
                         {
                             if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} is being copied to {copyLocalFile.Destination}");
-                            string oldFilePath = copyLocalFile.Source;
-                            if (sourceDirectory != null)
-                                oldFilePath = Path.Combine(sourceDirectory, oldFilePath);
 
+                            // Ensure directory separators are consistent
+                            string oldFilePath = copyLocalFile.Source;
+                            if (Path.DirectorySeparatorChar == '\\')
+                                oldFilePath = oldFilePath.Replace('/', '\\');
+                            else if (Path.DirectorySeparatorChar == '/')
+                                oldFilePath = oldFilePath.Replace('\\', '/');
+
+                            // Replace the installer directory variable
+                            if (sourceDirectory != null)
+                                oldFilePath = oldFilePath.Replace("%INST%", sourceDirectory);
+
+                            // Ensure directory separators are consistent
                             string newFilePath = Path.Combine(outputDirectory, copyLocalFile.Destination);
+                            if (Path.DirectorySeparatorChar == '\\')
+                                newFilePath = newFilePath.Replace('/', '\\');
+                            else if (Path.DirectorySeparatorChar == '/')
+                                newFilePath = newFilePath.Replace('\\', '/');
 
                             File.Copy(oldFilePath, newFilePath);
                         }
