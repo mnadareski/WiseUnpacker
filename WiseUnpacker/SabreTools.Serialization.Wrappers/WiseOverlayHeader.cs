@@ -208,7 +208,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
 
             // If the file could not be opened
-            if (!OpenFile(filename, out var stream))
+            if (!OpenFile(filename, includeDebug, out var stream))
                 return false;
 
             return ExtractAll(stream, outputDirectory, includeDebug);
@@ -461,24 +461,40 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Open a potential WISE installer file and any additional files
         /// </summary>
+        /// <param name="filename">Input filename or base name to read from</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if the file could be opened, false otherwise</returns>
-        private static bool OpenFile(string name, out ReadOnlyCompositeStream? stream)
+        private static bool OpenFile(string filename, bool includeDebug, out ReadOnlyCompositeStream? stream)
         {
             // If the file exists as-is
-            if (File.Exists(name))
+            if (File.Exists(filename))
             {
-                var fileStream = File.Open(name, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                var fileStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream = new ReadOnlyCompositeStream([fileStream]);
 
+                // Debug statement
+                if (includeDebug) Console.WriteLine($"File {filename} was found and opened");
+
                 // Strip the extension
-                name = Path.GetFileNameWithoutExtension(name);
+                filename = Path.GetFileNameWithoutExtension(filename);
             }
 
             // If the base name was provided, try to open the associated exe
-            else if (File.Exists($"{name}.exe"))
+            else if (File.Exists($"{filename}.EXE"))
             {
-                var fileStream = File.Open($"{name}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                var fileStream = File.Open($"{filename}.EXE", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream = new ReadOnlyCompositeStream([fileStream]);
+
+                // Debug statement
+                if (includeDebug) Console.WriteLine($"File {filename}.EXE was found and opened");
+            }
+            else if (File.Exists($"{filename}.exe"))
+            {
+                var fileStream = File.Open($"{filename}.exe", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                stream = new ReadOnlyCompositeStream([fileStream]);
+
+                // Debug statement
+                if (includeDebug) Console.WriteLine($"File {filename}.exe was found and opened");
             }
 
             // Otherwise, the file cannot be opened
@@ -488,25 +504,22 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            // Strip the extension for pattern matching
-            name = Path.GetFileNameWithoutExtension(name);
-
             // Get the pattern for file naming
             string filePattern;
             bool longDigits;
-            if (File.Exists($"{name}.W02"))
+            if (File.Exists($"{filename}.W02"))
             {
-                filePattern = $"{name}.W";
+                filePattern = $"{filename}.W";
                 longDigits = false;
             }
-            else if (File.Exists($"{name}.w02"))
+            else if (File.Exists($"{filename}.w02"))
             {
-                filePattern = $"{name}.w";
+                filePattern = $"{filename}.w";
                 longDigits = false;
             }
-            else if (File.Exists($"{name}.002"))
+            else if (File.Exists($"{filename}.002"))
             {
-                filePattern = $"{name}.";
+                filePattern = $"{filename}.";
                 longDigits = true;
             }
             else
@@ -519,7 +532,13 @@ namespace SabreTools.Serialization.Wrappers
             {
                 string nextPart = longDigits ? $"{filePattern}{fileno:X3}" : $"{filePattern}{fileno:X2}";
                 if (!File.Exists(nextPart))
+                {
+                    if (includeDebug) Console.WriteLine($"Part {filename} was not found");
                     break;
+                }
+
+                // Debug statement
+                    if (includeDebug) Console.WriteLine($"Part {nextPart} was found and appended");
 
                 var fileStream = File.Open(nextPart, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream.AddStream(fileStream);
