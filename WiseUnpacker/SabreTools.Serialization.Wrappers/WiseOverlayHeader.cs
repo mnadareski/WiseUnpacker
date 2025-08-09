@@ -511,25 +511,25 @@ namespace SabreTools.Serialization.Wrappers
             string filePattern = string.Empty;
             bool longDigits = false;
 
-            byte firstIndex = 0;
+            byte fileno = 0;
             bool foundStart = false;
-            for (; firstIndex < 3; firstIndex++)
+            for (; fileno < 3; fileno++)
             {
-                if (File.Exists($"{filename}.W0{firstIndex}"))
+                if (File.Exists($"{filename}.W0{fileno}"))
                 {
                     foundStart = true;
                     filePattern = $"{filename}.W";
                     longDigits = false;
                     break;
                 }
-                else if (File.Exists($"{filename}.w0{firstIndex}"))
+                else if (File.Exists($"{filename}.w0{fileno}"))
                 {
                     foundStart = true;
                     filePattern = $"{filename}.w";
                     longDigits = false;
                     break;
                 }
-                else if (File.Exists($"{filename}.00{firstIndex}"))
+                else if (File.Exists($"{filename}.00{fileno}"))
                 {
                     foundStart = true;
                     filePattern = $"{filename}.";
@@ -543,7 +543,7 @@ namespace SabreTools.Serialization.Wrappers
                 return true;
 
             // Loop through and try to read all additional files
-            for (byte fileno = firstIndex; ; fileno++)
+            for (; ; fileno++)
             {
                 string nextPart = longDigits ? $"{filePattern}{fileno:X3}" : $"{filePattern}{fileno:X2}";
                 if (!File.Exists(nextPart))
@@ -557,7 +557,6 @@ namespace SabreTools.Serialization.Wrappers
 
                 var fileStream = File.Open(nextPart, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 stream.AddStream(fileStream);
-                fileno++;
             }
 
             return true;
