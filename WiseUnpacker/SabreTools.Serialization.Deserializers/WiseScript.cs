@@ -395,16 +395,16 @@ namespace SabreTools.Serialization.Deserializers
                 obj.ReturnVariable = data.ReadNullTerminatedAnsiString();
             }
 
-            obj.Entries = new FunctionData?[languageCount];
+            obj.Entries = new FunctionData[languageCount];
             for (int i = 0; i < obj.Entries.Length; i++)
             {
                 // Switch based on the function
                 string entryString = data.ReadNullTerminatedAnsiString() ?? string.Empty;
                 obj.Entries[i] = obj.FunctionName switch
                 {
-                    "f0" => null, // TODO: Implement
-                    "f1" => null, // TODO: Implement
-                    "f2" => null, // TODO: Implement
+                    "f0" => ParseUnknownF0(entryString),
+                    "f1" => ParseAddToAutoexecBat(entryString),
+                    "f2" => ParseAddToConfigSys(entryString),
                     "f3" => ParseAddToSystemIni(entryString),
                     "f8" => ParseReadIniValue(entryString),
                     "f9" => ParseGetRegistryKeyValue(entryString),
@@ -424,7 +424,7 @@ namespace SabreTools.Serialization.Deserializers
                     "f27" => ParseParseString(entryString),
                     "f28" => ParseExitInstallation(entryString),
                     "f29" => ParseSelfRegisterOCXsDLLs(entryString),
-                    "f30" => null, // TODO: Implement
+                    "f30" => ParseUnknownF30(entryString),
                     "f31" => ParseWizardBlockLoop(entryString),
                     "f33" => ParseReadUpdateTextFile(entryString),
                     "f34" => ParsePostToHttpServer(entryString),
@@ -797,31 +797,47 @@ namespace SabreTools.Serialization.Deserializers
 
         #region Function Actions
 
-        // TODO: Implement f0
-        // Unknown
-        // Could be either:
-        // - Set Control Text
-        // - Set Current Control
+        /// <summary>
+        /// Parse a string into a UnknownF0
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled UnknownF0 on success, null on error</returns>
+        private static UnknownF0 ParseUnknownF0(string data)
+        {
+            var obj = new UnknownF0();
 
-        // TODO: Implement f1
-        // Add to AUTOEXEC.BAT
-        // Probably this layout: 
-        // - Flags (numeric) (e.g. "12", "8")
-        // - Unknown string (empty in samples)
-        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-        // - Unknown string (empty in samples)
-        // - Numeric value (e.g. "0")
+            obj.Args = data.Split((char)0x7F);
 
-        // TODO: Implement f2
-        // Add to CONFIG.SYS
-        // Probably this layout: 
-        // - Flags (numeric) (e.g. "12", "8")
-        // - Unknown string (empty in samples)
-        // - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-        // - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-        // - Unknown string (empty in samples)
-        // - Numeric value (e.g. "0")
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a AddToAutoexecBat
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled AddToAutoexecBat on success, null on error</returns>
+        private static AddToAutoexecBat ParseAddToAutoexecBat(string data)
+        {
+            var obj = new AddToAutoexecBat();
+
+            obj.Args = data.Split((char)0x7F);
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a AddToConfigSys
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled AddToConfigSys on success, null on error</returns>
+        private static AddToConfigSys ParseAddToConfigSys(string data)
+        {
+            var obj = new AddToConfigSys();
+
+            obj.Args = data.Split((char)0x7F);
+
+            return obj;
+        }
 
         /// <summary>
         /// Parse a string into a AddToSystemIni
@@ -1286,13 +1302,19 @@ namespace SabreTools.Serialization.Deserializers
             return obj;
         }
 
-        // TODO: Implement f30
-        // Maybe "Modify Component Size"?
-        // Probably this layout:
-        // - Flags (numeric)
-        // - Directory name (e.g. "%INST%\..\DirectX")
-        // - File name (e.g. "%INST%\..\DirectX\DSETUP.DLL")
-        // - Offset? (e.g. "2623")
+        /// <summary>
+        /// Parse a string into a UnknownF30
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled UnknownF30 on success, null on error</returns>
+        private static UnknownF30 ParseUnknownF30(string data)
+        {
+            var obj = new UnknownF30();
+
+            obj.Args = data.Split((char)0x7F);
+
+            return obj;
+        }
 
         /// <summary>
         /// Parse a string into a WizardBlockLoop

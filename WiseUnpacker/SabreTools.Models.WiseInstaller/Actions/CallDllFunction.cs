@@ -51,6 +51,6 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <summary>
         /// One entry per language count
         /// </summary>
-        public FunctionData?[]? Entries { get; set; }
+        public FunctionData[]? Entries { get; set; }
     }
 }

@@ -288,6 +288,9 @@ namespace SabreTools.Serialization.Printers
                     var entry = data.Entries[i];
                     switch (entry)
                     {
+                        case UnknownF0 args: Print(builder, args, i); break;
+                        case AddToAutoexecBat args: Print(builder, args, i); break;
+                        case AddToConfigSys args: Print(builder, args, i); break;
                         case AddToSystemIni args: Print(builder, args, i); break;
                         case ReadIniValue args: Print(builder, args, i); break;
                         case GetRegistryKeyValue args: Print(builder, args, i); break;
@@ -307,6 +310,7 @@ namespace SabreTools.Serialization.Printers
                         case ParseString args: Print(builder, args, i); break;
                         case ExitInstallation args: Print(builder, args, i); break;
                         case SelfRegisterOCXsDLLs args: Print(builder, args, i); break;
+                        case UnknownF30 args: Print(builder, args, i); break;
                         case WizardBlockLoop args: Print(builder, args, i); break;
                         case ReadUpdateTextFile args: Print(builder, args, i); break;
                         case PostToHttpServer args: Print(builder, args, i); break;
@@ -512,6 +516,36 @@ namespace SabreTools.Serialization.Printers
 
         #region Function Actions
 
+        private static void Print(StringBuilder builder, UnknownF0 data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: UnknownF0");
+            if (data.Args == null)
+                builder.AppendLine((string?)null, $"        Args");
+            else
+                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, AddToAutoexecBat data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: AddToAutoexecBat");
+            if (data.Args == null)
+                builder.AppendLine((string?)null, $"        Args");
+            else
+                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, AddToConfigSys data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: AddToConfigSys");
+            if (data.Args == null)
+                builder.AppendLine((string?)null, $"        Args");
+            else
+                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine();
+        }
+
         private static void Print(StringBuilder builder, AddToSystemIni data, int i)
         {
             builder.AppendLine($"      Entry {i}: AddToSystemIni");
@@ -690,6 +724,16 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine($"      Entry {i}: SelfRegisterOCXsDLLs");
             builder.AppendLine(data.DataFlags, $"        Data flags");
             builder.AppendLine(data.Description, $"        Description");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, UnknownF30 data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: UnknownF30");
+            if (data.Args == null)
+                builder.AppendLine((string?)null, $"        Args");
+            else
+                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
             builder.AppendLine();
         }
 
