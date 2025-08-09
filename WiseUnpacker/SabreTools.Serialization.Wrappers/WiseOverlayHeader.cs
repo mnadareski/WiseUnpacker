@@ -1143,6 +1143,8 @@ namespace SabreTools.Serialization.Wrappers
             // Initialize important loop information
             int normalFileCount = 0;
             Dictionary<string, string> environment = [];
+            if (sourceDirectory != null)
+                environment.Add("INST", sourceDirectory);
 
             // Loop through the state machine and process
             foreach (var state in script.States)
@@ -1223,6 +1225,14 @@ namespace SabreTools.Serialization.Wrappers
                             else if (Path.DirectorySeparatorChar == '/')
                                 newDirectoryName = newDirectoryName.Replace('\\', '/');
 
+                            // Perform path replacements
+                            foreach (var kvp in environment)
+                            {
+                                newDirectoryName = newDirectoryName.Replace($"%{kvp.Key}%", kvp.Value);
+                            }
+
+                            newDirectoryName = newDirectoryName.Replace("%", string.Empty);
+
                             // Remove wildcards from end of the path
                             if (newDirectoryName.EndsWith("*.*"))
                                 newDirectoryName = newDirectoryName.Substring(0, newDirectoryName.Length - 4);
@@ -1260,9 +1270,13 @@ namespace SabreTools.Serialization.Wrappers
                             else if (Path.DirectorySeparatorChar == '/')
                                 oldFilePath = oldFilePath.Replace('\\', '/');
 
-                            // Replace the installer directory variable
-                            if (sourceDirectory != null)
-                                oldFilePath = oldFilePath.Replace("%INST%", sourceDirectory);
+                            // Perform path replacements
+                            foreach (var kvp in environment)
+                            {
+                                oldFilePath = oldFilePath.Replace($"%{kvp.Key}%", kvp.Value);
+                            }
+
+                            oldFilePath = oldFilePath.Replace("%", string.Empty);
 
                             // Ensure directory separators are consistent
                             string newFilePath = Path.Combine(outputDirectory, copyLocalFile.Destination);
@@ -1270,6 +1284,14 @@ namespace SabreTools.Serialization.Wrappers
                                 newFilePath = newFilePath.Replace('/', '\\');
                             else if (Path.DirectorySeparatorChar == '/')
                                 newFilePath = newFilePath.Replace('\\', '/');
+
+                            // Perform path replacements
+                            foreach (var kvp in environment)
+                            {
+                                newFilePath = newFilePath.Replace($"%{kvp.Key}%", kvp.Value);
+                            }
+
+                            newFilePath = newFilePath.Replace("%", string.Empty);
 
                             File.Copy(oldFilePath, newFilePath);
                         }
