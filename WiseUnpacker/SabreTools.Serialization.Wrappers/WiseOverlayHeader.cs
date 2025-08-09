@@ -475,8 +475,11 @@ namespace SabreTools.Serialization.Wrappers
                 // Debug statement
                 if (includeDebug) Console.WriteLine($"File {filename} was found and opened");
 
-                // Strip the extension
+                // Strip the extension and rebuild
+                string? directory = Path.GetDirectoryName(filename);
                 filename = Path.GetFileNameWithoutExtension(filename);
+                if (directory != null)
+                    filename = Path.Combine(directory, filename);
             }
 
             // If the base name was provided, try to open the associated exe
