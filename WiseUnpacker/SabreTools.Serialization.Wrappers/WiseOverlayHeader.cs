@@ -211,7 +211,10 @@ namespace SabreTools.Serialization.Wrappers
             if (!OpenFile(filename, includeDebug, out var stream))
                 return false;
 
-            return ExtractAll(stream, outputDirectory, includeDebug);
+            // Get the source directory
+            string? sourceDirectory = Path.GetDirectoryName(Path.GetFullPath(filename));
+
+            return ExtractAll(stream, sourceDirectory, outputDirectory, includeDebug);
         }
 
         /// <summary>
@@ -222,6 +225,20 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if all files extracted, false otherwise</returns>
         public static bool ExtractAll(Stream? data, string outputDirectory, bool includeDebug)
+            => ExtractAll(data, sourceDirectory: null, outputDirectory, includeDebug);
+
+        /// <summary>
+        /// Extract all files from a Wise installer to an output directory
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="sourceDirectory">Directory where installer files live, if possible</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>True if all files extracted, false otherwise</returns>
+        public static bool ExtractAll(Stream? data,
+            string? sourceDirectory,
+            string outputDirectory,
+            bool includeDebug)
         {
             // If the data is invalid
             if (data == null || !data.CanRead)
@@ -252,7 +269,12 @@ namespace SabreTools.Serialization.Wrappers
             }
 
             // Process the state machine
-            return header.ProcessStateMachine(data, script, dataStart, outputDirectory, includeDebug);
+            return header.ProcessStateMachine(data,
+                sourceDirectory,
+                script,
+                dataStart,
+                outputDirectory,
+                includeDebug);
         }
 
         /// <summary>
@@ -1101,12 +1123,14 @@ namespace SabreTools.Serialization.Wrappers
         /// Process the state machine and perform all required actions
         /// </summary>
         /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="sourceDirectory">Directory where installer files live, if possible</param>
         /// <param name="script">Parsed script to retrieve information from</param>
         /// <param name="dataStart">Start of the deflated data</param>
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if there were no errors during processing, false otherwise</returns>
         private bool ProcessStateMachine(Stream data,
+            string? sourceDirectory,
             WiseScript script,
             long dataStart,
             string outputDirectory,
@@ -1205,6 +1229,8 @@ namespace SabreTools.Serialization.Wrappers
                             return false;
                         if (copyLocalFile.Source == null)
                             return false;
+                        if (copyLocalFile.Destination == null)
+                            return false;
 
                         if (!File.Exists(copyLocalFile.Source))
                         {
@@ -1214,8 +1240,14 @@ namespace SabreTools.Serialization.Wrappers
 
                         try
                         {
-                            if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} should be copied to {copyLocalFile.Destination}");
-                            // TODO: Implement file copying
+                            if (includeDebug) Console.WriteLine($"File {copyLocalFile.Source} is being copied to {copyLocalFile.Destination}");
+                            string oldFilePath = copyLocalFile.Source;
+                            if (sourceDirectory != null)
+                                oldFilePath = Path.Combine(sourceDirectory, oldFilePath);
+
+                            string newFilePath = Path.Combine(outputDirectory, copyLocalFile.Destination);
+
+                            File.Copy(oldFilePath, newFilePath);
                         }
                         catch
                         {
@@ -1244,18 +1276,10 @@ namespace SabreTools.Serialization.Wrappers
                         if (state.Data is not AddTextToInstallLog addTextToInstallLog)
                             return false;
 
-                        // TODO: Write to the install log if enabled
-                        break;
-
-                    case OperationCode.OpenCloseInstallLog:
-                        if (state.Data is not OpenCloseInstallLog openCloseInstallLog)
-                            return false;
-
-                        // TODO: Enable/disable install log
+                        if (includeDebug) Console.WriteLine($"INSTALL.LOG: {addTextToInstallLog.Text}");
                         break;
 
                     default:
-                        //Console.WriteLine($"Skipped opcode {state.Op}");
                         break;
                 }
             }
