@@ -98,7 +98,7 @@ namespace SabreTools.Serialization.Deserializers
             header.DibInflatedSize = data.ReadUInt32LittleEndian();
 
             // Peek at the next 2 bytes
-            uint peek = data.ReadUInt16LittleEndian();
+            ushort peek = data.ReadUInt16LittleEndian();
             data.Seek(-2, SeekOrigin.Current);
 
             // If the next value is a known Endianness
