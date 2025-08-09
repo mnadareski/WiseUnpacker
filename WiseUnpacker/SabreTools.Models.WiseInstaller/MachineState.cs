@@ -1,3 +1,5 @@
+using SabreTools.Models.WiseInstaller.Actions;
+
 namespace SabreTools.Models.WiseInstaller
 {
     /// <summary>

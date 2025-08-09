@@ -1,4 +1,4 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
     /// Base class for all machine state data types

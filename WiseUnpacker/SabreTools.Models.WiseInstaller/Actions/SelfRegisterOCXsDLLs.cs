@@ -10,7 +10,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// This action is called through Call DLL Function and is mapped to "f29".
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
-    public class SelfRegisterOCXsDLLs
+    public class SelfRegisterOCXsDLLs : FunctionData
     {
         /// <summary>
         /// Flags from the argument data

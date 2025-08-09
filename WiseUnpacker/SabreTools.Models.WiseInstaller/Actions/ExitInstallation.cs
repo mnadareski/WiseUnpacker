@@ -11,7 +11,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// This action is called through Call DLL Function and is mapped to "f28".
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
-    public class ExitInstallation
+    public class ExitInstallation : FunctionData
     {
         // There is no data
     }

@@ -1,4 +1,4 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
     /// Rename File/Directory

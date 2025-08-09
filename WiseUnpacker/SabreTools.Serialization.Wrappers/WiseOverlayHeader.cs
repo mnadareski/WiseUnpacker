@@ -865,7 +865,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>True if the file extracted successfully, false otherwise</returns>
         public ExtractStatus ExtractFile(Stream data,
             long dataStart,
-            ScriptUnknown0x06 obj,
+            Unknown0x06 obj,
             int index,
             string outputDirectory,
             bool includeDebug)
@@ -1135,7 +1135,7 @@ namespace SabreTools.Serialization.Wrappers
                         break;
 
                     case OperationCode.UnknownDeflatedFile0x06:
-                        if (state.Data is not ScriptUnknown0x06 unknown0x06)
+                        if (state.Data is not Unknown0x06 unknown0x06)
                             return false;
 
                         // Try to extract to the output directory

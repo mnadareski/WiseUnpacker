@@ -16,7 +16,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// This acts like the start of a block.
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
-    public class PromptForFilename
+    public class PromptForFilename : FunctionData
     {
         /// <summary>
         /// Flags from the argument data

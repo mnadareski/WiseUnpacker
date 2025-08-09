@@ -1,7 +1,7 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptUnknown0x19 : MachineStateData
+    public class Unknown0x19 : MachineStateData
     {
         /// <summary>
         /// Unknown

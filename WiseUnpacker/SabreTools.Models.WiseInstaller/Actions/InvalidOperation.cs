@@ -8,7 +8,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
-    public class Invalid0x13 : MachineStateData
+    public class InvalidOperation : MachineStateData
     {
         // There is no data
     }

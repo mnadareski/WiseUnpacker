@@ -202,7 +202,7 @@ namespace SabreTools.Serialization.Deserializers
                 MachineStateData? stateData = op switch
                 {
                     OperationCode.InstallFile => ParseInstallFile(data, languageCount),
-                    OperationCode.Invalid0x01 => ParseInvalid0x01(data),
+                    OperationCode.Invalid0x01 => ParseInvalidOperation(data),
                     OperationCode.NoOp => ParseNoOp(data),
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
@@ -215,12 +215,12 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
-                    OperationCode.Invalid0x0E => ParseInvalid0x0E(data),
+                    OperationCode.Invalid0x0E => ParseInvalidOperation(data),
                     OperationCode.StartUserDefinedAction => ParseStartUserDefinedAction(data),
                     OperationCode.EndUserDefinedAction => ParseEndUserDefinedAction(data),
                     OperationCode.CreateDirectory => ParseCreateDirectory(data),
                     OperationCode.CopyLocalFile => ParseCopyLocalFile(data, languageCount),
-                    OperationCode.Invalid0x13 => ParseInvalid0x13(data),
+                    OperationCode.Invalid0x13 => ParseInvalidOperation(data),
                     OperationCode.CustomDialogSet => ParseCustomDialogSet(data),
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
@@ -232,10 +232,10 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.AddTextToInstallLog => ParseAddTextToInstallLog(data),
                     OperationCode.RenameFileDirectory => ParseRenameFileDirectory(data),
                     OperationCode.OpenCloseInstallLog => ParseOpenCloseInstallLog(data),
-                    OperationCode.Unknown0x1F => null, // No information known
-                    OperationCode.Unknown0x20 => null, // No information known
-                    OperationCode.Unknown0x21 => null, // No information known
-                    OperationCode.Unknown0x22 => null, // No information known
+                    OperationCode.Unknown0x1F => ParseInvalidOperation(data),
+                    OperationCode.Unknown0x20 => ParseInvalidOperation(data),
+                    OperationCode.Unknown0x21 => ParseInvalidOperation(data),
+                    OperationCode.Unknown0x22 => ParseInvalidOperation(data),
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
 
                     //_ => null,
@@ -285,16 +285,6 @@ namespace SabreTools.Serialization.Deserializers
             header.Operand_11 = data.ReadNullTerminatedAnsiString();
 
             return header;
-        }
-
-        /// <summary>
-        /// Parse a Stream into a Invalid0x01
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled Invalid0x01 on success, null on error</returns>
-        private static Invalid0x01 ParseInvalid0x01(Stream data)
-        {
-            return new Invalid0x01();
         }
 
         /// <summary>
@@ -364,15 +354,15 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x06
+        /// Parse a Stream into a Unknown0x06
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
         /// <param name="old">Indicates an old install script</param>
-        /// <returns>Filled ScriptUnknown0x06 on success, null on error</returns>
-        private static ScriptUnknown0x06 ParseUnknown0x06(Stream data, int languageCount, bool old)
+        /// <returns>Filled Unknown0x06 on success, null on error</returns>
+        private static Unknown0x06 ParseUnknown0x06(Stream data, int languageCount, bool old)
         {
-            var obj = new ScriptUnknown0x06();
+            var obj = new Unknown0x06();
 
             obj.Operand_1 = data.ReadUInt16LittleEndian();
             obj.Operand_2 = data.ReadUInt16LittleEndian();
@@ -645,16 +635,6 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a Invalid0x0E
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled Invalid0x0E on success, null on error</returns>
-        private static Invalid0x0E ParseInvalid0x0E(Stream data)
-        {
-            return new Invalid0x0E();
-        }
-
-        /// <summary>
         /// Parse a Stream into an ElseStatement
         /// </summary>
         /// <param name="data">Stream to parse</param>
@@ -711,16 +691,6 @@ namespace SabreTools.Serialization.Deserializers
             obj.Destination = data.ReadNullTerminatedAnsiString();
 
             return obj;
-        }
-
-        /// <summary>
-        /// Parse a Stream into a Invalid0x13
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled Invalid0x13 on success, null on error</returns>
-        private static Invalid0x13 ParseInvalid0x13(Stream data)
-        {
-            return new Invalid0x13();
         }
 
         /// <summary>
@@ -819,13 +789,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a ScriptUnknown0x19
+        /// Parse a Stream into a Unknown0x19
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptUnknown0x19 on success, null on error</returns>
-        private static ScriptUnknown0x19 ParseUnknown0x19(Stream data)
+        /// <returns>Filled Unknown0x19 on success, null on error</returns>
+        private static Unknown0x19 ParseUnknown0x19(Stream data)
         {
-            var obj = new ScriptUnknown0x19();
+            var obj = new Unknown0x19();
 
             obj.Operand_1 = data.ReadByteValue();
             obj.Operand_2 = data.ReadNullTerminatedAnsiString();
@@ -928,6 +898,16 @@ namespace SabreTools.Serialization.Deserializers
             obj.Value = data.ReadNullTerminatedAnsiString();
 
             return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into a InvalidOperation
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled InvalidOperation on success, null on error</returns>
+        private static InvalidOperation ParseInvalidOperation(Stream data)
+        {
+            return new InvalidOperation();
         }
     }
 }
