@@ -332,6 +332,7 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine($"    Data: EditRegistry");
             builder.AppendLine(data.FlagsAndRoot, $"      Flags and root");
             builder.AppendLine(data.DataType, $"      Data type");
+            builder.AppendLine(data.UnknownFsllib, $"      Unknown");
             builder.AppendLine(data.Key, $"      Key");
             builder.AppendLine(data.NewValue, $"      New value");
             builder.AppendLine(data.ValueName, $"      Value name");

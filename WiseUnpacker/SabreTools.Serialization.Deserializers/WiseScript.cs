@@ -117,23 +117,7 @@ namespace SabreTools.Serialization.Deserializers
                 if (header.ScriptStrings[i].Length > 0)
                 {
                     string str = header.ScriptStrings[i];
-                    char firstChar = str[0];
-
-                    // Control code blocks
-                    bool controlChar = false;
-                    if (firstChar < (char)0x0A)
-                        controlChar = true;
-                    else if (firstChar == (char)0x0A && str.Length == 1)
-                        controlChar = true;
-                    else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
-                        controlChar = true;
-                    else if (firstChar == (char)0x0D && str.Length == 1)
-                        controlChar = true;
-                    else if (firstChar > (char)0x0D && firstChar < (char)0x20)
-                        controlChar = true;
-
-                    // Rewind so state can be parsed
-                    if (controlChar)
+                    if (IsTypicalControlCode(str, strict: false))
                     {
                         header.ScriptStrings[i] = string.Empty;
                         data.Seek(-str.Length - 1, SeekOrigin.Current);
@@ -156,11 +140,11 @@ namespace SabreTools.Serialization.Deserializers
         {
             // Extract required information
             byte languageCount = header.LanguageCount;
-            bool longDataValue = header.Unknown_22?[0] == 0x40;
             bool old = header.Unknown_22?.Length != 22;
 
             // Initialize important loop information
             int op0x18skip = -1;
+            bool? registryDll = null;
 
             // Store all states in order
             List<MachineState> states = [];
@@ -180,7 +164,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
                     OperationCode.CallDllFunction => ParseCallDllFunction(data, languageCount, old),
-                    OperationCode.EditRegistry => ParseEditRegistry(data, longDataValue),
+                    OperationCode.EditRegistry => ParseEditRegistry(data, ref registryDll),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
                     OperationCode.ElseStatement => ParseElseStatement(data),
@@ -452,26 +436,79 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a EditRegistry
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <param name="longDataValue">Indicates an old install script</param>
+        /// <param name="registryDll">Indicates if the longer value set is used</param>
         /// <returns>Filled EditRegistry on success, null on error</returns>
-        private static EditRegistry ParseEditRegistry(Stream data, bool longDataValue)
+        private static EditRegistry ParseEditRegistry(Stream data, ref bool? registryDll)
         {
-            // Cache the current offset
-            long current = data.Position;
-
-            // Read as standard first
             var obj = new EditRegistry();
 
             obj.FlagsAndRoot = data.ReadByteValue();
 
-            if (longDataValue)
-                obj.DataType = data.ReadUInt16();
-            else
+            // If the fsllib32.dll flag is set
+            if (registryDll == false)
+            {
                 obj.DataType = data.ReadByteValue();
+                obj.Key = data.ReadNullTerminatedAnsiString();
+                obj.NewValue = data.ReadNullTerminatedAnsiString();
+                obj.ValueName = data.ReadNullTerminatedAnsiString();
+                return obj;
+            }
+            else if (registryDll == true)
+            {
+                obj.DataType = data.ReadByteValue();
+                obj.UnknownFsllib = data.ReadNullTerminatedAnsiString();
+                obj.Key = data.ReadNullTerminatedAnsiString();
+                obj.NewValue = data.ReadNullTerminatedAnsiString();
+                obj.ValueName = data.ReadNullTerminatedAnsiString();
+                return obj;
+            }
 
+            // Check for an empty registry call
+            uint possiblyEmpty = data.ReadUInt32LittleEndian();
+            data.Seek(-4, SeekOrigin.Current);
+            if (possiblyEmpty == 0x00000000)
+            {
+                obj.DataType = data.ReadByteValue();
+                obj.Key = data.ReadNullTerminatedAnsiString();
+                obj.NewValue = data.ReadNullTerminatedAnsiString();
+                obj.ValueName = data.ReadNullTerminatedAnsiString();
+
+                registryDll = false;
+                return obj;
+            }
+
+            // Assume use until otherwise determined
+            registryDll = true;
+
+            obj.DataType = data.ReadByteValue();
+            obj.UnknownFsllib = data.ReadNullTerminatedAnsiString();
             obj.Key = data.ReadNullTerminatedAnsiString();
             obj.NewValue = data.ReadNullTerminatedAnsiString();
             obj.ValueName = data.ReadNullTerminatedAnsiString();
+
+            // If the delete pattern is found
+            if (obj.UnknownFsllib != null && obj.UnknownFsllib.Length > 0
+                && obj.Key != null && obj.Key.Length == 0
+                && obj.NewValue != null && obj.NewValue.Length == 0)
+            {
+                data.Seek(-(obj.ValueName?.Length ?? 0) - 1, SeekOrigin.Current);
+                obj.ValueName = obj.NewValue;
+                obj.NewValue = obj.Key;
+                obj.Key = obj.UnknownFsllib;
+                obj.UnknownFsllib = null;
+                registryDll = false;
+            }
+
+            // If the last value is a control
+            else if (obj.ValueName != null && IsTypicalControlCode(obj.ValueName, strict: true))
+            {
+                data.Seek(-obj.ValueName.Length - 1, SeekOrigin.Current);
+                obj.ValueName = obj.NewValue;
+                obj.NewValue = obj.Key;
+                obj.Key = obj.UnknownFsllib;
+                obj.UnknownFsllib = null;
+                registryDll = false;
+            }
 
             return obj;
         }
@@ -719,7 +756,10 @@ namespace SabreTools.Serialization.Deserializers
                 obj.Count++;
             }
 
-            data.Seek(-1, SeekOrigin.Current);
+            // Rewind if one was found
+            if (data.Position < data.Length)
+                data.Seek(-1, SeekOrigin.Current);
+
             return obj;
         }
 
@@ -1510,6 +1550,38 @@ namespace SabreTools.Serialization.Deserializers
         #endregion
 
         #region Helpers
+
+        /// <summary>
+        /// Returns if a string may be a typical control code
+        /// </summary>
+        /// <param name="str">String to check</param>
+        /// <param name="strict">Indicates if control codes should always be checked</param>
+        /// <returns>True if the string probably represents a control code, false otherwise</returns>
+        private static bool IsTypicalControlCode(string str, bool strict)
+        {
+            // Safeguard against odd cases
+            if (str.Length == 0)
+                return strict;
+
+            char firstChar = str[0];
+
+            // If there is no worry about newline trickery
+            if (strict)
+                return firstChar >= (char)0x00 && firstChar < (char)0x23;
+
+            if (firstChar < (char)0x0A)
+                return true;
+            else if (firstChar == (char)0x0A && str.Length == 1)
+                return true;
+            else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
+                return true;
+            else if (firstChar == (char)0x0D && str.Length == 1)
+                return true;
+            else if (firstChar > (char)0x0D && firstChar < (char)0x20)
+                return true;
+
+            return false;
+        }
 
         /// <summary>
         /// Parse a Stream into a ScriptDeflateInfo

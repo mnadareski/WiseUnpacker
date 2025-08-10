@@ -31,18 +31,16 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// Data type, defaults to 0 if not defined
         /// in source scripts
         /// </summary>
-        /// <remarks>
-        /// This value is a byte in most versions of the WiseScript
-        /// format, but seems to be a ushort in newer(?) versions.
-        /// It is unknown if this is version-controlled or
-        /// flag-controlled, but it is difficult to tell what uses
-        /// which format.
-        /// 
-        /// One version of WISE0001.DLL has the length as 2 bytes,
-        /// notably from an installer that is not that old. In the
-        /// final check, it only seems to check the first byte.
-        /// </remarks>
-        public ushort DataType { get; set; }
+        public byte DataType { get; set; }
+
+        /// <summary>
+        /// An unknown value that appears in some versions.
+        /// Its presence indicates to load an external DLL
+        /// for performing registry actions. Investigation
+        /// is needed on how to determine the script is the
+        /// version that uses this string or not.
+        /// </summary>
+        public string? UnknownFsllib { get; set; }
 
         /// <summary>
         /// Key path
