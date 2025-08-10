@@ -96,6 +96,11 @@ namespace Test
             if (!string.IsNullOrEmpty(outputDirectory))
                 filenameBase = Path.Combine(outputDirectory, Path.GetFileName(filenameBase));
 
+            // Ensure the directory is created
+            string? tempDirectory = Path.GetDirectoryName(filenameBase);
+            if (tempDirectory != null)
+                Directory.CreateDirectory(tempDirectory);
+
             Console.WriteLine($"Attempting to print info for {file}");
 
             try
