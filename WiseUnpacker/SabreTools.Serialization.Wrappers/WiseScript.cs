@@ -144,12 +144,7 @@ namespace SabreTools.Serialization.Wrappers
                         else if (Path.DirectorySeparatorChar == '/')
                             iniFilePath = iniFilePath.Replace('\\', '/');
 
-                        // Perform path replacements
-                        foreach (var kvp in environment)
-                        {
-                            iniFilePath = iniFilePath.Replace($"%{kvp.Key}%", kvp.Value);
-                        }
-
+                        // Ignore path replacements
                         iniFilePath = iniFilePath.Replace("%", string.Empty);
 
                         // Ensure the full output directory exists
