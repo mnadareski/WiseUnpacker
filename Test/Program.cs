@@ -124,7 +124,7 @@ namespace Test
                 // Try to read the script information
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
                 string scriptFilename = "WiseScript.bin";
-                if (header.ExtractStream(stream, ref scriptFilename, header.WiseScriptDeflatedSize, header.WiseScriptInflatedSize, 0, includeDebug, out var extracted) == WiseOverlayHeader.ExtractStatus.FAIL)
+                if (WiseScript.ExtractStream(stream, ref scriptFilename, header.WiseScriptDeflatedSize, header.WiseScriptInflatedSize, 0, header.IsPKZIP, includeDebug, out var extracted) == WiseExtractStatus.FAIL)
                     return;
 
                 // Try to parse the script information
