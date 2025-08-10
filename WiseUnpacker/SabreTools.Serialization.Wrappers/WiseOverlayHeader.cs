@@ -194,10 +194,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if all files extracted, false otherwise</returns>
-        public static bool ExtractAll(Stream? data,
-            string? sourceDirectory,
-            string outputDirectory,
-            bool includeDebug)
+        public static bool ExtractAll(Stream? data, string? sourceDirectory, string outputDirectory, bool includeDebug)
         {
             // If the data is invalid
             if (data == null || !data.CanRead)
@@ -296,20 +293,32 @@ namespace SabreTools.Serialization.Wrappers
         /// Find the overlay header from a PE Wise installer, if possible
         /// </summary>
         /// <param name="data">Stream representing the Wise installer</param>
-        /// <param name="nex">Wrapper representing the PE</param>
+        /// <param name="pex">Wrapper representing the PE</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <param name="header">The found overlay header on success, null otherwise</param>
         /// <returns>True if the header was found and valid, false otherwise</returns>
         public static bool FindOverlayHeader(Stream data, PortableExecutable pex, bool includeDebug, out WiseOverlayHeader? header)
+            => FindOverlayHeader(data, pex, dataOffset: 0, includeDebug, out header);
+
+        /// <summary>
+        /// Find the overlay header from a PE Wise installer, if possible
+        /// </summary>
+        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="pex">Wrapper representing the PE</param>
+        /// <param name="dataOffset">Adjustment offset for all operations</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <param name="header">The found overlay header on success, null otherwise</param>
+        /// <returns>True if the header was found and valid, false otherwise</returns>
+        public static bool FindOverlayHeader(Stream data, PortableExecutable pex, long dataOffset, bool includeDebug, out WiseOverlayHeader? header)
         {
             // Set the default header value
             header = null;
 
             // Get the overlay offset
-            long overlayOffset = pex.OverlayAddress;
+            long overlayOffset = GetOverlayAddress(pex, dataOffset, out long endOfFile);
 
             // Attempt to get the overlay header
-            if (overlayOffset >= 0 && overlayOffset < data.Length)
+            if (overlayOffset >= 0 && overlayOffset < endOfFile)
             {
                 data.Seek(overlayOffset, SeekOrigin.Begin);
                 header = Create(data);
@@ -380,63 +389,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            // Get the end of the file, if possible
-            long endOfFile = resourcePex.GetEndOfFile();
-            if (endOfFile == -1)
-                return false;
-
-            // If the section table is missing
-            if (resourcePex.Model.SectionTable == null)
-                return false;
-
-            // If we have certificate data, use that as the end
-            if (resourcePex.Model.OptionalHeader?.CertificateTable != null)
-            {
-                int certificateTableAddress = (int)resourcePex.Model.OptionalHeader.CertificateTable.VirtualAddress.ConvertVirtualAddress(resourcePex.Model.SectionTable);
-                if (certificateTableAddress != 0 && resourceOffset + certificateTableAddress < endOfFile)
-                    endOfFile = resourceOffset + certificateTableAddress;
-            }
-
-            // Search through all sections and find the furthest a section goes
-            overlayOffset = -1;
-            foreach (var section in resourcePex.Model.SectionTable)
-            {
-                // If we have an invalid section
-                if (section == null)
-                    continue;
-
-                // If we have an invalid section address
-                int sectionAddress = (int)section.VirtualAddress.ConvertVirtualAddress(resourcePex.Model.SectionTable);
-                if (sectionAddress == 0)
-                    continue;
-
-                // If we have an invalid section size
-                if (section.SizeOfRawData == 0 && section.VirtualSize == 0)
-                    continue;
-
-                // Get the real section size
-                int sectionSize;
-                if (section.SizeOfRawData < section.VirtualSize)
-                    sectionSize = (int)section.VirtualSize;
-                else
-                    sectionSize = (int)section.SizeOfRawData;
-
-                // Compare and set the end of section data
-                if (resourceOffset + sectionAddress + sectionSize > overlayOffset)
-                    overlayOffset = resourceOffset + sectionAddress + sectionSize;
-            }
-
-            // If we didn't find the end of section data
-            if (overlayOffset < 0 || overlayOffset >= endOfFile)
-            {
-                if (includeDebug) Console.Error.WriteLine($"Invalid overlay offset: {overlayOffset}");
-                return false;
-            }
-
-            // Attempt to get the overlay header
-            data.Seek(overlayOffset, SeekOrigin.Begin);
-            header = Create(data);
-            return header != null;
+            return FindOverlayHeader(data, resourcePex, resourceOffset, includeDebug, out header);
         }
 
         /// <summary>
@@ -667,7 +620,7 @@ namespace SabreTools.Serialization.Wrappers
         /// Address of the overlay, if it exists
         /// </summary>
         /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/exefile.c"/>
-        private static int GetOverlayAddress(NewExecutable nex)
+        private static long GetOverlayAddress(NewExecutable nex)
         {
             // Get the end of the file, if possible
             int endOfFile = nex.GetEndOfFile();
@@ -712,6 +665,60 @@ namespace SabreTools.Serialization.Wrappers
 
             // Cache and return the position
             return endOfSectionData;
+        }
+
+        /// <summary>
+        /// Address of the overlay, if it exists
+        /// </summary>
+        private static long GetOverlayAddress(PortableExecutable pex, long dataOffset, out long endOfFile)
+        {
+            // Get the end of the file, if possible
+            endOfFile = pex.GetEndOfFile();
+            if (endOfFile == -1)
+                return -1;
+
+            // If the section table is missing
+            if (pex.Model.SectionTable == null)
+                return -1;
+
+            // If we have certificate data, use that as the end
+            if (pex.Model.OptionalHeader?.CertificateTable != null)
+            {
+                int certificateTableAddress = (int)pex.Model.OptionalHeader.CertificateTable.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                if (certificateTableAddress != 0 && dataOffset + certificateTableAddress < endOfFile)
+                    endOfFile = dataOffset + certificateTableAddress;
+            }
+
+            // Search through all sections and find the furthest a section goes
+            long overlayOffset = -1;
+            foreach (var section in pex.Model.SectionTable)
+            {
+                // If we have an invalid section
+                if (section == null)
+                    continue;
+
+                // If we have an invalid section address
+                int sectionAddress = (int)section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                if (sectionAddress == 0)
+                    continue;
+
+                // If we have an invalid section size
+                if (section.SizeOfRawData == 0 && section.VirtualSize == 0)
+                    continue;
+
+                // Get the real section size
+                int sectionSize;
+                if (section.SizeOfRawData < section.VirtualSize)
+                    sectionSize = (int)section.VirtualSize;
+                else
+                    sectionSize = (int)section.SizeOfRawData;
+
+                // Compare and set the end of section data
+                if (dataOffset + sectionAddress + sectionSize > overlayOffset)
+                    overlayOffset = dataOffset + sectionAddress + sectionSize;
+            }
+
+            return overlayOffset;
         }
 
         #endregion
