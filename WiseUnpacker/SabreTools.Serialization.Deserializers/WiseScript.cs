@@ -105,38 +105,41 @@ namespace SabreTools.Serialization.Deserializers
                 header.LanguageSelectionStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
-            header.ScriptStrings = new string[scriptStringsMultiplier * header.LanguageCount];
+            int scriptStringCount = header.LanguageCount == 1
+                ? scriptStringsMultiplier
+                : (header.LanguageCount * scriptStringsMultiplier) + 1;
+            header.ScriptStrings = new string[scriptStringCount];
             for (int i = 0; i < header.ScriptStrings.Length; i++)
             {
                 header.ScriptStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
 
-                // // Try to handle invalid string lengths
-                // if (header.ScriptStrings[i].Length > 0)
-                // {
-                //     string str = header.ScriptStrings[i];
-                //     char firstChar = str[0];
+                // Try to handle invalid string lengths
+                if (header.ScriptStrings[i].Length > 0)
+                {
+                    string str = header.ScriptStrings[i];
+                    char firstChar = str[0];
 
-                //     // Control code blocks
-                //     bool controlChar = false;
-                //     if (firstChar < (char)0x0A)
-                //         controlChar = true;
-                //     else if (firstChar == (char)0x0A && str.Length == 1)
-                //         controlChar = true;
-                //     else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
-                //         controlChar = true;
-                //     else if (firstChar == (char)0x0D && str.Length == 1)
-                //         controlChar = true;
-                //     else if (firstChar > (char)0x0D && firstChar < (char)0x20)
-                //         controlChar = true;
+                    // Control code blocks
+                    bool controlChar = false;
+                    if (firstChar < (char)0x0A)
+                        controlChar = true;
+                    else if (firstChar == (char)0x0A && str.Length == 1)
+                        controlChar = true;
+                    else if (firstChar > (char)0x0A && firstChar < (char)0x0D)
+                        controlChar = true;
+                    else if (firstChar == (char)0x0D && str.Length == 1)
+                        controlChar = true;
+                    else if (firstChar > (char)0x0D && firstChar < (char)0x20)
+                        controlChar = true;
 
-                //     // Rewind so state can be parsed
-                //     if (controlChar)
-                //     {
-                //         header.ScriptStrings[i] = string.Empty;
-                //         data.Seek(-str.Length - 1, SeekOrigin.Current);
-                //         break;
-                //     }
-                // }
+                    // Rewind so state can be parsed
+                    if (controlChar)
+                    {
+                        header.ScriptStrings[i] = string.Empty;
+                        data.Seek(-str.Length - 1, SeekOrigin.Current);
+                        break;
+                    }
+                }
             }
 
             return header;
@@ -153,7 +156,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             // Extract required information
             byte languageCount = header.LanguageCount;
-            bool longDataValue = header.Unknown_22?[1] == 0x10;
+            bool longDataValue = header.Unknown_22?[0] == 0x40;
             bool old = header.Unknown_22?.Length != 22;
 
             // Initialize important loop information
@@ -430,6 +433,7 @@ namespace SabreTools.Serialization.Deserializers
                     "f34" => ParsePostToHttpServer(entryString),
                     "f35" => ParsePromptForFilename(entryString),
                     "f36" => ParseStartStopService(entryString),
+                    "f38" => ParseCheckHttpConnection(entryString),
 
                     // External and unrecognized functions
                     _ => ParseExternalDllCall(entryString),
@@ -1456,6 +1460,35 @@ namespace SabreTools.Serialization.Deserializers
 
             if (parts.Length > 1)
                 obj.ServiceName = parts[1];
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a string into a CheckHttpConnection
+        /// </summary>
+        /// <param name="data">0x7F-separated string to parse</param>
+        /// <returns>Filled CheckHttpConnection on success, null on error</returns>
+        private static CheckHttpConnection ParseCheckHttpConnection(string data)
+        {
+            string[] parts = data.Split((char)0x7F);
+
+            var obj = new CheckHttpConnection();
+
+            if (parts.Length > 0)
+                obj.UrlToCheck = parts[0];
+
+            if (parts.Length > 1)
+                obj.Win32ErrorTextVariable = parts[1];
+
+            if (parts.Length > 2)
+                obj.Win32ErrorNumberVariable = parts[2];
+
+            if (parts.Length > 3)
+                obj.Win16ErrorTextVariable = parts[3];
+
+            if (parts.Length > 4)
+                obj.Win16ErrorNumberVariable = parts[4];
 
             return obj;
         }

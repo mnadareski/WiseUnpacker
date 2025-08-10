@@ -39,6 +39,7 @@ namespace SabreTools.Serialization
                 "f34" => "Post to HTTP Server",
                 "f35" => "Prompt for Filename",
                 "f36" => "Start/Stop Service",
+                "f38" => "Check HTTP Connection",
 
                 // Undefined function IDs
                 "f4" => $"UNDEFINED {functionId}",
@@ -50,6 +51,7 @@ namespace SabreTools.Serialization
                 "f24" => $"UNDEFINED {functionId}",
                 "f26" => $"UNDEFINED {functionId}",
                 "f32" => $"UNDEFINED {functionId}",
+                "f37" => $"UNDEFINED {functionId}",
 
                 // External DLL
                 null => null,

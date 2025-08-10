@@ -316,6 +316,7 @@ namespace SabreTools.Serialization.Printers
                         case PostToHttpServer args: Print(builder, args, i); break;
                         case PromptForFilename args: Print(builder, args, i); break;
                         case StartStopService args: Print(builder, args, i); break;
+                        case CheckHttpConnection args: Print(builder, args, i); break;
                         case ExternalDllCall args: Print(builder, args, i); break;
 
                         // Should never happen
@@ -789,6 +790,17 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine($"      Entry {i}: StartStopService");
             builder.AppendLine(data.Operation, $"        Operation");
             builder.AppendLine(data.ServiceName, $"        Service name");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, CheckHttpConnection data, int i)
+        {
+            builder.AppendLine($"      Entry {i}: CheckHttpConnection");
+            builder.AppendLine(data.UrlToCheck, $"        URL to check");
+            builder.AppendLine(data.Win32ErrorTextVariable, $"        Win32 error text variable");
+            builder.AppendLine(data.Win32ErrorNumberVariable, $"        Win32 error number variable");
+            builder.AppendLine(data.Win16ErrorTextVariable, $"        Win16 error text variable");
+            builder.AppendLine(data.Win16ErrorNumberVariable, $"        Win16 error number variable");
             builder.AppendLine();
         }
 
