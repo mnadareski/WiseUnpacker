@@ -68,10 +68,12 @@ namespace SabreTools.Serialization.Deserializers
             header.FTPURL = data.ReadNullTerminatedAnsiString();
             header.LogPathname = data.ReadNullTerminatedAnsiString();
             header.MessageFont = data.ReadNullTerminatedAnsiString();
+            header.FontSize = data.ReadUInt32LittleEndian();
 
             // If the font string is empty, then the header is trimmed
             int scriptStringsMultiplier = 55;
-            if (header.MessageFont != null && header.MessageFont.Length == 0)
+            if (header.MessageFont != null && header.MessageFont.Length == 0
+                && (header.FontSize < 8 || header.FontSize > 24))
             {
                 // Seek back to the original position
                 data.Seek(current, SeekOrigin.Begin);
@@ -85,12 +87,16 @@ namespace SabreTools.Serialization.Deserializers
                 header.FTPURL = data.ReadNullTerminatedAnsiString();
                 header.LogPathname = data.ReadNullTerminatedAnsiString();
                 header.MessageFont = data.ReadNullTerminatedAnsiString();
+                header.FontSize = data.ReadUInt32LittleEndian();
+
                 scriptStringsMultiplier = 46;
             }
 
             // If the first character of the message font is a control char,
             // then the header is trimmed in a different way
-            else if (header.MessageFont != null && IsTypicalControlCode(header.MessageFont, strict: true))
+            else if (header.MessageFont != null
+                && header.MessageFont.Length > 0
+                && IsTypicalControlCode(header.MessageFont, strict: true))
             {
                 // Seek back to the original position
                 data.Seek(current, SeekOrigin.Begin);
@@ -108,9 +114,9 @@ namespace SabreTools.Serialization.Deserializers
                 header.FTPURL = data.ReadNullTerminatedAnsiString();
                 header.LogPathname = data.ReadNullTerminatedAnsiString();
                 header.MessageFont = data.ReadNullTerminatedAnsiString();
+                header.FontSize = data.ReadUInt32LittleEndian();
             }
 
-            header.FontSize = data.ReadUInt32LittleEndian();
             header.Unknown_2 = data.ReadBytes(2);
             header.LanguageCount = data.ReadByteValue();
 
