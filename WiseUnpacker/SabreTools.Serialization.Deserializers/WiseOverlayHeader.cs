@@ -22,8 +22,7 @@ namespace SabreTools.Serialization.Deserializers
                 if (overlayHeader.DibDeflatedSize >= data.Length)
                     return null;
 
-                if (overlayHeader.WiseScriptInflatedSize == 0
-                    || overlayHeader.WiseScriptDeflatedSize == 0
+                if (overlayHeader.WiseScriptDeflatedSize == 0
                     || overlayHeader.WiseScriptDeflatedSize >= data.Length)
                 {
                     return null;
@@ -32,8 +31,7 @@ namespace SabreTools.Serialization.Deserializers
                 if (overlayHeader.WiseDllDeflatedSize >= data.Length)
                     return null;
 
-                if (overlayHeader.FinalFileInflatedSize == 0
-                    || overlayHeader.FinalFileDeflatedSize == 0
+                if (overlayHeader.FinalFileDeflatedSize == 0
                     || overlayHeader.FinalFileDeflatedSize >= data.Length)
                 {
                     return null;

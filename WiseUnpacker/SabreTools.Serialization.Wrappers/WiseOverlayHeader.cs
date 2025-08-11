@@ -3,6 +3,7 @@ using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Matching;
+using SabreTools.Models.NewExecutable;
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Serialization.Interfaces;
 
@@ -276,7 +277,7 @@ namespace SabreTools.Serialization.Wrappers
             header = null;
 
             // Get the overlay offset
-            long overlayOffset = GetOverlayAddress(nex);
+            long overlayOffset = GetOverlayAddress(data, nex);
             if (overlayOffset < 0 || overlayOffset >= data.Length)
             {
                 if (includeDebug) Console.Error.WriteLine("Could not parse the overlay header");
@@ -286,7 +287,25 @@ namespace SabreTools.Serialization.Wrappers
             // Attempt to get the overlay header
             data.Seek(overlayOffset, SeekOrigin.Begin);
             header = Create(data);
-            return header != null;
+            if (header != null)
+                return true;
+
+            // Align and loop to see if it can be found
+            data.Seek(overlayOffset, SeekOrigin.Begin);
+            data.AlignToBoundary(0x10);
+            overlayOffset = data.Position;
+            while (data.Position < data.Length)
+            {
+                data.Seek(overlayOffset, SeekOrigin.Begin);
+                header = Create(data);
+                if (header != null)
+                    return true;
+
+                overlayOffset += 0x10;
+            }
+
+            header = null;
+            return false;
         }
 
         /// <summary>
@@ -620,7 +639,7 @@ namespace SabreTools.Serialization.Wrappers
         /// Address of the overlay, if it exists
         /// </summary>
         /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/exefile.c"/>
-        private static long GetOverlayAddress(NewExecutable nex)
+        private static long GetOverlayAddress(Stream data, NewExecutable nex)
         {
             // Get the end of the file, if possible
             int endOfFile = nex.GetEndOfFile();
@@ -632,10 +651,22 @@ namespace SabreTools.Serialization.Wrappers
                 return -1;
 
             // Search through the segments table to find the furthest
-            int endOfSectionData = -1;
+            long endOfSectionData = -1;
             foreach (var entry in nex.Model.SegmentTable)
             {
-                int offset = (entry.Offset << nex.Model.Header.SegmentAlignmentShiftCount) + entry.Length;
+                // Get end of segment data
+                long offset = entry.Offset * (1 << nex.Model.Header.SegmentAlignmentShiftCount) + entry.Length;
+
+                // Read and find the end of the relocation data
+                if ((entry.FlagWord & SegmentTableEntryFlag.RELOCINFO) != 0)
+                {
+                    // TODO: This should be unnecessary once this lives in Serialization
+                    data.Seek(offset, SeekOrigin.Begin);
+                    var relocationData = ParsePerSegmentData(data);
+
+                    offset = data.Position;
+                }
+
                 if (offset > endOfSectionData)
                     endOfSectionData = offset;
             }
@@ -659,9 +690,9 @@ namespace SabreTools.Serialization.Wrappers
             if (endOfSectionData <= 0)
                 return -1;
 
-            // Adjust the position of the data by 705 bytes
+            // Adjust the position of the data by 738 bytes
             // TODO: Investigate what the byte data is
-            endOfSectionData += 705;
+            endOfSectionData += 738;
 
             // Cache and return the position
             return endOfSectionData;
@@ -719,6 +750,118 @@ namespace SabreTools.Serialization.Wrappers
             }
 
             return overlayOffset;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an PerSegmentData
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled PerSegmentData on success, null on error</returns>
+        private static PerSegmentData ParsePerSegmentData(Stream data)
+        {
+            var obj = new PerSegmentData();
+
+            obj.RelocationRecordCount = data.ReadUInt16LittleEndian();
+            obj.RelocationRecords = new RelocationRecord[obj.RelocationRecordCount];
+            for (int i = 0; i < obj.RelocationRecords.Length; i++)
+            {
+                obj.RelocationRecords[i] = ParseRelocationRecord(data);
+            }
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an RelocationRecord
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled RelocationRecord on success, null on error</returns>
+        private static RelocationRecord ParseRelocationRecord(Stream data)
+        {
+            var obj = new RelocationRecord();
+
+            obj.SourceType = (RelocationRecordSourceType)data.ReadByteValue();
+            obj.Flags = (RelocationRecordFlag)data.ReadByteValue();
+            obj.Offset = data.ReadUInt16LittleEndian();
+
+            switch (obj.Flags & RelocationRecordFlag.TARGET_MASK)
+            {
+                case RelocationRecordFlag.INTERNALREF:
+                    obj.InternalRefRelocationRecord = ParseInternalRefRelocationRecord(data);
+                    break;
+                case RelocationRecordFlag.IMPORTORDINAL:
+                    obj.ImportOrdinalRelocationRecord = ParseImportOrdinalRelocationRecord(data);
+                    break;
+                case RelocationRecordFlag.IMPORTNAME:
+                    obj.ImportNameRelocationRecord = ParseImportNameRelocationRecord(data);
+                    break;
+                case RelocationRecordFlag.OSFIXUP:
+                    obj.OSFixupRelocationRecord = ParseOSFixupRelocationRecord(data);
+                    break;
+            }
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an InternalRefRelocationRecord
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled InternalRefRelocationRecord on success, null on error</returns>
+        private static InternalRefRelocationRecord ParseInternalRefRelocationRecord(Stream data)
+        {
+            var obj = new InternalRefRelocationRecord();
+
+            obj.SegmentNumber = data.ReadByteValue();
+            obj.Reserved = data.ReadByteValue();
+            obj.Offset = data.ReadUInt16LittleEndian();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an ImportOrdinalRelocationRecord
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled ImportOrdinalRelocationRecord on success, null on error</returns>
+        private static ImportOrdinalRelocationRecord ParseImportOrdinalRelocationRecord(Stream data)
+        {
+            var obj = new ImportOrdinalRelocationRecord();
+
+            obj.Index = data.ReadUInt16LittleEndian();
+            obj.Ordinal = data.ReadUInt16LittleEndian();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an ImportNameRelocationRecord
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled ImportNameRelocationRecord on success, null on error</returns>
+        private static ImportNameRelocationRecord ParseImportNameRelocationRecord(Stream data)
+        {
+            var obj = new ImportNameRelocationRecord();
+
+            obj.Index = data.ReadUInt16LittleEndian();
+            obj.Offset = data.ReadUInt16LittleEndian();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into an OSFixupRelocationRecord
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled OSFixupRelocationRecord on success, null on error</returns>
+        private static OSFixupRelocationRecord ParseOSFixupRelocationRecord(Stream data)
+        {
+            var obj = new OSFixupRelocationRecord();
+
+            obj.FixupType = (OSFixupType)data.ReadUInt16LittleEndian();
+            obj.Reserved = data.ReadUInt16LittleEndian();
+
+            return obj;
         }
 
         #endregion
