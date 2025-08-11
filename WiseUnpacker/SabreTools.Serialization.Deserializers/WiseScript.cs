@@ -88,6 +88,28 @@ namespace SabreTools.Serialization.Deserializers
                 scriptStringsMultiplier = 46;
             }
 
+            // If the first character of the message font is a control char,
+            // then the header is trimmed in a different way
+            else if (header.MessageFont != null && IsTypicalControlCode(header.MessageFont, strict: true))
+            {
+                // Seek back to the original position
+                data.Seek(current, SeekOrigin.Begin);
+
+                // Recreate the header with minimal data
+                header = new ScriptHeader();
+
+                header.Flags = data.ReadByteValue();
+                header.UnknownBytes_1 = data.ReadBytes(4);
+                header.SomeOffset1 = data.ReadUInt32LittleEndian();
+                header.SomeOffset2 = data.ReadUInt32LittleEndian();
+                header.UnknownBytes_2 = data.ReadBytes(4);
+                header.DateTime = data.ReadUInt32LittleEndian();
+                header.Unknown_22 = data.ReadBytes(17);
+                header.FTPURL = data.ReadNullTerminatedAnsiString();
+                header.LogPathname = data.ReadNullTerminatedAnsiString();
+                header.MessageFont = data.ReadNullTerminatedAnsiString();
+            }
+
             header.FontSize = data.ReadUInt32LittleEndian();
             header.Unknown_2 = data.ReadBytes(2);
             header.LanguageCount = data.ReadByteValue();
@@ -139,8 +161,9 @@ namespace SabreTools.Serialization.Deserializers
         private static MachineState[]? ParseStateMachine(Stream data, ScriptHeader header)
         {
             // Extract required information
+            bool has0x06Terminator = header.Unknown_22?.Length == 22 && header.DateTime != 0x00000000;
             byte languageCount = header.LanguageCount;
-            bool old = header.Unknown_22?.Length != 22;
+            bool old = header.Unknown_22?.Length != 22 && header.DateTime == 0x00000000;
 
             // Initialize important loop information
             int op0x18skip = -1;
@@ -160,7 +183,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
-                    OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, old),
+                    OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, has0x06Terminator),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
                     OperationCode.CallDllFunction => ParseCallDllFunction(data, languageCount, old),
@@ -313,9 +336,9 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <param name="old">Indicates an old install script</param>
+        /// <param name="hasTerminator">Indicates if a terminator byte should be read</param>
         /// <returns>Filled Unknown0x06 on success, null on error</returns>
-        private static Unknown0x06 ParseUnknown0x06(Stream data, int languageCount, bool old)
+        private static Unknown0x06 ParseUnknown0x06(Stream data, int languageCount, bool hasTerminator)
         {
             var obj = new Unknown0x06();
 
@@ -325,7 +348,7 @@ namespace SabreTools.Serialization.Deserializers
             obj.DeflateInfo = ParseScriptDeflateInfoContainer(data, languageCount);
 
             // Terminator byte does not exist in old scripts
-            if (!old)
+            if (hasTerminator)
                 obj.Terminator = data.ReadByteValue();
 
             return obj;
