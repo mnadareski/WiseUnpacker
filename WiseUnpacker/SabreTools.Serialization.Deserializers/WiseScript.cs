@@ -1624,7 +1624,7 @@ namespace SabreTools.Serialization.Deserializers
 
             // If there is no worry about newline trickery
             if (strict)
-                return firstChar >= (char)0x00 && firstChar < (char)0x23;
+                return firstChar >= (char)0x00 && firstChar <= (char)0x25;
 
             if (firstChar < (char)0x0A)
                 return true;
@@ -1635,6 +1635,8 @@ namespace SabreTools.Serialization.Deserializers
             else if (firstChar == (char)0x0D && str.Length == 1)
                 return true;
             else if (firstChar > (char)0x0D && firstChar < (char)0x20)
+                return true;
+            else if (firstChar > (char)0x20 && firstChar <= (char)0x25 && str.Length == 1)
                 return true;
 
             return false;
