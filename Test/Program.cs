@@ -123,30 +123,9 @@ namespace Test
                     return;
                 }
 
-                // Process header statistics
+                // Process header statistics and print
                 _statistics.ProcessStatistics(file, header);
-
-#if NETCOREAPP
-                // If we have the JSON flag
-                if (json)
-                {
-                    // Create the output data
-                    string serializedData = header.ExportJSON();
-
-                    // Write the output data
-                    using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.json"));
-                    jsw.WriteLine(serializedData);
-                    jsw.Flush();
-                }
-#endif
-
-                // Create the header output data
-                var hBuilder = header.ExportStringBuilderExt();
-                if (hBuilder == null)
-                {
-                    Console.WriteLine("No header information could be generated");
-                    return;
-                }
+                PrintOverlayHeader(filenameBase, header, json);
 
                 // Seek to the script offset
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
@@ -174,37 +153,9 @@ namespace Test
                     return;
                 }
 
-                // Process script statistics
+                // Process script statistics and print
                 _statistics.ProcessStatistics(file, script);
-
-#if NETCOREAPP
-                // If we have the JSON flag
-                if (json)
-                {
-                    // Create the output data
-                    string serializedData = script.ExportJSON();
-
-                    // Write the output data
-                    using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-script.json"));
-                    jsw.WriteLine(serializedData);
-                    jsw.Flush();
-                }
-#endif
-
-                // Create script output data
-                var sBuilder = script.ExportStringBuilderExt();
-                if (sBuilder == null)
-                {
-                    Console.WriteLine("No header information could be generated");
-                    return;
-                }
-
-                Console.WriteLine(hBuilder);
-                using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}.txt"));
-                sw.WriteLine(hBuilder.ToString());
-                sw.WriteLine();
-                sw.WriteLine(sBuilder.ToString());
-                sw.Flush();
+                PrintScript(filenameBase, script, json);
             }
             catch (Exception ex)
             {
@@ -212,6 +163,77 @@ namespace Test
                 Console.WriteLine(includeDebug ? ex : "[Exception opening file, please try again]");
                 Console.WriteLine();
             }
+        }
+
+        /// <summary>
+        /// Print overlay header information, if possible
+        /// </summary>
+        /// <param name="filenameBase">Base filename pattern to use for output</param>
+        /// <param name="header">Overlay header to print information for</param>
+        /// <param name="json">Enable JSON output, if supported</param>
+        private static void PrintOverlayHeader(string filenameBase, WiseOverlayHeader header, bool json)
+        {
+#if NETCOREAPP
+            // If we have the JSON flag
+            if (json)
+            {
+                // Create the output data
+                string serializedData = header.ExportJSON();
+
+                // Write the output data
+                using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.json"));
+                jsw.WriteLine(serializedData);
+                jsw.Flush();
+            }
+#endif
+
+            // Create the header output data
+            var builder = header.ExportStringBuilderExt();
+            if (builder == null)
+            {
+                Console.WriteLine("No header information could be generated");
+                return;
+            }
+
+            Console.WriteLine(builder);
+            using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.txt"));
+            sw.WriteLine(builder.ToString());
+            sw.Flush();
+        }
+
+        /// <summary>
+        /// Print script information, if possible
+        /// </summary>
+        /// <param name="filenameBase">Base filename pattern to use for output</param>
+        /// <param name="script">Script to print information for</param>
+        /// <param name="json">Enable JSON output, if supported</param>
+        private static void PrintScript(string filenameBase, WiseScript script, bool json)
+        {
+#if NETCOREAPP
+            // If we have the JSON flag
+            if (json)
+            {
+                // Create the output data
+                string serializedData = script.ExportJSON();
+
+                // Write the output data
+                using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-script.json"));
+                jsw.WriteLine(serializedData);
+                jsw.Flush();
+            }
+#endif
+
+            // Create script output data
+            var builder = script.ExportStringBuilderExt();
+            if (builder == null)
+            {
+                Console.WriteLine("No header information could be generated");
+                return;
+            }
+
+            using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-script.txt"));
+            sw.WriteLine(builder.ToString());
+            sw.Flush();
         }
 
         #endregion
