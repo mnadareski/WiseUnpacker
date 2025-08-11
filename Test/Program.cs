@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
@@ -126,10 +127,20 @@ namespace Test
                     return;
                 }
 
-                // Try to read the script information
+                // Seek to the script offset
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
-                string scriptFilename = "WiseScript.bin";
-                if (WiseScript.ExtractStream(stream, ref scriptFilename, header.WiseScriptDeflatedSize, header.WiseScriptInflatedSize, 0, header.IsPKZIP, includeDebug, out var extracted) == WiseExtractStatus.FAIL)
+
+                // Create the expected output information
+                var expected = new DeflateInfo
+                {
+                    InputSize = header.WiseScriptDeflatedSize,
+                    OutputSize = header.WiseScriptInflatedSize,
+                    Crc32 = 0,
+                };
+
+                // Try to extract the script
+                var extracted = new MemoryStream();
+                if (InflateWrapper.ExtractStream(stream, extracted, expected, header.IsPKZIP, includeDebug, out _) == ExtractionStatus.FAIL)
                     return;
 
                 // Try to parse the script information

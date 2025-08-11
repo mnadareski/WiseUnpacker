@@ -1,9 +1,9 @@
-namespace SabreTools.Serialization.Wrappers
+namespace SabreTools.IO.Compression.Deflate
 {
     /// <summary>
-    /// Represents the status returned from extracting a file
+    /// Represents the status returned from extracting
     /// </summary>
-    public enum WiseExtractStatus
+    public enum ExtractionStatus
     {
         /// <summary>
         /// Extraction wasn't performed because the inputs were invalid

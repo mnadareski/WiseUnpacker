@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
 using SabreTools.Matching;
@@ -576,55 +577,68 @@ namespace SabreTools.Serialization.Wrappers
             dataStart = data.Position;
 
             // Extract WiseColors.dib, if it exists
-            if (WiseScript.ExtractFile(data, "WiseColors.dib", outputDirectory, DibDeflatedSize, DibInflatedSize, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            var expected = new DeflateInfo { InputSize = DibDeflatedSize, OutputSize = DibInflatedSize, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "WiseColors.dib", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract WiseScript.bin
-            if (WiseScript.ExtractFile(data, "WiseScript.bin", outputDirectory, WiseScriptDeflatedSize, WiseScriptInflatedSize, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = WiseScriptDeflatedSize, OutputSize = WiseScriptInflatedSize, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "WiseScript.bin", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract WISE0001.DLL, if it exists
-            if (WiseScript.ExtractFile(data, "WISE0001.DLL", outputDirectory, WiseDllDeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = WiseDllDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "WISE0001.DLL", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract CTL3D32.DLL, if it exists
-            if (WiseScript.ExtractFile(data, "CTL3D32.DLL", outputDirectory, Ctl3d32DeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = Ctl3d32DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "CTL3D32.DLL", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0004, if it exists
-            if (WiseScript.ExtractFile(data, "FILE0004", outputDirectory, SomeData4DeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = SomeData4DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "FILE0004", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract Ocxreg32.EXE, if it exists
-            if (WiseScript.ExtractFile(data, "Ocxreg32.EXE", outputDirectory, RegToolDeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = RegToolDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "Ocxreg32.EXE", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract PROGRESS.DLL, if it exists
-            if (WiseScript.ExtractFile(data, "PROGRESS.DLL", outputDirectory, ProgressDllDeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = ProgressDllDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "PROGRESS.DLL", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0007, if it exists
-            if (WiseScript.ExtractFile(data, "FILE0007", outputDirectory, SomeData7DeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = SomeData7DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "FILE0007", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0008, if it exists
-            if (WiseScript.ExtractFile(data, "FILE0008", outputDirectory, SomeData8DeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = SomeData8DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "FILE0008", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0009, if it exists
-            if (WiseScript.ExtractFile(data, "FILE0009", outputDirectory, SomeData9DeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = SomeData9DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "FILE0009", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE000A, if it exists
-            if (WiseScript.ExtractFile(data, "FILE000A", outputDirectory, SomeData10DeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = SomeData10DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "FILE000A", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract install script, if it exists
-            if (WiseScript.ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, InstallScriptDeflatedSize, -1, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = InstallScriptDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE000{n}.DAT, if it exists
-            if (WiseScript.ExtractFile(data, IsPKZIP ? null : "FILE00XX.DAT", outputDirectory, FinalFileDeflatedSize, FinalFileInflatedSize, 0, IsPKZIP, includeDebug) == WiseExtractStatus.FAIL)
+            expected = new DeflateInfo { InputSize = FinalFileDeflatedSize, OutputSize = FinalFileInflatedSize, Crc32 = 0 };
+            if (InflateWrapper.ExtractFile(data, IsPKZIP ? null : "FILE00XX.DAT", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             dataStart = data.Position;
