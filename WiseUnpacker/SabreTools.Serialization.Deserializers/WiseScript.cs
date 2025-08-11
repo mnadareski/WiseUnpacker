@@ -861,11 +861,7 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled Unknown0x24 on success, null on error</returns>
         private static Unknown0x24 ParseUnknown0x24(Stream data)
         {
-            var obj = new Unknown0x24();
-
-            obj.Operand_1 = data.ReadByteValue();
-
-            return obj;
+            return new Unknown0x24();
         }
 
         /// <summary>
@@ -875,11 +871,7 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled Unknown0x25 on success, null on error</returns>
         private static Unknown0x25 ParseUnknown0x25(Stream data)
         {
-            var obj = new Unknown0x25();
-
-            obj.Operand_1 = data.ReadByteValue();
-
-            return obj;
+            return new Unknown0x25();
         }
 
         /// <summary>

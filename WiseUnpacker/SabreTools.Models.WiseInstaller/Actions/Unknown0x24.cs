@@ -12,9 +12,6 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     public class Unknown0x24 : MachineStateData
     {
-        /// <summary>
-        /// Unknown, maybe flags?
-        /// </summary>
-        public byte Operand_1 { get; set; }
+        // There is no data
     }
 }

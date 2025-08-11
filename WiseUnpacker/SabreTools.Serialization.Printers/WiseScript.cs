@@ -527,14 +527,12 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, Unknown0x24 data)
         {
             builder.AppendLine($"    Data: Unknown0x24");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, Unknown0x25 data)
         {
             builder.AppendLine($"    Data: Unknown0x25");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine();
         }
 

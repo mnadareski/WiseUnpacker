@@ -625,7 +625,7 @@ namespace SabreTools.Serialization.Wrappers
             bool includeDebug)
         {
             // Get the generated base name
-            string baseName = $"Billboard_{obj.Flags:X4}";
+            string baseName = $"CustomBillboardSet_{obj.Flags:X4}-{obj.Operand_2}-{obj.Operand_3}";
 
             // If there are no deflate objects
             if (obj.DeflateInfo == null)
@@ -676,7 +676,7 @@ namespace SabreTools.Serialization.Wrappers
             long expectedBytesWritten = obj.InflatedSize;
 
             // Perform path replacements
-            string filename = $"WISE_0x14_{obj.DisplayVariable}-{obj.Name}";
+            string filename = $"CustomDialogSet_{obj.DisplayVariable}-{obj.Name}";
             filename = filename.Replace("%", string.Empty);
             data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
             return ExtractFile(data, filename, outputDirectory, expectedBytesRead, expectedBytesWritten, expectedCrc: 0, isPkzip, includeDebug);
