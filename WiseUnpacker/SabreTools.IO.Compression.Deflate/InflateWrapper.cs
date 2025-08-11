@@ -52,7 +52,7 @@ namespace SabreTools.IO.Compression.Deflate
                 out var foundFilename);
 
             // If the extracted data is invalid
-            if (destination == null)
+            if (status != ExtractionStatus.GOOD || destination == null)
                 return status;
 
             // Ensure directory separators are consistent
