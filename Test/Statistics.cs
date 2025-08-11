@@ -439,7 +439,7 @@ namespace Test
             }
 
             // Contains Unknown0x25
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x22, out var contains0x25) && contains0x25.Count > 0)
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x25, out var contains0x25) && contains0x25.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x25:");
                 contains0x25.Sort();
