@@ -161,7 +161,6 @@ namespace SabreTools.Serialization.Deserializers
         private static MachineState[]? ParseStateMachine(Stream data, ScriptHeader header)
         {
             // Extract required information
-            bool has0x06Terminator = header.Unknown_22?.Length == 22 && header.DateTime != 0x00000000;
             byte languageCount = header.LanguageCount;
             bool old = header.Unknown_22?.Length != 22 && header.DateTime == 0x00000000;
 
@@ -183,7 +182,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DisplayMessage => ParseDisplayMessage(data, languageCount),
                     OperationCode.UserDefinedActionStep => ParseUserDefinedActionStep(data, languageCount),
                     OperationCode.EditIniFile => ParseEditIniFile(data),
-                    OperationCode.UnknownDeflatedFile0x06 => ParseUnknown0x06(data, languageCount, has0x06Terminator),
+                    OperationCode.DisplayBillboard => ParseDisplayBillboard(data, languageCount),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
                     OperationCode.CallDllFunction => ParseCallDllFunction(data, languageCount, old),
@@ -213,6 +212,8 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.Unknown0x21 => ParseInvalidOperation(data),
                     OperationCode.Unknown0x22 => ParseInvalidOperation(data),
                     OperationCode.ElseIfStatement => ParseElseIfStatement(data),
+                    OperationCode.Unknown0x24 => ParseUnknown0x24(data),
+                    OperationCode.Unknown0x25 => ParseUnknown0x25(data),
 
                     //_ => null,
                     _ => throw new IndexOutOfRangeException(nameof(op)),
@@ -332,24 +333,31 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a Unknown0x06
+        /// Parse a Stream into a DisplayBillboard
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <param name="hasTerminator">Indicates if a terminator byte should be read</param>
-        /// <returns>Filled Unknown0x06 on success, null on error</returns>
-        private static Unknown0x06 ParseUnknown0x06(Stream data, int languageCount, bool hasTerminator)
+        /// <returns>Filled DisplayBillboard on success, null on error</returns>
+        private static DisplayBillboard ParseDisplayBillboard(Stream data, int languageCount)
         {
-            var obj = new Unknown0x06();
+            var obj = new DisplayBillboard();
 
-            obj.Operand_1 = data.ReadUInt16LittleEndian();
+            obj.Flags = data.ReadUInt16LittleEndian();
             obj.Operand_2 = data.ReadUInt16LittleEndian();
             obj.Operand_3 = data.ReadUInt16LittleEndian();
-            obj.DeflateInfo = ParseScriptDeflateInfoContainer(data, languageCount);
+            obj.DeflateInfo = new ScriptDeflateInfo[languageCount];
+            for (int i = 0; i < obj.DeflateInfo.Length; i++)
+            {
+                obj.DeflateInfo[i] = ParseScriptDeflateInfo(data);
+            }
 
-            // Terminator byte does not exist in old scripts
-            if (hasTerminator)
-                obj.Terminator = data.ReadByteValue();
+            // Check the terminator byte is 0x00
+            obj.Terminator = data.ReadByteValue();
+            if (obj.Terminator != 0x00)
+            {
+                obj.Terminator = 0x00;
+                data.Seek(-1, SeekOrigin.Current);
+            }
 
             return obj;
         }
@@ -842,6 +850,34 @@ namespace SabreTools.Serialization.Deserializers
             obj.Operator = data.ReadByteValue();
             obj.Variable = data.ReadNullTerminatedAnsiString();
             obj.Value = data.ReadNullTerminatedAnsiString();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into a Unknown0x24
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled Unknown0x24 on success, null on error</returns>
+        private static Unknown0x24 ParseUnknown0x24(Stream data)
+        {
+            var obj = new Unknown0x24();
+
+            obj.Operand_1 = data.ReadByteValue();
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Parse a Stream into a Unknown0x25
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled Unknown0x25 on success, null on error</returns>
+        private static Unknown0x25 ParseUnknown0x25(Stream data)
+        {
+            var obj = new Unknown0x25();
+
+            obj.Operand_1 = data.ReadByteValue();
 
             return obj;
         }
@@ -1618,24 +1654,6 @@ namespace SabreTools.Serialization.Deserializers
             obj.DeflateStart = data.ReadUInt32LittleEndian();
             obj.DeflateEnd = data.ReadUInt32LittleEndian();
             obj.InflatedSize = data.ReadUInt32LittleEndian();
-
-            return obj;
-        }
-
-        /// <summary>
-        /// Parse a Stream into a ScriptDeflateInfoContainer
-        /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <returns>Filled ScriptDeflateInfoContainer on success, null on error</returns>
-        private static ScriptDeflateInfoContainer ParseScriptDeflateInfoContainer(Stream data, int languageCount)
-        {
-            var obj = new ScriptDeflateInfoContainer();
-
-            obj.Info = new ScriptDeflateInfo[languageCount];
-            for (int i = 0; i < obj.Info.Length; i++)
-            {
-                obj.Info[i] = ParseScriptDeflateInfo(data);
-            }
 
             return obj;
         }

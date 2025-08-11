@@ -162,12 +162,12 @@ namespace SabreTools.Serialization.Wrappers
 
                         break;
 
-                    case OperationCode.UnknownDeflatedFile0x06:
-                        if (state.Data is not Unknown0x06 unknown0x06)
+                    case OperationCode.DisplayBillboard:
+                        if (state.Data is not DisplayBillboard displayBillboard)
                             return false;
 
                         // Try to extract to the output directory
-                        ExtractFile(data, dataStart, unknown0x06, ++normalFileCount, outputDirectory, isPkzip, includeDebug);
+                        ExtractFile(data, dataStart, displayBillboard, ++normalFileCount, outputDirectory, isPkzip, includeDebug);
                         break;
 
                     case OperationCode.DeleteFile:
@@ -618,27 +618,27 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>True if the file extracted successfully, false otherwise</returns>
         public WiseExtractStatus ExtractFile(Stream data,
             long dataStart,
-            Unknown0x06 obj,
+            DisplayBillboard obj,
             int index,
             string outputDirectory,
             bool isPkzip,
             bool includeDebug)
         {
             // Get the generated base name
-            string baseName = $"WISE_0x06_{obj.Operand_1:X4}";
+            string baseName = $"Billboard_{obj.Flags:X4}";
 
             // If there are no deflate objects
-            if (obj.DeflateInfo?.Info == null)
+            if (obj.DeflateInfo == null)
             {
                 if (includeDebug) Console.WriteLine($"Skipping {baseName} because the deflate object array is null!");
                 return WiseExtractStatus.FAIL;
             }
 
             // Loop through the values
-            for (int i = 0; i < obj.DeflateInfo.Info.Length; i++)
+            for (int i = 0; i < obj.DeflateInfo.Length; i++)
             {
                 // Get the deflate info object
-                var info = obj.DeflateInfo.Info[i];
+                var info = obj.DeflateInfo[i];
 
                 // Get expected values
                 long expectedBytesRead = info.DeflateEnd - info.DeflateStart;

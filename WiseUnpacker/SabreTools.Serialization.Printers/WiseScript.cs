@@ -118,7 +118,7 @@ namespace SabreTools.Serialization.Printers
                     case DisplayMessage data: Print(builder, data); break;
                     case UserDefinedActionStep data: Print(builder, data); break;
                     case EditIniFile data: Print(builder, data); break;
-                    case Unknown0x06 data: Print(builder, data); break;
+                    case DisplayBillboard data: Print(builder, data); break;
                     case ExecuteProgram data: Print(builder, data); break;
                     case EndBlockStatement data: Print(builder, data); break;
                     case CallDllFunction data: Print(builder, data); break;
@@ -142,7 +142,8 @@ namespace SabreTools.Serialization.Printers
                     case RenameFileDirectory data: Print(builder, data); break;
                     case OpenCloseInstallLog data: Print(builder, data); break;
                     case ElseIfStatement data: Print(builder, data); break;
-
+                    case Unknown0x24 data: Print(builder, data); break;
+                    case Unknown0x25 data: Print(builder, data); break;
 
                     // Should never happen
                     case InvalidOperation data: Print(builder, data); break;
@@ -240,11 +241,26 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, Unknown0x06 data)
+        private static void Print(StringBuilder builder, DisplayBillboard data)
         {
-            builder.AppendLine($"    Data: Unknown0x06");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
-            Print(builder, data.DeflateInfo, 6);
+            builder.AppendLine($"    Data: DisplayBillboard");
+            builder.AppendLine(data.Flags, $"      Flags");
+
+            builder.AppendLine($"      Deflate info:");
+            builder.AppendLine($"      -------------------------");
+            if (data.DeflateInfo == null || data.DeflateInfo.Length == 0)
+            {
+                builder.AppendLine("  No deflate info items");
+            }
+            else
+            {
+                for (int i = 0; i < data.DeflateInfo.Length; i++)
+                {
+                    var entry = data.DeflateInfo[i];
+                    Print(builder, entry, 8, i);
+                }
+            }
+
             builder.AppendLine(data.Terminator, $"      Terminator");
             builder.AppendLine();
         }
@@ -505,6 +521,20 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(data.Operator, $"      Operator");
             builder.AppendLine(data.Variable, $"      Variable");
             builder.AppendLine(data.Value, $"      Value");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, Unknown0x24 data)
+        {
+            builder.AppendLine($"    Data: Unknown0x24");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine();
+        }
+
+        private static void Print(StringBuilder builder, Unknown0x25 data)
+        {
+            builder.AppendLine($"    Data: Unknown0x25");
+            builder.AppendLine(data.Operand_1, $"      Unknown");
             builder.AppendLine();
         }
 
@@ -818,26 +848,6 @@ namespace SabreTools.Serialization.Printers
         #endregion
 
         #region Additional
-
-        private static void Print(StringBuilder builder, ScriptDeflateInfoContainer? data, int indent)
-        {
-            string padding = string.Empty.PadLeft(indent, ' ');
-
-            builder.AppendLine($"{padding}Deflate info container:");
-            builder.AppendLine($"{padding}-------------------------");
-            builder.AppendLine($"{padding}Info:");
-            if (data?.Info == null || data.Info.Length == 0)
-            {
-                builder.AppendLine("  No deflate info items");
-                return;
-            }
-
-            for (int i = 0; i < data.Info.Length; i++)
-            {
-                var entry = data.Info[i];
-                Print(builder, entry, indent + 2, i);
-            }
-        }
 
         private static void Print(StringBuilder builder, ScriptDeflateInfo data, int indent, int index = -1)
         {

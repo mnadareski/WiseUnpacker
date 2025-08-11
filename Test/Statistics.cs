@@ -334,19 +334,6 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains Unknown0x06
-            if (_opcodes.TryGetValue(OperationCode.UnknownDeflatedFile0x06, out var contains0x06) && contains0x06.Count > 0)
-            {
-                sw.WriteLine("Contains Unknown0x06:");
-                contains0x06.Sort();
-                foreach (string path in contains0x06)
-                {
-                    sw.WriteLine($"  {path}");
-                }
-
-                sw.WriteLine();
-            }
-
             // Contains Invalid0x0E
             if (_opcodes.TryGetValue(OperationCode.Invalid0x0E, out var contains0x0E) && contains0x0E.Count > 0)
             {
@@ -431,6 +418,32 @@ namespace Test
                 sw.WriteLine("Contains Unknown0x22:");
                 contains0x22.Sort();
                 foreach (string path in contains0x22)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x24
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x24, out var contains0x24) && contains0x24.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x24:");
+                contains0x24.Sort();
+                foreach (string path in contains0x24)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Contains Unknown0x25
+            if (_opcodes.TryGetValue(OperationCode.Unknown0x22, out var contains0x25) && contains0x25.Count > 0)
+            {
+                sw.WriteLine("Contains Unknown0x25:");
+                contains0x25.Sort();
+                foreach (string path in contains0x25)
                 {
                     sw.WriteLine($"  {path}");
                 }
