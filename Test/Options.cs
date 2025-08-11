@@ -27,6 +27,13 @@ namespace Test
         /// </summary>
         public bool Info { get; private set; } = false;
 
+#if NETCOREAPP
+        /// <summary>
+        /// Enable JSON output
+        /// </summary>
+        public bool Json { get; private set; } = false;
+#endif
+
         /// <summary>
         /// Set of input paths to use for operations
         /// </summary>
@@ -70,6 +77,15 @@ namespace Test
                     case "-i":
                     case "--info":
                         options.Info = true;
+                        break;
+
+                    case "-j":
+                    case "--json":
+#if NETCOREAPP
+                        options.Json = true;
+#else
+                        Console.WriteLine("JSON output not available in .NET Framework");
+#endif
                         break;
 
                     case "-o":
@@ -123,6 +139,9 @@ namespace Test
             Console.WriteLine("-?, -h, --help           Display this help text and quit");
             Console.WriteLine("-d, --debug              Enable debug mode");
             Console.WriteLine("-i, --info               Print overlay and script info");
+#if NETCOREAPP
+            Console.WriteLine("-j, --json               Print info as JSON");
+#endif
             Console.WriteLine("-x, --extract            Extract files (default if nothing else provided)");
             Console.WriteLine("-o, --outdir [PATH]      Set output path for extraction (required)");
         }

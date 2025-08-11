@@ -73,9 +73,15 @@ namespace Test
         /// <param name="options">User-defined options</param>
         private static void ProcessFile(string file, Options options)
         {
+#if NETFRAMEWORK || NETSTANDARD2_0_OR_GREATER
+            bool json = false;
+#else
+            bool json = options.Json;
+#endif
+
             // Attempt to print information
             if (options.Info)
-                PrintFileInfo(file, options.OutputPath, options.Debug);
+                PrintFileInfo(file, options.OutputPath, json, options.Debug);
 
             // Attempt to extract the file
             if (options.Extract)
@@ -89,8 +95,9 @@ namespace Test
         /// </summary>
         /// <param name="file">File path</param>
         /// <param name="outputDirectory">Output directory path</param>
+        /// <param name="json">Enable JSON output, if supported</param>
         /// <param name="includeDebug">Enable including debug information</param>
-        private static void PrintFileInfo(string file, string outputDirectory, bool includeDebug)
+        private static void PrintFileInfo(string file, string outputDirectory, bool json, bool includeDebug)
         {
             // Get the base info output name
             string filenameBase = $"{file}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}";
@@ -118,6 +125,20 @@ namespace Test
 
                 // Process header statistics
                 _statistics.ProcessStatistics(file, header);
+
+#if NETCOREAPP
+                // If we have the JSON flag
+                if (json)
+                {
+                    // Create the output data
+                    string serializedData = header.ExportJSON();
+
+                    // Write the output data
+                    using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.json"));
+                    jsw.WriteLine(serializedData);
+                    jsw.Flush();
+                }
+#endif
 
                 // Create the header output data
                 var hBuilder = header.ExportStringBuilderExt();
@@ -155,6 +176,20 @@ namespace Test
 
                 // Process script statistics
                 _statistics.ProcessStatistics(file, script);
+
+#if NETCOREAPP
+                // If we have the JSON flag
+                if (json)
+                {
+                    // Create the output data
+                    string serializedData = script.ExportJSON();
+
+                    // Write the output data
+                    using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-script.json"));
+                    jsw.WriteLine(serializedData);
+                    jsw.Flush();
+                }
+#endif
 
                 // Create script output data
                 var sBuilder = script.ExportStringBuilderExt();
