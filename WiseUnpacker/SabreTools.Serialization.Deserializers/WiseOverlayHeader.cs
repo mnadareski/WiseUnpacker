@@ -38,7 +38,7 @@ namespace SabreTools.Serialization.Deserializers
                 }
 
                 // Valid for older overlay headers
-                if (overlayHeader.Endianness == 0x0000)
+                if (overlayHeader.Endianness == 0x0000 && overlayHeader.InitTextLen == 0)
                     return overlayHeader;
                 if (overlayHeader.Endianness != Endianness.LittleEndian && overlayHeader.Endianness != Endianness.BigEndian)
                     return null;
