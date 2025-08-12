@@ -19,23 +19,31 @@ namespace SabreTools.Serialization.Deserializers
             {
                 var overlayHeader = ParseOverlayHeader(data);
 
+                // WiseColors.dib
                 if (overlayHeader.DibDeflatedSize >= data.Length)
                     return null;
-
-                if (overlayHeader.WiseScriptDeflatedSize == 0
-                    || overlayHeader.WiseScriptDeflatedSize >= data.Length)
-                {
+                else if (overlayHeader.DibDeflatedSize > overlayHeader.DibDeflatedSize)
                     return null;
-                }
 
+                // WiseScript.bin
+                if (overlayHeader.WiseScriptDeflatedSize == 0)
+                    return null;
+                else if (overlayHeader.WiseScriptDeflatedSize >= data.Length)
+                    return null;
+                else if (overlayHeader.WiseScriptDeflatedSize > overlayHeader.WiseScriptInflatedSize)
+                    return null;
+
+                // WISE0001.DLL
                 if (overlayHeader.WiseDllDeflatedSize >= data.Length)
                     return null;
 
-                if (overlayHeader.FinalFileDeflatedSize == 0
-                    || overlayHeader.FinalFileDeflatedSize >= data.Length)
-                {
+                // FILE00XX.DAT
+                if (overlayHeader.FinalFileDeflatedSize == 0)
                     return null;
-                }
+                else if (overlayHeader.FinalFileDeflatedSize >= data.Length)
+                    return null;
+                else if (overlayHeader.FinalFileDeflatedSize > overlayHeader.FinalFileInflatedSize)
+                    return null;
 
                 // Valid for older overlay headers
                 if (overlayHeader.Endianness == 0x0000 && overlayHeader.InitTextLen == 0)
