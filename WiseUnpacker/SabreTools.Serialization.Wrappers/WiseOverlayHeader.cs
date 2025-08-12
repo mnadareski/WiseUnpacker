@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
 using SabreTools.IO.Streams;
@@ -344,6 +345,29 @@ namespace SabreTools.Serialization.Wrappers
                 header = Create(data);
                 if (header != null)
                     return true;
+            }
+
+            // Check section data
+            foreach (var section in pex.Model.SectionTable ?? [])
+            {
+                long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                data.Seek(sectionOffset, SeekOrigin.Begin);
+
+                header = Create(data);
+                if (header != null)
+                    return true;
+
+                // Check after the resource table
+                string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
+                if (sectionName == ".rsrc")
+                {
+                    long afterResourceOffset = sectionOffset + section.SizeOfRawData;
+                    data.Seek(afterResourceOffset, SeekOrigin.Begin);
+
+                    header = Create(data);
+                    if (header != null)
+                        return true;
+                }
             }
 
             // If there are no resources
