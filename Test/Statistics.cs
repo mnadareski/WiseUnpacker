@@ -48,6 +48,11 @@ namespace Test
         #region Script
 
         /// <summary>
+        /// Mapping of first flags in script files
+        /// </summary>
+        private readonly Dictionary<ushort, List<string>> _firstFlags = [];
+
+        /// <summary>
         /// Mapping of found DLL function calls
         /// </summary>
         private readonly Dictionary<string, List<string>> _functions = [];
@@ -170,6 +175,13 @@ namespace Test
         /// <param name="script">WiseScript to gather statistics from</param>
         public void ProcessStatistics(string file, WiseScript script)
         {
+            // First Flags
+            ushort flags = script.Model.Header?.Flags ?? 0;
+            if (!_firstFlags.ContainsKey(script.Model.Header?.Flags ?? 0))
+                _firstFlags[flags] = [];
+
+            _firstFlags[flags].Add(file);
+
             // Short Header
             if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
                 _shortHeaders.Add(file);
@@ -307,6 +319,25 @@ namespace Test
         {
             sw.WriteLine("Script");
             sw.WriteLine("-------------------------");
+
+            // First Flags
+            if (_firstFlags.Count > 0)
+            {
+                sw.WriteLine("First Flags:");
+                List<ushort> firstFlagsKeys = [.. _firstFlags.Keys];
+                firstFlagsKeys.Sort();
+
+                foreach (byte flags in firstFlagsKeys)
+                {
+                    sw.WriteLine($"  0x{flags:X4}:");
+                    foreach (string path in _firstFlags[flags])
+                    {
+                        sw.WriteLine($"    {path}");
+                    }
+                }
+
+                sw.WriteLine();
+            }
 
             // Short Headers
             if (_shortHeaders.Count > 0)

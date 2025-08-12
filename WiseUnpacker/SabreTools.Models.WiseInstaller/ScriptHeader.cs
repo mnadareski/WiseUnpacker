@@ -9,13 +9,37 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Flags, unknown mapping
         /// </summary>
-        public byte Flags { get; set; } // 0x00
+        /// <remarks>
+        /// The high byte (0x01) being any value but 0x00 indicates
+        /// that a 32-bit library will be used.
+        /// </remarks>
+        public ushort Flags { get; set; } // 0x00 - 0x01
 
         /// <summary>
         /// Unknown
         /// </summary>
-        /// <remarks>4 bytes</remarks>
-        public byte[]? UnknownBytes_1 { get; set; } // 0x01 - 0x04
+        /// <remarks>
+        /// Read in a loop with <see cref="UnknownU16_2"/>, possibly
+        /// an offset? It's read into an array.
+        /// 
+        /// Both values are then used to build variable names if they're
+        /// non-zero. The variable names use "SYS" as the template.
+        /// The values are then seemingly read over?
+        /// </remarks>
+        public ushort UnknownU16_1 { get; set; } // 0x02 - 0x03
+
+        /// <summary>
+        /// Unknown
+        /// </summary>
+        /// <remarks>
+        /// Read in a loop with <see cref="UnknownU16_1"/>, possibly
+        /// an offset? It's read into an array.
+        /// 
+        /// Both values are then used to build variable names if they're
+        /// non-zero. The variable names use "SYS" as the template.
+        /// The values are then seemingly read over?
+        /// </remarks>
+        public ushort UnknownU16_2 { get; set; } // 0x04 - 0x05
 
         /// <summary>
         /// Total deflated size of OP 0x00 files?

@@ -56,10 +56,70 @@ namespace SabreTools.Serialization.Deserializers
             // Cache the current position in case of a trimmed header
             long current = data.Position;
 
+            // Set the number of strings per language
+            int scriptStringsMultiplier = 55;
+
             var header = new ScriptHeader();
 
+            // Attempt to read strings at 0x12
+            data.Seek(current + 0x12, SeekOrigin.Begin);
+            string? ftpUrl = data.ReadNullTerminatedAnsiString();
+            string? logPath = data.ReadNullTerminatedAnsiString();
+            string? messageFont = data.ReadNullTerminatedAnsiString();
+            data.Seek(current, SeekOrigin.Begin);
+
+            // If the strings are valid
+            if ((ftpUrl != null && (ftpUrl.Length == 0 || ftpUrl.Split('.').Length > 2))
+                && (logPath != null && (logPath.Length == 0 || logPath.StartsWith("%")))
+                && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
+                && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
+            {
+                // TODO: Figure out if this maps to existing fields
+                header.Flags = data.ReadByteValue();
+                header.Unknown_22 = data.ReadBytes(17);
+                header.FTPURL = data.ReadNullTerminatedAnsiString();
+                header.LogPathname = data.ReadNullTerminatedAnsiString();
+                header.MessageFont = data.ReadNullTerminatedAnsiString();
+                header.FontSize = data.ReadUInt32LittleEndian();
+
+                scriptStringsMultiplier = 46;
+                goto ReadStrings;
+            }
+
+            // Attempt to read strings at 0x26
+            data.Seek(current + 0x26, SeekOrigin.Begin);
+            ftpUrl = data.ReadNullTerminatedAnsiString();
+            logPath = data.ReadNullTerminatedAnsiString();
+            messageFont = data.ReadNullTerminatedAnsiString();
+            data.Seek(current, SeekOrigin.Begin);
+
+            // If the strings are valid
+            if ((ftpUrl != null && (ftpUrl.Length == 0 || ftpUrl.Split('.').Length > 2))
+                && (logPath != null && (logPath.Length == 0 || logPath.StartsWith("%")))
+                && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
+                && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
+            {
+                header.Flags = data.ReadByteValue();
+                header.UnknownU16_1 = data.ReadUInt16LittleEndian();
+                header.UnknownU16_2 = data.ReadUInt16LittleEndian();
+                header.SomeOffset1 = data.ReadUInt32LittleEndian();
+                header.SomeOffset2 = data.ReadUInt32LittleEndian();
+                header.UnknownBytes_2 = data.ReadBytes(4);
+                header.DateTime = data.ReadUInt32LittleEndian();
+                header.Unknown_22 = data.ReadBytes(17);
+                header.FTPURL = data.ReadNullTerminatedAnsiString();
+                header.LogPathname = data.ReadNullTerminatedAnsiString();
+                header.MessageFont = data.ReadNullTerminatedAnsiString();
+                header.FontSize = data.ReadUInt32LittleEndian();
+
+                scriptStringsMultiplier = 53;
+                goto ReadStrings;
+            }
+
+            // Otherwise, assume a standard header
             header.Flags = data.ReadByteValue();
-            header.UnknownBytes_1 = data.ReadBytes(4);
+            header.UnknownU16_1 = data.ReadUInt16LittleEndian();
+            header.UnknownU16_2 = data.ReadUInt16LittleEndian();
             header.SomeOffset1 = data.ReadUInt32LittleEndian();
             header.SomeOffset2 = data.ReadUInt32LittleEndian();
             header.UnknownBytes_2 = data.ReadBytes(4);
@@ -70,53 +130,7 @@ namespace SabreTools.Serialization.Deserializers
             header.MessageFont = data.ReadNullTerminatedAnsiString();
             header.FontSize = data.ReadUInt32LittleEndian();
 
-            // If the font string is empty, then the header is trimmed
-            int scriptStringsMultiplier = 55;
-            if (header.MessageFont != null && header.MessageFont.Length == 0
-                && (header.FontSize < 8 || header.FontSize > 24))
-            {
-                // Seek back to the original position
-                data.Seek(current, SeekOrigin.Begin);
-
-                // Recreate the header with minimal data
-                header = new ScriptHeader();
-
-                // TODO: Figure out if this maps to existing fields
-                header.Flags = data.ReadByteValue();
-                header.Unknown_22 = data.ReadBytes(17);
-                header.FTPURL = data.ReadNullTerminatedAnsiString();
-                header.LogPathname = data.ReadNullTerminatedAnsiString();
-                header.MessageFont = data.ReadNullTerminatedAnsiString();
-                header.FontSize = data.ReadUInt32LittleEndian();
-
-                scriptStringsMultiplier = 46;
-            }
-
-            // If the first character of the message font is a control char,
-            // then the header is trimmed in a different way
-            else if (header.MessageFont != null
-                && header.MessageFont.Length > 0
-                && IsTypicalControlCode(header.MessageFont, strict: true))
-            {
-                // Seek back to the original position
-                data.Seek(current, SeekOrigin.Begin);
-
-                // Recreate the header with minimal data
-                header = new ScriptHeader();
-
-                header.Flags = data.ReadByteValue();
-                header.UnknownBytes_1 = data.ReadBytes(4);
-                header.SomeOffset1 = data.ReadUInt32LittleEndian();
-                header.SomeOffset2 = data.ReadUInt32LittleEndian();
-                header.UnknownBytes_2 = data.ReadBytes(4);
-                header.DateTime = data.ReadUInt32LittleEndian();
-                header.Unknown_22 = data.ReadBytes(17);
-                header.FTPURL = data.ReadNullTerminatedAnsiString();
-                header.LogPathname = data.ReadNullTerminatedAnsiString();
-                header.MessageFont = data.ReadNullTerminatedAnsiString();
-                header.FontSize = data.ReadUInt32LittleEndian();
-            }
-
+        ReadStrings:
             header.Unknown_2 = data.ReadBytes(2);
             header.LanguageCount = data.ReadByteValue();
 
@@ -135,7 +149,7 @@ namespace SabreTools.Serialization.Deserializers
 
             int scriptStringCount = header.LanguageCount == 1
                 ? scriptStringsMultiplier
-                : (header.LanguageCount * scriptStringsMultiplier) + 1;
+                : header.LanguageCount * scriptStringsMultiplier;
             header.ScriptStrings = new string[scriptStringCount];
             for (int i = 0; i < header.ScriptStrings.Length; i++)
             {
