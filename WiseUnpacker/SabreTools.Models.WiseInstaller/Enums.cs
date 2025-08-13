@@ -219,24 +219,24 @@ namespace SabreTools.Models.WiseInstaller
         OpenCloseInstallLog = 0x1E,
 
         /// <summary>
-        /// Unknown
+        /// Invalid case
         /// </summary>
-        Unknown0x1F = 0x1F,
+        Invalid0x1F = 0x1F,
 
         /// <summary>
-        /// Unknown
+        /// Invalid case
         /// </summary>
-        Unknown0x20 = 0x20,
+        Invalid0x20 = 0x20,
 
         /// <summary>
-        /// Unknown
+        /// Invalid case
         /// </summary>
-        Unknown0x21 = 0x21,
+        Invalid0x21 = 0x21,
 
         /// <summary>
-        /// Unknown
+        /// Invalid case
         /// </summary>
-        Unknown0x22 = 0x22,
+        Invalid0x22 = 0x22,
 
         /// <summary>
         /// ElseIf Statement
