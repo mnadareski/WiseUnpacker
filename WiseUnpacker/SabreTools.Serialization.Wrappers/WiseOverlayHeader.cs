@@ -361,8 +361,17 @@ namespace SabreTools.Serialization.Wrappers
                 string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
                 if (sectionName == ".rsrc")
                 {
+                    // Data immediately following
                     long afterResourceOffset = sectionOffset + section.SizeOfRawData;
                     data.Seek(afterResourceOffset, SeekOrigin.Begin);
+
+                    header = Create(data);
+                    if (header != null)
+                        return true;
+
+                    // Data following padding data
+                    data.Seek(afterResourceOffset, SeekOrigin.Begin);
+                    _ = data.ReadNullTerminatedAnsiString();
 
                     header = Create(data);
                     if (header != null)

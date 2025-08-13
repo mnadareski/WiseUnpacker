@@ -74,15 +74,12 @@ namespace SabreTools.Serialization.Deserializers
                 && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
                 && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
             {
+                scriptStringsMultiplier = 46;
+
                 // TODO: Figure out if this maps to existing fields
                 header.Flags = data.ReadByteValue();
                 header.Unknown_22 = data.ReadBytes(17);
-                header.FTPURL = data.ReadNullTerminatedAnsiString();
-                header.LogPathname = data.ReadNullTerminatedAnsiString();
-                header.MessageFont = data.ReadNullTerminatedAnsiString();
-                header.FontSize = data.ReadUInt32LittleEndian();
 
-                scriptStringsMultiplier = 46;
                 goto ReadStrings;
             }
 
@@ -99,6 +96,8 @@ namespace SabreTools.Serialization.Deserializers
                 && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
                 && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
             {
+                scriptStringsMultiplier = 53;
+
                 header.Flags = data.ReadByteValue();
                 header.UnknownU16_1 = data.ReadUInt16LittleEndian();
                 header.UnknownU16_2 = data.ReadUInt16LittleEndian();
@@ -107,12 +106,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.UnknownBytes_2 = data.ReadBytes(4);
                 header.DateTime = data.ReadUInt32LittleEndian();
                 header.Unknown_22 = data.ReadBytes(17);
-                header.FTPURL = data.ReadNullTerminatedAnsiString();
-                header.LogPathname = data.ReadNullTerminatedAnsiString();
-                header.MessageFont = data.ReadNullTerminatedAnsiString();
-                header.FontSize = data.ReadUInt32LittleEndian();
 
-                scriptStringsMultiplier = 53;
                 goto ReadStrings;
             }
 
@@ -125,12 +119,12 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownBytes_2 = data.ReadBytes(4);
             header.DateTime = data.ReadUInt32LittleEndian();
             header.Unknown_22 = data.ReadBytes(22);
+
+        ReadStrings:
             header.FTPURL = data.ReadNullTerminatedAnsiString();
             header.LogPathname = data.ReadNullTerminatedAnsiString();
             header.MessageFont = data.ReadNullTerminatedAnsiString();
             header.FontSize = data.ReadUInt32LittleEndian();
-
-        ReadStrings:
             header.Unknown_2 = data.ReadBytes(2);
             header.LanguageCount = data.ReadByteValue();
 
