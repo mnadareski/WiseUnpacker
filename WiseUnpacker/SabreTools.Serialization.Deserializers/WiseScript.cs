@@ -927,9 +927,27 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled AddToAutoexecBat on success, null on error</returns>
         private static AddToAutoexecBat ParseAddToAutoexecBat(string data)
         {
+            string[] parts = data.Split((char)0x7F);
+
             var obj = new AddToAutoexecBat();
 
-            obj.Args = data.Split((char)0x7F);
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.FileToEdit = parts[1];
+
+            if (parts.Length > 2)
+                obj.TextToInsert = parts[2];
+
+            if (parts.Length > 3)
+                obj.SearchForText = parts[3];
+
+            if (parts.Length > 4)
+                obj.CommentText = parts[4];
+
+            if (parts.Length > 5 && int.TryParse(parts[5], out int lineNumber))
+                obj.LineNumber = lineNumber;
 
             return obj;
         }
@@ -941,9 +959,27 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled AddToConfigSys on success, null on error</returns>
         private static AddToConfigSys ParseAddToConfigSys(string data)
         {
+            string[] parts = data.Split((char)0x7F);
+
             var obj = new AddToConfigSys();
 
-            obj.Args = data.Split((char)0x7F);
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.FileToEdit = parts[1];
+
+            if (parts.Length > 2)
+                obj.TextToInsert = parts[2];
+
+            if (parts.Length > 3)
+                obj.SearchForText = parts[3];
+
+            if (parts.Length > 4)
+                obj.CommentText = parts[4];
+
+            if (parts.Length > 5 && int.TryParse(parts[5], out int lineNumber))
+                obj.LineNumber = lineNumber;
 
             return obj;
         }

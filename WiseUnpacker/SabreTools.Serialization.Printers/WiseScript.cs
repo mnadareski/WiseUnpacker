@@ -560,20 +560,24 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, AddToAutoexecBat data, int i)
         {
             builder.AppendLine($"      Entry {i}: AddToAutoexecBat");
-            if (data.Args == null)
-                builder.AppendLine((string?)null, $"        Args");
-            else
-                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.FileToEdit, $"        File to edit");
+            builder.AppendLine(data.TextToInsert, $"        Text to insert");
+            builder.AppendLine(data.SearchForText, $"        Search for text");
+            builder.AppendLine(data.CommentText, $"        Comment text");
+            builder.AppendLine(data.LineNumber, $"        Line number");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, AddToConfigSys data, int i)
         {
             builder.AppendLine($"      Entry {i}: AddToConfigSys");
-            if (data.Args == null)
-                builder.AppendLine((string?)null, $"        Args");
-            else
-                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.FileToEdit, $"        File to edit");
+            builder.AppendLine(data.TextToInsert, $"        Text to insert");
+            builder.AppendLine(data.SearchForText, $"        Search for text");
+            builder.AppendLine(data.CommentText, $"        Comment text");
+            builder.AppendLine(data.LineNumber, $"        Line number");
             builder.AppendLine();
         }
 

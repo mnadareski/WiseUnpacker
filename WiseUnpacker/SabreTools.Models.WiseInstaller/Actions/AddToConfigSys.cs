@@ -10,21 +10,51 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// </summary>
     /// <remarks>
     /// This action is called through Call DLL Function and is mapped to "f2".
-    /// 
-    /// Probably this layout: 
-    /// - Flags (numeric) (e.g. "12", "8")
-    /// - Unknown string (empty in samples)
-    /// - Executable path (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-    /// - Executable path again (e.g. "%WIN%\hcwSubID.exe", "765.exe")
-    /// - Unknown string (empty in samples)
-    /// - Numeric value (e.g. "0")
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     public class AddToConfigSys : FunctionData
     {
         /// <summary>
-        /// Arguments passed in from the Call DLL Function
+        /// Flags from the argument data
         /// </summary>
-        public string[]? Args { get; set; }
+        /// <remarks>
+        /// Encoded as a string, binary representation in script file.
+        /// Expected flags:
+        /// - Case Sensitive (0x01)
+        /// - Insert Action (unknown)
+        /// - Match Criteria (unknown)
+        /// - Ignore White Space (unknown)
+        /// - Make Backup File (unknown)
+        /// </remarks>
+        public byte DataFlags { get; set; }
+
+        /// <summary>
+        /// Full path to the text file to edit
+        /// </summary>
+        /// <remarks>
+        /// Ignored because structure is shared with both <see cref="AddToAutoexecBat"/>
+        /// and <see cref="InsertLineIntoTextFile"/>
+        /// </remarks>
+        public string? FileToEdit { get; set; }
+
+        /// <summary>
+        /// Text to insert into the file
+        /// </summary>
+        public string? TextToInsert { get; set; }
+
+        /// <summary>
+        /// Search for Text
+        /// </summary>
+        public string? SearchForText { get; set; }
+
+        /// <summary>
+        /// Comment Text
+        /// </summary>
+        public string? CommentText { get; set; }
+
+        /// <summary>
+        /// Line number to insert text at, 0 for append to end
+        /// </summary>
+        public int LineNumber { get; set; }
     }
 }

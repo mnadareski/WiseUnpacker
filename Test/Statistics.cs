@@ -495,32 +495,6 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains f1 -- Known but need samples for data layout
-            if (_functions.TryGetValue("f1", out var containsFunction1) && containsFunction1.Count > 0)
-            {
-                sw.WriteLine("Contains Function f1 [Add to AUTOEXEC.BAT]:");
-                containsFunction1.Sort();
-                foreach (string path in containsFunction1)
-                {
-                    sw.WriteLine($"  {path}");
-                }
-
-                sw.WriteLine();
-            }
-
-            // Contains f2 -- Known but need samples for data layout
-            if (_functions.TryGetValue("f2", out var containsFunction2) && containsFunction2.Count > 0)
-            {
-                sw.WriteLine("Contains Function f2 [Add to CONFIG.SYS]:");
-                containsFunction2.Sort();
-                foreach (string path in containsFunction2)
-                {
-                    sw.WriteLine($"  {path}");
-                }
-
-                sw.WriteLine();
-            }
-
             // Contains Unmapped Function
             var unmappedFunctions = Array.FindAll([.. _functions.Keys], k =>
             {
