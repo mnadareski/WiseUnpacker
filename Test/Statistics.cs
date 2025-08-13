@@ -299,12 +299,18 @@ namespace Test
                 sw.WriteLine($"  Bit {i} ({bitName}): {_flags[i].Count}");
             }
 
+            sw.WriteLine();
+
             // Should Contain File
             sw.WriteLine("Should Contain File:");
             for (int i = 0; i < _shouldContainFile.Length; i++)
             {
                 string filename = MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {_shouldContainFile[i].Count}");
+                foreach (string path in _shouldContainFile[i])
+                {
+                    sw.WriteLine($"    {path}");
+                }
             }
 
             sw.WriteLine();
