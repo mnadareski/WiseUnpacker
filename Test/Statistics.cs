@@ -521,19 +521,6 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains f30 -- Layout unmapped, present in WISE0001.DLL
-            if (_functions.TryGetValue("f30", out var containsFunction30) && containsFunction30.Count > 0)
-            {
-                sw.WriteLine("Contains Function f30:");
-                containsFunction30.Sort();
-                foreach (string path in containsFunction30)
-                {
-                    sw.WriteLine($"  {path}");
-                }
-
-                sw.WriteLine();
-            }
-
             // Contains Unmapped Function
             var unmappedFunctions = Array.FindAll([.. _functions.Keys], k =>
             {
