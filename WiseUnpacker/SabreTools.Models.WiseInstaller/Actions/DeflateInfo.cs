@@ -1,24 +1,24 @@
-namespace SabreTools.Models.WiseInstaller
+namespace SabreTools.Models.WiseInstaller.Actions
 {
     /// <summary>
-    /// Deflated Wise file?
+    /// Represents deflated file parameters
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class ScriptDeflateInfo
+    public class DeflateInfo
     {
         /// <summary>
         /// Start of the deflated data
         /// </summary>
-        public uint DeflateStart { get; set; } // 0x00 - 0x03 (0x07 - 0x0A)
+        public uint DeflateStart { get; set; }
 
         /// <summary>
         /// End of the deflated data
         /// </summary>
-        public uint DeflateEnd { get; set; } // 0x04 - 0x07 (0x0B - 0x0E)
+        public uint DeflateEnd { get; set; }
 
         /// <summary>
         /// Inflated data size
         /// </summary>
-        public uint InflatedSize { get; set; } // 0x08 - 0x0B (0x0F - 0x12)
+        public uint InflatedSize { get; set; }
     }
 }
