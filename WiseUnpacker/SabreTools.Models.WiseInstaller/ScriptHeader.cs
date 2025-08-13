@@ -163,21 +163,9 @@ namespace SabreTools.Models.WiseInstaller
         public byte LanguageCount { get; set; }
 
         /// <summary>
-        /// Unknown strings, most set to \0, only seen set in smartsd.exe
+        /// All strings in the aheader
         /// </summary>
-        /// <remarks>7 strings</remarks>
-        public string[]? UnknownStrings_7 { get; set; }
-
-        /// <summary>
-        /// 1 string when <see cref="LanguageCount"/> is 1,
-        /// otherwise (<see cref="LanguageCount"/> * 2) + 2
-        /// </summary>
-        public string[]? LanguageSelectionStrings { get; set; }
-
-        /// <summary>
-        /// 55 * <see cref="LanguageCount"/> strings
-        /// </summary>
-        /// <remarks>In trimmed scripts, this number seems to be 46?</remarks>
-        public string[]? ScriptStrings { get; set; }
+        /// <remarks>See the remarks in <see cref="LanguageCount"/></remarks> 
+        public string[]? HeaderStrings { get; set; }
     }
 }

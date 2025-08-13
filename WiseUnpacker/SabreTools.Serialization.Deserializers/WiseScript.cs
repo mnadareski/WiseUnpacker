@@ -56,9 +56,6 @@ namespace SabreTools.Serialization.Deserializers
             // Cache the current position in case of a trimmed header
             long current = data.Position;
 
-            // Set the number of strings per language
-            int scriptStringsMultiplier = 55;
-
             var header = new ScriptHeader();
 
             // Attempt to read strings at 0x12
@@ -74,8 +71,6 @@ namespace SabreTools.Serialization.Deserializers
                 && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
                 && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
             {
-                scriptStringsMultiplier = 46;
-
                 // TODO: Figure out if this maps to existing fields
                 header.Flags = data.ReadByteValue();
                 header.Unknown_22 = data.ReadBytes(17);
@@ -96,8 +91,6 @@ namespace SabreTools.Serialization.Deserializers
                 && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
                 && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
             {
-                scriptStringsMultiplier = 53;
-
                 header.Flags = data.ReadByteValue();
                 header.UnknownU16_1 = data.ReadUInt16LittleEndian();
                 header.UnknownU16_2 = data.ReadUInt16LittleEndian();
@@ -128,39 +121,44 @@ namespace SabreTools.Serialization.Deserializers
             header.Unknown_2 = data.ReadBytes(2);
             header.LanguageCount = data.ReadByteValue();
 
-            header.UnknownStrings_7 = new string[7];
-            for (int i = 0; i < header.UnknownStrings_7.Length; i++)
+            List<string> headerStrings = [];
+            while (true)
             {
-                header.UnknownStrings_7[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
-            }
-
-            int languageSelectionCount = header.LanguageCount == 1 ? 1 : (header.LanguageCount * 2) + 2;
-            header.LanguageSelectionStrings = new string[languageSelectionCount];
-            for (int i = 0; i < header.LanguageSelectionStrings.Length; i++)
-            {
-                header.LanguageSelectionStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
-            }
-
-            int scriptStringCount = header.LanguageCount == 1
-                ? scriptStringsMultiplier
-                : header.LanguageCount * scriptStringsMultiplier;
-            header.ScriptStrings = new string[scriptStringCount];
-            for (int i = 0; i < header.ScriptStrings.Length; i++)
-            {
-                header.ScriptStrings[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
+                string? str = data.ReadNullTerminatedAnsiString();
+                if (str == null)
+                    break;
 
                 // Try to handle invalid string lengths
-                if (header.ScriptStrings[i].Length > 0)
+                if (str.Length > 0 && IsTypicalControlCode(str, strict: false))
                 {
-                    string str = header.ScriptStrings[i];
-                    if (IsTypicalControlCode(str, strict: false))
+                    data.Seek(-str.Length - 1, SeekOrigin.Current);
+                    break;
+                }
+
+                // Try to handle InstallFile calls
+                long original = data.Position;
+                if (str.Length == 0)
+                {
+                    data.Seek(-1, SeekOrigin.Current);
+
+                    // Try to read the next block as an install file call
+                    var maybeInstall = ParseInstallFile(data, header.LanguageCount);
+                    if (maybeInstall != null
+                        && (maybeInstall.DeflateEnd - maybeInstall.DeflateStart) < data.Length
+                        && (maybeInstall.DeflateEnd - maybeInstall.DeflateStart) < maybeInstall.InflatedSize)
                     {
-                        header.ScriptStrings[i] = string.Empty;
-                        data.Seek(-str.Length - 1, SeekOrigin.Current);
+                        data.Seek(original - 1, SeekOrigin.Begin);
                         break;
                     }
+
+                    // Otherwise, seek back to reading
+                    data.Seek(original, SeekOrigin.Begin);
                 }
+
+                headerStrings.Add(str);
             }
+
+            header.HeaderStrings = [.. headerStrings];
 
             return header;
         }
@@ -914,7 +912,7 @@ namespace SabreTools.Serialization.Deserializers
         private static AddDirectoryToPath ParseAddDirectoryToPath(string data)
         {
             string[] parts = data.Split((char)0x7F);
-            
+
             var obj = new AddDirectoryToPath();
 
             if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))

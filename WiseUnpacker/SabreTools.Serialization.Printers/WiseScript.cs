@@ -47,50 +47,18 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine(header.Unknown_2, "  Unknown_2");
             builder.AppendLine(header.LanguageCount, "  Language count");
             builder.AppendLine();
-            builder.AppendLine("  Unknown strings");
+            builder.AppendLine("  Header strings");
             builder.AppendLine("  -------------------------");
-            if (header.UnknownStrings_7 == null || header.UnknownStrings_7.Length == 0)
+            if (header.HeaderStrings == null || header.HeaderStrings.Length == 0)
             {
-                builder.AppendLine("  No unknown strings");
+                builder.AppendLine("  No header strings");
             }
             else
             {
-                for (int i = 0; i < header.UnknownStrings_7.Length; i++)
+                for (int i = 0; i < header.HeaderStrings.Length; i++)
                 {
-                    var entry = header.UnknownStrings_7[i];
-                    builder.AppendLine($"  Unknown String {i}: {entry}");
-                }
-            }
-            builder.AppendLine();
-
-            builder.AppendLine("  Language selection strings");
-            builder.AppendLine("  -------------------------");
-            if (header.LanguageSelectionStrings == null || header.LanguageSelectionStrings.Length == 0)
-            {
-                builder.AppendLine("  No language selection strings");
-            }
-            else
-            {
-                for (int i = 0; i < header.LanguageSelectionStrings.Length; i++)
-                {
-                    var entry = header.LanguageSelectionStrings[i];
-                    builder.AppendLine($"  Language Selection String {i}: {entry}");
-                }
-            }
-            builder.AppendLine();
-
-            builder.AppendLine("  Script strings");
-            builder.AppendLine("  -------------------------");
-            if (header.ScriptStrings == null || header.ScriptStrings.Length == 0)
-            {
-                builder.AppendLine("  No script strings");
-            }
-            else
-            {
-                for (int i = 0; i < header.ScriptStrings.Length; i++)
-                {
-                    var entry = header.ScriptStrings[i];
-                    builder.AppendLine($"  Script String {i}: {entry}");
+                    var entry = header.HeaderStrings[i];
+                    builder.AppendLine($"  Header String {i}: {entry}");
                 }
             }
             builder.AppendLine();
