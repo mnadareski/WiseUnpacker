@@ -456,7 +456,7 @@ namespace SabreTools.Serialization.Deserializers
                     "f27" => ParseParseString(entryString),
                     "f28" => ParseExitInstallation(entryString),
                     "f29" => ParseSelfRegisterOCXsDLLs(entryString),
-                    "f30" => ParseUnknownF30(entryString),
+                    "f30" => ParseInstallDirectXComponents(entryString),
                     "f31" => ParseWizardBlockLoop(entryString),
                     "f33" => ParseReadUpdateTextFile(entryString),
                     "f34" => ParsePostToHttpServer(entryString),
@@ -1412,15 +1412,27 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a string into a UnknownF30
+        /// Parse a string into a InstallDirectXComponents
         /// </summary>
         /// <param name="data">0x7F-separated string to parse</param>
-        /// <returns>Filled UnknownF30 on success, null on error</returns>
-        private static UnknownF30 ParseUnknownF30(string data)
+        /// <returns>Filled InstallDirectXComponents on success, null on error</returns>
+        private static InstallDirectXComponents ParseInstallDirectXComponents(string data)
         {
-            var obj = new UnknownF30();
+            string[] parts = data.Split((char)0x7F);
 
-            obj.Args = data.Split((char)0x7F);
+            var obj = new InstallDirectXComponents();
+
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.RootPath = parts[1];
+
+            if (parts.Length > 2)
+                obj.LibraryPath = parts[2];
+
+            if (parts.Length > 3 && int.TryParse(parts[3], out int sizeOrOffsetOrFlag))
+                obj.SizeOrOffsetOrFlag = sizeOrOffsetOrFlag;
 
             return obj;
         }

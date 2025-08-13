@@ -33,7 +33,7 @@ namespace SabreTools.Serialization
                 "f27" => "Parse String",
                 "f28" => "Exit Installation",
                 "f29" => "Self-Register OCXs/DLLs",
-                "f30" => "Unknown",
+                "f30" => "Install DirectX Components",
                 "f31" => "Wizard Block",
                 "f33" => "Read/Update Text File",
                 "f34" => "Post to HTTP Server",

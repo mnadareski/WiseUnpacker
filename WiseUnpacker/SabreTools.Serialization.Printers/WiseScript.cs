@@ -327,7 +327,7 @@ namespace SabreTools.Serialization.Printers
                         case ParseString args: Print(builder, args, i); break;
                         case ExitInstallation args: Print(builder, args, i); break;
                         case SelfRegisterOCXsDLLs args: Print(builder, args, i); break;
-                        case UnknownF30 args: Print(builder, args, i); break;
+                        case InstallDirectXComponents args: Print(builder, args, i); break;
                         case WizardBlockLoop args: Print(builder, args, i); break;
                         case ReadUpdateTextFile args: Print(builder, args, i); break;
                         case PostToHttpServer args: Print(builder, args, i); break;
@@ -758,13 +758,13 @@ namespace SabreTools.Serialization.Printers
             builder.AppendLine();
         }
 
-        private static void Print(StringBuilder builder, UnknownF30 data, int i)
+        private static void Print(StringBuilder builder, InstallDirectXComponents data, int i)
         {
-            builder.AppendLine($"      Entry {i}: UnknownF30");
-            if (data.Args == null)
-                builder.AppendLine((string?)null, $"        Args");
-            else
-                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine($"      Entry {i}: InstallDirectXComponents");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.RootPath, $"        Root path");
+            builder.AppendLine(data.LibraryPath, $"        Library path");
+            builder.AppendLine(data.SizeOrOffsetOrFlag, $"        Size or offset");
             builder.AppendLine();
         }
 
