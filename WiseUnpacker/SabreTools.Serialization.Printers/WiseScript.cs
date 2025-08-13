@@ -181,7 +181,7 @@ namespace SabreTools.Serialization.Printers
                     builder.AppendLine($"      File Text {i}: {entry}");
                 }
             }
-            builder.AppendLine(data.Operand_11, $"      Unknown");
+            builder.AppendLine(data.Source, $"      Source");
             builder.AppendLine();
         }
 
@@ -305,7 +305,7 @@ namespace SabreTools.Serialization.Printers
                     var entry = data.Entries[i];
                     switch (entry)
                     {
-                        case UnknownF0 args: Print(builder, args, i); break;
+                        case AddDirectoryToPath args: Print(builder, args, i); break;
                         case AddToAutoexecBat args: Print(builder, args, i); break;
                         case AddToConfigSys args: Print(builder, args, i); break;
                         case AddToSystemIni args: Print(builder, args, i); break;
@@ -547,9 +547,9 @@ namespace SabreTools.Serialization.Printers
 
         #region Function Actions
 
-        private static void Print(StringBuilder builder, UnknownF0 data, int i)
+        private static void Print(StringBuilder builder, AddDirectoryToPath data, int i)
         {
-            builder.AppendLine($"      Entry {i}: UnknownF0");
+            builder.AppendLine($"      Entry {i}: AddDirectoryToPath");
             if (data.Args == null)
                 builder.AppendLine((string?)null, $"        Args");
             else

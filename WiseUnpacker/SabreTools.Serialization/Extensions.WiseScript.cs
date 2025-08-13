@@ -11,7 +11,7 @@ namespace SabreTools.Serialization
         {
             return functionId switch
             {
-                "f0" => "Unknown",
+                "f0" => "Add Directory to PATH",
                 "f1" => "Add to AUTOEXEC.BAT",
                 "f2" => "Add to CONFIG.SYS",
                 "f3" => "Add to SYSTEM.INI",

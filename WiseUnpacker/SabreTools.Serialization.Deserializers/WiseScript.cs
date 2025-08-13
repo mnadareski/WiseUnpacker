@@ -275,7 +275,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.Description[i] = data.ReadNullTerminatedAnsiString() ?? string.Empty;
             }
 
-            header.Operand_11 = data.ReadNullTerminatedAnsiString();
+            header.Source = data.ReadNullTerminatedAnsiString();
 
             return header;
         }
@@ -434,7 +434,7 @@ namespace SabreTools.Serialization.Deserializers
                 string entryString = data.ReadNullTerminatedAnsiString() ?? string.Empty;
                 obj.Entries[i] = obj.FunctionName switch
                 {
-                    "f0" => ParseUnknownF0(entryString),
+                    "f0" => ParseAddDirectoryToPath(entryString),
                     "f1" => ParseAddToAutoexecBat(entryString),
                     "f2" => ParseAddToConfigSys(entryString),
                     "f3" => ParseAddToSystemIni(entryString),
@@ -907,13 +907,13 @@ namespace SabreTools.Serialization.Deserializers
         #region Function Actions
 
         /// <summary>
-        /// Parse a string into a UnknownF0
+        /// Parse a string into a AddDirectoryToPath
         /// </summary>
         /// <param name="data">0x7F-separated string to parse</param>
-        /// <returns>Filled UnknownF0 on success, null on error</returns>
-        private static UnknownF0 ParseUnknownF0(string data)
+        /// <returns>Filled AddDirectoryToPath on success, null on error</returns>
+        private static AddDirectoryToPath ParseAddDirectoryToPath(string data)
         {
-            var obj = new UnknownF0();
+            var obj = new AddDirectoryToPath();
 
             obj.Args = data.Split((char)0x7F);
 

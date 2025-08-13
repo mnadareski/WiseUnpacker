@@ -92,8 +92,11 @@ namespace SabreTools.Models.WiseInstaller.Actions
         public string[]? Description { get; set; }
 
         /// <summary>
-        /// Seen used on hl15of16.exe and hl1316.exe, on others its \0
+        /// Source file
         /// </summary>
-        public string? Operand_11 { get; set; }
+        /// <remarks>
+        /// Unused because structure is internally shared with <see cref="CopyLocalFile"/> 
+        /// </remarks>
+        public string? Source { get; set; }
     }
 }
