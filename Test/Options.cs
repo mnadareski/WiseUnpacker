@@ -22,6 +22,11 @@ namespace Test
         public bool Extract { get; private set; } = false;
 
         /// <summary>
+        /// Output information to file only, skip printing to console
+        /// </summary>
+        public bool FileOnly { get; private set; } = false;
+
+        /// <summary>
         /// Print both the overlay and script information
         /// to screen and file, if possible
         /// </summary>
@@ -77,6 +82,11 @@ namespace Test
                     case "-i":
                     case "--info":
                         options.Info = true;
+                        break;
+
+                    case "-f":
+                    case "--file":
+                        options.FileOnly = true;
                         break;
 
                     case "-j":
@@ -139,6 +149,7 @@ namespace Test
             Console.WriteLine("-?, -h, --help           Display this help text and quit");
             Console.WriteLine("-d, --debug              Enable debug mode");
             Console.WriteLine("-i, --info               Print overlay and script info");
+            Console.WriteLine("-f, --file               Print to file only");
 #if NETCOREAPP
             Console.WriteLine("-j, --json               Print info as JSON");
 #endif

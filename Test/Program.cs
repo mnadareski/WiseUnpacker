@@ -73,15 +73,9 @@ namespace Test
         /// <param name="options">User-defined options</param>
         private static void ProcessFile(string file, Options options)
         {
-#if NETFRAMEWORK || NETSTANDARD2_0_OR_GREATER
-            bool json = false;
-#else
-            bool json = options.Json;
-#endif
-
             // Attempt to print information
             if (options.Info)
-                PrintFileInfo(file, options.OutputPath, json, options.Debug);
+                PrintFileInfo(file, options.OutputPath, options);
 
             // Attempt to extract the file
             if (options.Extract)
@@ -95,9 +89,8 @@ namespace Test
         /// </summary>
         /// <param name="file">File path</param>
         /// <param name="outputDirectory">Output directory path</param>
-        /// <param name="json">Enable JSON output, if supported</param>
-        /// <param name="includeDebug">Enable including debug information</param>
-        private static void PrintFileInfo(string file, string outputDirectory, bool json, bool includeDebug)
+        /// <param name="options">User-defined options</param>
+        private static void PrintFileInfo(string file, string outputDirectory, Options options)
         {
             // Get the base info output name
             string filenameBase = $"{file}-{DateTime.Now:yyyy-MM-dd_HHmmss.ffff}";
@@ -116,7 +109,7 @@ namespace Test
                 using Stream stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 // Try to find the overlay header
-                if (!WiseOverlayHeader.FindOverlayHeader(stream, includeDebug, out var header) || header == null)
+                if (!WiseOverlayHeader.FindOverlayHeader(stream, options.Debug, out var header) || header == null)
                 {
                     _statistics.AddInvalidPath(file);
                     Console.WriteLine($"No valid header could be found in {file}, skipping...");
@@ -125,7 +118,7 @@ namespace Test
 
                 // Process header statistics and print
                 _statistics.ProcessStatistics(file, header);
-                PrintOverlayHeader(filenameBase, header, json);
+                PrintOverlayHeader(filenameBase, header, options);
 
                 // Seek to the script offset
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
@@ -140,7 +133,7 @@ namespace Test
 
                 // Try to extract the script
                 var extracted = new MemoryStream();
-                if (InflateWrapper.ExtractStream(stream, extracted, expected, header.IsPKZIP, includeDebug, out _) == ExtractionStatus.FAIL)
+                if (InflateWrapper.ExtractStream(stream, extracted, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.FAIL)
                     return;
 
                 // Try to parse the script information
@@ -155,12 +148,12 @@ namespace Test
 
                 // Process script statistics and print
                 _statistics.ProcessStatistics(file, script);
-                PrintScript(filenameBase, script, json);
+                PrintScript(filenameBase, script, options);
             }
             catch (Exception ex)
             {
                 _statistics.AddErroredPath(file);
-                Console.WriteLine(includeDebug ? ex : "[Exception opening file, please try again]");
+                Console.WriteLine(options.Debug ? ex : "[Exception opening file, please try again]");
                 Console.WriteLine();
             }
         }
@@ -169,13 +162,12 @@ namespace Test
         /// Print overlay header information, if possible
         /// </summary>
         /// <param name="filenameBase">Base filename pattern to use for output</param>
-        /// <param name="header">Overlay header to print information for</param>
-        /// <param name="json">Enable JSON output, if supported</param>
-        private static void PrintOverlayHeader(string filenameBase, WiseOverlayHeader header, bool json)
+        /// <param name="options">User-defined options</param>
+        private static void PrintOverlayHeader(string filenameBase, WiseOverlayHeader header, Options options)
         {
 #if NETCOREAPP
             // If we have the JSON flag
-            if (json)
+            if (options.Json)
             {
                 // Create the output data
                 string serializedData = header.ExportJSON();
@@ -195,7 +187,10 @@ namespace Test
                 return;
             }
 
-            Console.WriteLine(builder);
+            // Only print to console if enabled
+            if (!options.FileOnly)
+                Console.WriteLine(builder);
+
             using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.txt"));
             sw.WriteLine(builder.ToString());
             sw.Flush();
@@ -206,12 +201,12 @@ namespace Test
         /// </summary>
         /// <param name="filenameBase">Base filename pattern to use for output</param>
         /// <param name="script">Script to print information for</param>
-        /// <param name="json">Enable JSON output, if supported</param>
-        private static void PrintScript(string filenameBase, WiseScript script, bool json)
+        /// <param name="options">User-defined options</param>
+        private static void PrintScript(string filenameBase, WiseScript script, Options options)
         {
 #if NETCOREAPP
             // If we have the JSON flag
-            if (json)
+            if (options.Json)
             {
                 // Create the output data
                 string serializedData = script.ExportJSON();
