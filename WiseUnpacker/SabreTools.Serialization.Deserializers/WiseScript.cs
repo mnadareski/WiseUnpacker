@@ -913,9 +913,15 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>Filled AddDirectoryToPath on success, null on error</returns>
         private static AddDirectoryToPath ParseAddDirectoryToPath(string data)
         {
+            string[] parts = data.Split((char)0x7F);
+            
             var obj = new AddDirectoryToPath();
 
-            obj.Args = data.Split((char)0x7F);
+            if (parts.Length > 0 && byte.TryParse(parts[0], out byte flags))
+                obj.DataFlags = flags;
+
+            if (parts.Length > 1)
+                obj.Directory = parts[1];
 
             return obj;
         }

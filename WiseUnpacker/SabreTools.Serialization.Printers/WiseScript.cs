@@ -550,10 +550,8 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, AddDirectoryToPath data, int i)
         {
             builder.AppendLine($"      Entry {i}: AddDirectoryToPath");
-            if (data.Args == null)
-                builder.AppendLine((string?)null, $"        Args");
-            else
-                builder.AppendLine(string.Join(", ", data.Args), $"        Args");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
+            builder.AppendLine(data.Directory, $"        Directory");
             builder.AppendLine();
         }
 

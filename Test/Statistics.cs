@@ -482,19 +482,6 @@ namespace Test
                 sw.WriteLine();
             }
 
-            // Contains f0 -- Known but need samples for data layout
-            if (_functions.TryGetValue("f0", out var containsFunction0) && containsFunction0.Count > 0)
-            {
-                sw.WriteLine("Contains Function f0 [Add Directory to PATH]:");
-                containsFunction0.Sort();
-                foreach (string path in containsFunction0)
-                {
-                    sw.WriteLine($"  {path}");
-                }
-
-                sw.WriteLine();
-            }
-
             // Contains Unmapped Function
             var unmappedFunctions = Array.FindAll([.. _functions.Keys], k =>
             {

@@ -10,17 +10,27 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// </summary>
     /// <remarks>
     /// This action is called through Call DLL Function and is mapped to "f0".
-    /// Layout is unknown but should include:
-    /// - Directory to add
-    /// - Location to add (start of PATH or end of PATH)
-    /// - Add to all PATH variables(?)
     /// </remarks>
     /// <see href="https://www.manualslib.com/manual/404969/Symantec-Wisescript-Editor-8-0-Reference-For-Wise-Package-Studio-V1-0.html"/> 
     public class AddDirectoryToPath : FunctionData
     {
         /// <summary>
-        /// Arguments passed in from the Call DLL Function
+        /// Flags from the argument data
         /// </summary>
-        public string[]? Args { get; set; }
+        /// <remarks>
+        /// Encoded as a string, binary representation in script file.
+        /// Expected flags:
+        /// - Location to add [start of PATH or end of PATH] (unknown)
+        ///     + No indication that this flag is respected, if it exists
+        /// - Add to all PATH variables (unknown)
+        ///     + Only seems to apply to AUTOEXEC.BAT-based paths?
+        /// </remarks>
+        public byte DataFlags { get; set; }
+
+        /// <summary>
+        /// Directory name to add to path
+        /// </summary>
+        /// <remarks>May contain a variable name</remarks>
+        public string? Directory { get; set; }
     }
 }
