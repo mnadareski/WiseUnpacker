@@ -22,6 +22,9 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// <remarks>
         /// To get the root value, do (FlagsAndRoot & 0x1F)
         /// Flag values:
+        /// - 0x10 - Force backup of registry value (if 0x80 == 0)
+        ///     + It overrides the values set by 0x24 and 0x25
+        ///       and then disables the flag after
         /// - 0x40 - Delete? (If root is not 0?)
         /// - 0x80 - Unknown
         /// </remarks>

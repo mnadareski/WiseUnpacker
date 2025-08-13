@@ -118,6 +118,9 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Invalid case
         /// </summary>
+        /// <remarks>
+        /// Defined in some versions, related to <see cref="EditRegistry"/>
+        /// </remarks>
         Invalid0x0E = 0x0E,
 
         /// <summary>
