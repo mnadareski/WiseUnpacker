@@ -22,7 +22,7 @@ namespace SabreTools.Serialization.Deserializers
                 // WiseColors.dib
                 if (overlayHeader.DibDeflatedSize >= data.Length)
                     return null;
-                else if (overlayHeader.DibDeflatedSize > overlayHeader.DibDeflatedSize)
+                else if (overlayHeader.DibDeflatedSize > overlayHeader.DibInflatedSize)
                     return null;
 
                 // WiseScript.bin
