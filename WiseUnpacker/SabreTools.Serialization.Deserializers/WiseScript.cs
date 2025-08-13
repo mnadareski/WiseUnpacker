@@ -359,10 +359,10 @@ namespace SabreTools.Serialization.Deserializers
             obj.Flags = data.ReadUInt16LittleEndian();
             obj.Operand_2 = data.ReadUInt16LittleEndian();
             obj.Operand_3 = data.ReadUInt16LittleEndian();
-            obj.DeflateInfo = new DeflateInfo[languageCount];
+            obj.DeflateInfo = new DeflateEntry[languageCount];
             for (int i = 0; i < obj.DeflateInfo.Length; i++)
             {
-                obj.DeflateInfo[i] = ParseDeflateInfo(data);
+                obj.DeflateInfo[i] = ParseDeflateEntry(data);
             }
 
             // Check the terminator byte is 0x00
@@ -1705,13 +1705,13 @@ namespace SabreTools.Serialization.Deserializers
         }
 
         /// <summary>
-        /// Parse a Stream into a DeflateInfo
+        /// Parse a Stream into a DeflateEntry
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <returns>Filled DeflateInfo on success, null on error</returns>
-        private static DeflateInfo ParseDeflateInfo(Stream data)
+        /// <returns>Filled DeflateEntry on success, null on error</returns>
+        private static DeflateEntry ParseDeflateEntry(Stream data)
         {
-            var obj = new DeflateInfo();
+            var obj = new DeflateEntry();
 
             obj.DeflateStart = data.ReadUInt32LittleEndian();
             obj.DeflateEnd = data.ReadUInt32LittleEndian();

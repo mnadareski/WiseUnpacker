@@ -47,7 +47,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
         /// Deflate information
         /// </summary>
         /// <remarks> One per language</remarks>
-        public DeflateInfo[]? DeflateInfo { get; set; } // 0x07 - 
+        public DeflateEntry[]? DeflateInfo { get; set; } // 0x07 - 
 
         /// <summary>
         /// Terminator?

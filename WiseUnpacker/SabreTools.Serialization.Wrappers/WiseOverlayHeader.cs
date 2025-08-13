@@ -610,67 +610,67 @@ namespace SabreTools.Serialization.Wrappers
             dataStart = data.Position;
 
             // Extract WiseColors.dib, if it exists
-            var expected = new IO.Compression.Deflate.DeflateInfo { InputSize = DibDeflatedSize, OutputSize = DibInflatedSize, Crc32 = 0 };
+            var expected = new DeflateInfo { InputSize = DibDeflatedSize, OutputSize = DibInflatedSize, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "WiseColors.dib", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract WiseScript.bin
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = WiseScriptDeflatedSize, OutputSize = WiseScriptInflatedSize, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = WiseScriptDeflatedSize, OutputSize = WiseScriptInflatedSize, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "WiseScript.bin", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract WISE0001.DLL, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = WiseDllDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = WiseDllDeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "WISE0001.DLL", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract CTL3D32.DLL, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = Ctl3d32DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = Ctl3d32DeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "CTL3D32.DLL", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0004, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = SomeData4DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = SomeData4DeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "FILE0004", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract Ocxreg32.EXE, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = RegToolDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = RegToolDeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "Ocxreg32.EXE", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract PROGRESS.DLL, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = ProgressDllDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = ProgressDllDeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "PROGRESS.DLL", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0007, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = SomeData7DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = SomeData7DeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "FILE0007", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0008, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = SomeData8DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = SomeData8DeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "FILE0008", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE0009, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = SomeData9DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = SomeData9DeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "FILE0009", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE000A, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = SomeData10DeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = SomeData10DeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "FILE000A", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract install script, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = InstallScriptDeflatedSize, OutputSize = -1, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = InstallScriptDeflatedSize, OutputSize = -1, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, "INSTALL_SCRIPT", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 
             // Extract FILE000{n}.DAT, if it exists
-            expected = new IO.Compression.Deflate.DeflateInfo { InputSize = FinalFileDeflatedSize, OutputSize = FinalFileInflatedSize, Crc32 = 0 };
+            expected = new DeflateInfo { InputSize = FinalFileDeflatedSize, OutputSize = FinalFileInflatedSize, Crc32 = 0 };
             if (InflateWrapper.ExtractFile(data, IsPKZIP ? null : "FILE00XX.DAT", outputDirectory, expected, IsPKZIP, includeDebug) == ExtractionStatus.FAIL)
                 return false;
 

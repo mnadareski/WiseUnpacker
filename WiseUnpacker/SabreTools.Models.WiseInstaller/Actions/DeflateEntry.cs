@@ -4,7 +4,7 @@ namespace SabreTools.Models.WiseInstaller.Actions
     /// Represents deflated file parameters
     /// </summary>
     /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/wisescript.h"/> 
-    public class DeflateInfo
+    public class DeflateEntry
     {
         /// <summary>
         /// Start of the deflated data

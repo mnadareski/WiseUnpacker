@@ -311,7 +311,7 @@ namespace SabreTools.Serialization.Wrappers
             bool includeDebug)
         {
             // Get expected values
-            var expected = new IO.Compression.Deflate.DeflateInfo
+            var expected = new DeflateInfo
             {
                 InputSize = obj.DeflateEnd - obj.DeflateStart,
                 OutputSize = obj.InflatedSize,
@@ -366,7 +366,7 @@ namespace SabreTools.Serialization.Wrappers
                 var info = obj.DeflateInfo[i];
 
                 // Get expected values
-                var expected = new IO.Compression.Deflate.DeflateInfo
+                var expected = new DeflateInfo
                 {
                     InputSize = info.DeflateEnd - info.DeflateStart,
                     OutputSize = info.InflatedSize,
@@ -401,7 +401,7 @@ namespace SabreTools.Serialization.Wrappers
             bool includeDebug)
         {
             // Get expected values
-            var expected = new IO.Compression.Deflate.DeflateInfo
+            var expected = new DeflateInfo
             {
                 InputSize = obj.DeflateEnd - obj.DeflateStart,
                 OutputSize = obj.InflatedSize,

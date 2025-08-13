@@ -850,7 +850,7 @@ namespace SabreTools.Serialization.Printers
 
         #region Additional
 
-        private static void Print(StringBuilder builder, DeflateInfo data, int indent, int index = -1)
+        private static void Print(StringBuilder builder, DeflateEntry data, int indent, int index = -1)
         {
             string padding = string.Empty.PadLeft(indent, ' ');
 
