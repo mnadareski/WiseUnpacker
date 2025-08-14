@@ -45,6 +45,11 @@ namespace Test
         public List<string> InputPaths { get; private set; } = [];
 
         /// <summary>
+        /// Print per-file statistics information
+        /// </summary>
+        public bool PerFile { get; private set; } = false;
+
+        /// <summary>
         /// Output path for archive extraction
         /// </summary>
         public string OutputPath { get; private set; } = string.Empty;
@@ -103,6 +108,11 @@ namespace Test
                         options.OutputPath = index + 1 < args.Length ? args[++index] : string.Empty;
                         break;
 
+                    case "-p":
+                    case "--per-file":
+                        options.PerFile = true;
+                        break;
+
                     case "-x":
                     case "--extract":
                         options.Extract = true;
@@ -149,10 +159,11 @@ namespace Test
             Console.WriteLine("-?, -h, --help           Display this help text and quit");
             Console.WriteLine("-d, --debug              Enable debug mode");
             Console.WriteLine("-i, --info               Print overlay and script info");
-            Console.WriteLine("-f, --file               Print to file only");
 #if NETCOREAPP
             Console.WriteLine("-j, --json               Print info as JSON");
 #endif
+            Console.WriteLine("-f, --file               Print to file only");
+            Console.WriteLine("-p, --per-file           Print per-file statistics");
             Console.WriteLine("-x, --extract            Extract files (default if nothing else provided)");
             Console.WriteLine("-o, --outdir [PATH]      Set output path for extraction (required)");
         }

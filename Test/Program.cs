@@ -103,6 +103,12 @@ namespace Test
             if (tempDirectory != null)
                 Directory.CreateDirectory(tempDirectory);
 
+            // Ensure the statistics object is created
+            if (!_statistics.PerFileStatistics.ContainsKey(file))
+                _statistics.PerFileStatistics[file] = new();
+
+            var fileStatistics = _statistics.PerFileStatistics[file];
+
             Console.WriteLine($"Attempting to print info for {file}");
 
             try
@@ -120,6 +126,8 @@ namespace Test
                 // Process header statistics and print
                 _statistics.ProcessStatistics(file, header);
                 PrintOverlayHeader(filenameBase, header, options);
+                if (options.PerFile)
+                    PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
 
                 // Seek to the script offset
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
@@ -170,6 +178,8 @@ namespace Test
                 // Process script statistics and print
                 _statistics.ProcessStatistics(file, script);
                 PrintScript(filenameBase, script, options);
+                if (options.PerFile)
+                    PrintScriptStatistics(filenameBase, fileStatistics, options);
             }
             catch (Exception ex)
             {
@@ -218,6 +228,28 @@ namespace Test
         }
 
         /// <summary>
+        /// Print overlay header statistical information, if possible
+        /// </summary>
+        /// <param name="filenameBase">Base filename pattern to use for output</param>
+        /// <param name="statistics">Statistics representing the file</param>
+        /// <param name="options">User-defined options</param>
+        private static void PrintOverlayHeaderStats(string filenameBase, PerFileStatistics statistics, Options options)
+        {
+#if NETCOREAPP
+            // If we have the JSON flag
+            if (options.Json)
+            {
+                // TODO: Not implemented
+            }
+#endif
+
+            // Create stats output data
+            using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay-stats.txt"));
+            statistics.ExportOverlayHeaderStatistics(sw);
+            sw.Flush();
+        }
+
+        /// <summary>
         /// Print script information, if possible
         /// </summary>
         /// <param name="filenameBase">Base filename pattern to use for output</param>
@@ -249,6 +281,28 @@ namespace Test
 
             using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-script.txt"));
             sw.WriteLine(builder.ToString());
+            sw.Flush();
+        }
+
+        /// <summary>
+        /// Print script statistical information, if possible
+        /// </summary>
+        /// <param name="filenameBase">Base filename pattern to use for output</param>
+        /// <param name="statistics">Statistics representing the file</param>
+        /// <param name="options">User-defined options</param>
+        private static void PrintScriptStatistics(string filenameBase, PerFileStatistics statistics, Options options)
+        {
+#if NETCOREAPP
+            // If we have the JSON flag
+            if (options.Json)
+            {
+                // TODO: Not implemented
+            }
+#endif
+
+            // Create stats output data
+            using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-script-stats.txt"));
+            statistics.ExportScriptStatistics(sw);
             sw.Flush();
         }
 

@@ -35,7 +35,7 @@ namespace Test
         /// <summary>
         /// Per-file statistics map
         /// </summary>
-        private readonly Dictionary<string, PerFileStatistics> _perFileStatistics = [];
+        public Dictionary<string, PerFileStatistics> PerFileStatistics { get; } = [];
 
         #endregion
 
@@ -80,10 +80,10 @@ namespace Test
         /// <param name="hash">Hash of the inflated DLL</param>
         public void AddWiseDllHash(string file, string hash)
         {
-            if (!_perFileStatistics.ContainsKey(file))
-                _perFileStatistics[file] = new();
+            if (!PerFileStatistics.ContainsKey(file))
+                PerFileStatistics[file] = new();
 
-            _perFileStatistics[file].WiseDllHash = hash;
+            PerFileStatistics[file].WiseDllHash = hash;
         }
 
         /// <summary>
@@ -93,10 +93,10 @@ namespace Test
         /// <param name="header">WiseOverlayHeader to gather statistics from</param>
         public void ProcessStatistics(string file, WiseOverlayHeader header)
         {
-            if (!_perFileStatistics.ContainsKey(file))
-                _perFileStatistics[file] = new();
+            if (!PerFileStatistics.ContainsKey(file))
+                PerFileStatistics[file] = new();
 
-            _perFileStatistics[file].ProcessStatistics(header);
+            PerFileStatistics[file].ProcessStatistics(header);
         }
 
         /// <summary>
@@ -106,10 +106,10 @@ namespace Test
         /// <param name="script">WiseScript to gather statistics from</param>
         public void ProcessStatistics(string file, WiseScript script)
         {
-            if (!_perFileStatistics.ContainsKey(file))
-                _perFileStatistics[file] = new();
+            if (!PerFileStatistics.ContainsKey(file))
+                PerFileStatistics[file] = new();
 
-            _perFileStatistics[file].ProcessStatistics(script);
+            PerFileStatistics[file].ProcessStatistics(script);
         }
 
         #endregion
@@ -188,7 +188,7 @@ namespace Test
             sw.WriteLine("Flag Counts:");
 
             int[] flagCounts = new int[32];
-            Array.ForEach([.. _perFileStatistics.Values], s =>
+            Array.ForEach([.. PerFileStatistics.Values], s =>
             {
                 for (int i = 0; i < flagCounts.Length; i++)
                 {
@@ -211,7 +211,7 @@ namespace Test
             sw.WriteLine("Should Contain File:");
 
             var shouldContainFile = new List<string>[13];
-            Array.ForEach([.. _perFileStatistics], kvp =>
+            Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 for (int i = 0; i < shouldContainFile.Length; i++)
                 {
@@ -224,7 +224,7 @@ namespace Test
             });
             for (int i = 0; i < shouldContainFile.Length; i++)
             {
-                string filename = PerFileStatistics.MapFileIndexToName(i);
+                string filename = Test.PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {shouldContainFile[i].Count}");
                 foreach (string path in shouldContainFile[i])
                 {
@@ -241,7 +241,7 @@ namespace Test
             sw.WriteLine("WISE0001.DLL Hashes:");
 
             Dictionary<string, List<string>> wiseDllHashes = [];
-            Array.ForEach([.. _perFileStatistics], kvp =>
+            Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 string? hash = kvp.Value.WiseDllHash;
                 if (hash != null && !wiseDllHashes.ContainsKey(hash))
@@ -284,7 +284,7 @@ namespace Test
             sw.WriteLine("First Flags:");
 
             Dictionary<ushort, List<string>> firstFlags = [];
-            Array.ForEach([.. _perFileStatistics], kvp =>
+            Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 ushort flag = kvp.Value.FirstFlag;
                 if (!firstFlags.ContainsKey(flag))
@@ -314,7 +314,7 @@ namespace Test
             sw.WriteLine("Header Prefix Lengths:");
 
             Dictionary<int, List<string>> headerLengths = [];
-            Array.ForEach([.. _perFileStatistics], kvp =>
+            Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 int length = kvp.Value.HeaderPrefixLength;
                 if (!headerLengths.ContainsKey(length))
@@ -328,7 +328,7 @@ namespace Test
 
             foreach (int length in headerLengthsKeys)
             {
-                string lengthName = PerFileStatistics.MapHeaderLengthToDescriptor(length);
+                string lengthName = Test.PerFileStatistics.MapHeaderLengthToDescriptor(length);
                 sw.WriteLine($"  {lengthName} ({length}): {headerLengths[length].Count}");
                 foreach (string path in headerLengths[length])
                 {
@@ -344,7 +344,7 @@ namespace Test
 
             var enumValues = (OperationCode[])Enum.GetValues(typeof(OperationCode));
             Dictionary<OperationCode, List<string>> opcodes = [];
-            Array.ForEach([.. _perFileStatistics], kvp =>
+            Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 foreach (var enumValue in enumValues)
                 {
@@ -492,7 +492,7 @@ namespace Test
             #region Functions
 
             Dictionary<string, List<string>> functions = [];
-            Array.ForEach([.. _perFileStatistics], kvp =>
+            Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 foreach (string function in kvp.Value.Functions)
                 {

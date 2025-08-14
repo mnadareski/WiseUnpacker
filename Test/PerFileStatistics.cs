@@ -193,7 +193,7 @@ namespace Test
             sw.WriteLine();
 
             // WISE0001.DLL Hashe
-            sw.WriteLine($"WISE0001.DLL Hashe: {WiseDllHash}");
+            sw.WriteLine($"WISE0001.DLL Hash: {WiseDllHash}");
             sw.WriteLine();
 
             sw.Flush();
