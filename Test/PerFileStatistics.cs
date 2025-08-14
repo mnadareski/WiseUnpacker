@@ -149,7 +149,7 @@ namespace Test
             // Header Length
             if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
             {
-                if (script.Model.Header.DateTime == 0x00000000)
+                if (script.Model.Header.SomeOffset1 == 0x00000000)
                     HeaderPrefixLength = 18;
                 else
                     HeaderPrefixLength = 38;
