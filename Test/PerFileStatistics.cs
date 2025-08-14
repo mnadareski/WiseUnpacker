@@ -42,6 +42,16 @@ namespace Test
         public ushort FirstFlag { get; private set; }
 
         /// <summary>
+        /// Second flag in script file
+        /// </summary>
+        public ushort SecondFlag { get; private set; }
+
+        /// <summary>
+        /// Third flag in script file
+        /// </summary>
+        public ushort ThirdFlag { get; private set; }
+
+        /// <summary>
         /// List of found DLL function calls
         /// </summary>
         public List<string> Functions { get; } = [];
@@ -119,8 +129,10 @@ namespace Test
         /// <param name="script">WiseScript to gather statistics from</param>
         public void ProcessStatistics(WiseScript script)
         {
-            // First Flag
+            // First Flags
             FirstFlag = script.Model.Header?.Flags ?? 0;
+            SecondFlag = script.Model.Header?.UnknownU16_1 ?? 0;
+            ThirdFlag = script.Model.Header?.UnknownU16_2 ?? 0;
 
             // Header Length
             if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
@@ -209,7 +221,9 @@ namespace Test
             sw.WriteLine("-------------------------");
 
             // First Flags
-            sw.WriteLine($"First Flags: {FirstFlag}");
+            sw.WriteLine($"First Flag: {FirstFlag}");
+            sw.WriteLine($"Second Flag: {SecondFlag}");
+            sw.WriteLine($"Third Flag: {ThirdFlag}");
             sw.WriteLine();
 
             // Header Length

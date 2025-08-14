@@ -268,7 +268,7 @@ namespace Test
 
             #region First Flags
 
-            sw.WriteLine("First Flags:");
+            sw.WriteLine("First Flag:");
 
             Dictionary<ushort, List<string>> firstFlags = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
@@ -287,6 +287,66 @@ namespace Test
             {
                 sw.WriteLine($"  0x{firstFlag:X4}: {firstFlags[firstFlag].Count}");
                 foreach (string path in firstFlags[firstFlag])
+                {
+                    sw.WriteLine($"    {path}");
+                }
+            }
+
+            sw.WriteLine();
+
+            #endregion
+
+            #region Second Flags
+
+            sw.WriteLine("Second Flag:");
+
+            Dictionary<ushort, List<string>> secondFlags = [];
+            Array.ForEach([.. PerFileStatistics], kvp =>
+            {
+                ushort flag = kvp.Value.FirstFlag;
+                if (!secondFlags.ContainsKey(flag))
+                    secondFlags[flag] = [];
+
+                secondFlags[flag].Add(kvp.Key);
+            });
+
+            List<ushort> secondFlagsKeys = [.. secondFlags.Keys];
+            secondFlagsKeys.Sort();
+
+            foreach (ushort secondFlag in secondFlagsKeys)
+            {
+                sw.WriteLine($"  0x{secondFlag:X4}: {secondFlags[secondFlag].Count}");
+                foreach (string path in secondFlags[secondFlag])
+                {
+                    sw.WriteLine($"    {path}");
+                }
+            }
+
+            sw.WriteLine();
+
+            #endregion
+
+            #region Third Flags
+
+            sw.WriteLine("Third Flag:");
+
+            Dictionary<ushort, List<string>> thirdFlags = [];
+            Array.ForEach([.. PerFileStatistics], kvp =>
+            {
+                ushort flag = kvp.Value.ThirdFlag;
+                if (!thirdFlags.ContainsKey(flag))
+                    thirdFlags[flag] = [];
+
+                thirdFlags[flag].Add(kvp.Key);
+            });
+
+            List<ushort> thirdFlagsKeys = [.. thirdFlags.Keys];
+            thirdFlagsKeys.Sort();
+
+            foreach (ushort thirdFlag in thirdFlagsKeys)
+            {
+                sw.WriteLine($"  0x{thirdFlag:X4}: {thirdFlags[thirdFlag].Count}");
+                foreach (string path in thirdFlags[thirdFlag])
                 {
                     sw.WriteLine($"    {path}");
                 }
