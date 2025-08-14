@@ -55,7 +55,7 @@ namespace Test
         /// - 38 bytes (Middle)
         /// - 43 bytes (Normal)
         /// </remarks>
-        public int HeaderPrefixLength { get; private set; }
+        public int HeaderPrefixLength { get; private set; } = -1;
 
         /// <summary>
         /// List of found opcodes

@@ -304,7 +304,7 @@ namespace Test
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
                 int length = kvp.Value.HeaderPrefixLength;
-                if (!headerLengths.ContainsKey(length))
+                if (length != -1 && !headerLengths.ContainsKey(length))
                     headerLengths[length] = [];
 
                 headerLengths[length].Add(kvp.Key);
