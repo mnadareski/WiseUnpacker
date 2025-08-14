@@ -174,7 +174,9 @@ namespace SabreTools.Serialization.Deserializers
         {
             // Extract required information
             byte languageCount = header.LanguageCount;
-            bool old = header.Unknown_22?.Length != 22 && header.DateTime == 0x00000000;
+            bool shortDllCall = header.Unknown_22?.Length != 22
+                && header.DateTime == 0x00000000
+                && header.Flags != 0x0014;
 
             // Initialize important loop information
             int op0x18skip = -1;
@@ -197,7 +199,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.DisplayBillboard => ParseDisplayBillboard(data, languageCount),
                     OperationCode.ExecuteProgram => ParseExecuteProgram(data),
                     OperationCode.EndBlock => ParseEndBlockStatement(data),
-                    OperationCode.CallDllFunction => ParseCallDllFunction(data, languageCount, old),
+                    OperationCode.CallDllFunction => ParseCallDllFunction(data, languageCount, shortDllCall),
                     OperationCode.EditRegistry => ParseEditRegistry(data, ref registryDll),
                     OperationCode.DeleteFile => ParseDeleteFile(data),
                     OperationCode.IfWhileStatement => ParseIfWhileStatement(data),
@@ -410,16 +412,16 @@ namespace SabreTools.Serialization.Deserializers
         /// </summary>
         /// <param name="data">Stream to parse</param>
         /// <param name="languageCount">Language counter from the header</param>
-        /// <param name="old">Indicates an old install script</param>
+        /// <param name="shortDllCall">Indicates a short DLL call</param>
         /// <returns>Filled CallDllFunction on success, null on error</returns>
-        private static CallDllFunction ParseCallDllFunction(Stream data, int languageCount, bool old)
+        private static CallDllFunction ParseCallDllFunction(Stream data, int languageCount, bool shortDllCall)
         {
             var obj = new CallDllFunction();
 
             obj.Flags = data.ReadByteValue();
             obj.DllPath = data.ReadNullTerminatedAnsiString();
             obj.FunctionName = data.ReadNullTerminatedAnsiString();
-            if (!old)
+            if (!shortDllCall)
             {
                 obj.Operand_4 = data.ReadNullTerminatedAnsiString();
                 obj.ReturnVariable = data.ReadNullTerminatedAnsiString();
