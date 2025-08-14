@@ -370,40 +370,6 @@ namespace Test
 
             #endregion
 
-            #region Datetimes
-
-            sw.WriteLine("Datetime:");
-
-            Dictionary<uint, List<string>> datetimes = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
-            {
-                uint? datetime = kvp.Value.Datetime;
-                if (datetime == null)
-                    return;
-
-                if (!datetimes.ContainsKey(datetime.Value))
-                        datetimes[datetime.Value] = [];
-
-                datetimes[datetime.Value].Add(kvp.Key);
-            });
-
-            List<uint> datetimesKeys = [.. datetimes.Keys];
-            thirdFlagsKeys.Sort();
-
-            foreach (uint datetime in datetimesKeys)
-            {
-                sw.WriteLine($"  0x{datetime:X4}: {datetimes[datetime].Count}");
-                datetimes[datetime].Sort();
-                foreach (string path in datetimes[datetime])
-                {
-                    sw.WriteLine($"    {path}");
-                }
-            }
-
-            sw.WriteLine();
-
-            #endregion
-
             #region Header Prefix Lengths
 
             sw.WriteLine("Header Prefix Lengths:");
