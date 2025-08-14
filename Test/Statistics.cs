@@ -275,11 +275,14 @@ namespace Test
             Dictionary<ushort, List<string>> firstFlags = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                ushort flag = kvp.Value.FirstFlag;
-                if (!firstFlags.ContainsKey(flag))
-                    firstFlags[flag] = [];
+                ushort? flag = kvp.Value.FirstFlag;
+                if (flag == null)
+                    return;
 
-                firstFlags[flag].Add(kvp.Key);
+                if (!firstFlags.ContainsKey(flag.Value))
+                        firstFlags[flag.Value] = [];
+
+                firstFlags[flag.Value].Add(kvp.Key);
             });
 
             List<ushort> firstFlagsKeys = [.. firstFlags.Keys];
@@ -306,11 +309,14 @@ namespace Test
             Dictionary<ushort, List<string>> secondFlags = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                ushort flag = kvp.Value.SecondFlag;
-                if (!secondFlags.ContainsKey(flag))
-                    secondFlags[flag] = [];
+                ushort? flag = kvp.Value.SecondFlag;
+                if (flag == null)
+                    return;
 
-                secondFlags[flag].Add(kvp.Key);
+                if (!secondFlags.ContainsKey(flag.Value))
+                    secondFlags[flag.Value] = [];
+
+                secondFlags[flag.Value].Add(kvp.Key);
             });
 
             List<ushort> secondFlagsKeys = [.. secondFlags.Keys];
@@ -337,11 +343,14 @@ namespace Test
             Dictionary<ushort, List<string>> thirdFlags = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                ushort flag = kvp.Value.ThirdFlag;
-                if (!thirdFlags.ContainsKey(flag))
-                    thirdFlags[flag] = [];
+                ushort? flag = kvp.Value.ThirdFlag;
+                if (flag == null)
+                    return;
 
-                thirdFlags[flag].Add(kvp.Key);
+                if (!thirdFlags.ContainsKey(flag.Value))
+                    thirdFlags[flag.Value] = [];
+
+                thirdFlags[flag.Value].Add(kvp.Key);
             });
 
             List<ushort> thirdFlagsKeys = [.. thirdFlags.Keys];
@@ -368,11 +377,14 @@ namespace Test
             Dictionary<uint, List<string>> datetimes = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                uint datetime = kvp.Value.Datetime;
-                if (!datetimes.ContainsKey(datetime))
-                    datetimes[datetime] = [];
+                uint? datetime = kvp.Value.Datetime;
+                if (datetime == null)
+                    return;
 
-                datetimes[datetime].Add(kvp.Key);
+                if (!datetimes.ContainsKey(datetime.Value))
+                        datetimes[datetime.Value] = [];
+
+                datetimes[datetime.Value].Add(kvp.Key);
             });
 
             List<uint> datetimesKeys = [.. datetimes.Keys];
@@ -399,12 +411,14 @@ namespace Test
             Dictionary<int, List<string>> headerLengths = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                int length = kvp.Value.HeaderPrefixLength;
-                if (length != -1 && !headerLengths.ContainsKey(length))
-                    headerLengths[length] = [];
+                int? length = kvp.Value.HeaderPrefixLength;
+                if (length == null)
+                    return;
 
-                if (length != -1)
-                    headerLengths[length].Add(kvp.Key);
+                if (!headerLengths.ContainsKey(length.Value))
+                        headerLengths[length.Value] = [];
+
+                headerLengths[length.Value].Add(kvp.Key);
             });
 
             List<int> headerLengthsKeys = [.. headerLengths.Keys];

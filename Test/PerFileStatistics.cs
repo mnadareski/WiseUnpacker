@@ -41,24 +41,24 @@ namespace Test
         /// <summary>
         /// First flag in script file
         /// </summary>
-        public ushort FirstFlag { get; private set; }
+        public ushort? FirstFlag { get; private set; }
 
         /// <summary>
         /// Second flag in script file
         /// </summary>
-        public ushort SecondFlag { get; private set; }
+        public ushort? SecondFlag { get; private set; }
 
         /// <summary>
         /// Third flag in script file
         /// </summary>
-        public ushort ThirdFlag { get; private set; }
+        public ushort? ThirdFlag { get; private set; }
 
         #endregion
 
         /// <summary>
         /// Date field from the header
         /// </summary>
-        public uint Datetime { get; private set; }
+        public uint? Datetime { get; private set; }
 
         /// <summary>
         /// List of found DLL function calls
@@ -74,7 +74,7 @@ namespace Test
         /// - 38 bytes (Middle)
         /// - 43 bytes (Normal)
         /// </remarks>
-        public int HeaderPrefixLength { get; private set; } = -1;
+        public int? HeaderPrefixLength { get; private set; }
 
         /// <summary>
         /// List of found opcodes
@@ -311,7 +311,7 @@ namespace Test
         /// </summary>
         /// <param name="length">Length to map</param>
         /// <returns>Mapped descriptor, if possible</returns>
-        public static string MapHeaderLengthToDescriptor(int length)
+        public static string MapHeaderLengthToDescriptor(int? length)
         {
             return length switch
             {
