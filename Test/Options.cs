@@ -160,10 +160,10 @@ namespace Test
             Console.WriteLine("-d, --debug              Enable debug mode");
             Console.WriteLine("-i, --info               Print overlay and script info");
 #if NETCOREAPP
-            Console.WriteLine("-j, --json               Print info as JSON");
+            Console.WriteLine("-j, --json               Print info as JSON (requires --info)");
 #endif
-            Console.WriteLine("-f, --file               Print to file only");
-            Console.WriteLine("-p, --per-file           Print per-file statistics");
+            Console.WriteLine("-f, --file               Print to file only (requires --info)");
+            Console.WriteLine("-p, --per-file           Print per-file statistics (requires --info)");
             Console.WriteLine("-x, --extract            Extract files (default if nothing else provided)");
             Console.WriteLine("-o, --outdir [PATH]      Set output path for extraction (required)");
         }
