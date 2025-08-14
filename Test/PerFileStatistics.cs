@@ -36,6 +36,8 @@ namespace Test
 
         #region Script
 
+        #region Flags
+
         /// <summary>
         /// First flag in script file
         /// </summary>
@@ -50,6 +52,13 @@ namespace Test
         /// Third flag in script file
         /// </summary>
         public ushort ThirdFlag { get; private set; }
+
+        #endregion
+
+        /// <summary>
+        /// Date field from the header
+        /// </summary>
+        public uint Datetime { get; private set; }
 
         /// <summary>
         /// List of found DLL function calls
@@ -133,6 +142,9 @@ namespace Test
             FirstFlag = script.Model.Header?.Flags ?? 0;
             SecondFlag = script.Model.Header?.UnknownU16_1 ?? 0;
             ThirdFlag = script.Model.Header?.UnknownU16_2 ?? 0;
+
+            // Datetime
+            Datetime = script.Model.Header?.DateTime ?? 0;
 
             // Header Length
             if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
@@ -224,6 +236,10 @@ namespace Test
             sw.WriteLine($"First Flag: {FirstFlag}");
             sw.WriteLine($"Second Flag: {SecondFlag}");
             sw.WriteLine($"Third Flag: {ThirdFlag}");
+            sw.WriteLine();
+
+            // Datetime
+            sw.WriteLine($"Datetime: {Datetime}"); // TODO: Translate to human-readable
             sw.WriteLine();
 
             // Header Length

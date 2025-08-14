@@ -303,7 +303,7 @@ namespace Test
             Dictionary<ushort, List<string>> secondFlags = [];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                ushort flag = kvp.Value.FirstFlag;
+                ushort flag = kvp.Value.SecondFlag;
                 if (!secondFlags.ContainsKey(flag))
                     secondFlags[flag] = [];
 
@@ -347,6 +347,36 @@ namespace Test
             {
                 sw.WriteLine($"  0x{thirdFlag:X4}: {thirdFlags[thirdFlag].Count}");
                 foreach (string path in thirdFlags[thirdFlag])
+                {
+                    sw.WriteLine($"    {path}");
+                }
+            }
+
+            sw.WriteLine();
+
+            #endregion
+
+            #region Datetimes
+
+            sw.WriteLine("Datetime:");
+
+            Dictionary<uint, List<string>> datetimes = [];
+            Array.ForEach([.. PerFileStatistics], kvp =>
+            {
+                uint datetime = kvp.Value.Datetime;
+                if (!datetimes.ContainsKey(datetime))
+                    datetimes[datetime] = [];
+
+                datetimes[datetime].Add(kvp.Key);
+            });
+
+            List<uint> datetimesKeys = [.. datetimes.Keys];
+            thirdFlagsKeys.Sort();
+
+            foreach (uint datetime in datetimesKeys)
+            {
+                sw.WriteLine($"  0x{datetime:X4}: {datetimes[datetime].Count}");
+                foreach (string path in datetimes[datetime])
                 {
                     sw.WriteLine($"    {path}");
                 }
