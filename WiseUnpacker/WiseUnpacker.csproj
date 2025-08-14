@@ -15,8 +15,8 @@
         <Version>1.5.6</Version>
 
         <!-- Package Properties -->
-        <Authors>Matt Nadareski;kannegieser.net;Jägermeister Markus</Authors>
-        <Description>Wise installer unpacker based on E_WISE and HWUN</Description>
+        <Authors>Matt Nadareski;CYBERDEV</Authors>
+        <Description>Wise installer unpacker based on REWise</Description>
         <Copyright>Copyright (c)2021-2025 Matt Nadareski</Copyright>
         <PackageProjectUrl>https://github.com/SabreTools/</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
