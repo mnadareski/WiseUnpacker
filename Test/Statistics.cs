@@ -213,6 +213,7 @@ namespace Test
             {
                 string filename = Test.PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {shouldContainFile[i].Count}");
+                shouldContainFile[i].Sort();
                 foreach (string path in shouldContainFile[i])
                 {
                     sw.WriteLine($"    {path}");
@@ -244,6 +245,7 @@ namespace Test
             foreach (string hash in wiseDllHashesKeys)
             {
                 sw.WriteLine($"  {hash}: {wiseDllHashes[hash].Count}");
+                wiseDllHashes[hash].Sort();
                 foreach (string path in wiseDllHashes[hash])
                 {
                     sw.WriteLine($"    {path}");
@@ -286,6 +288,7 @@ namespace Test
             foreach (ushort firstFlag in firstFlagsKeys)
             {
                 sw.WriteLine($"  0x{firstFlag:X4}: {firstFlags[firstFlag].Count}");
+                firstFlags[firstFlag].Sort();
                 foreach (string path in firstFlags[firstFlag])
                 {
                     sw.WriteLine($"    {path}");
@@ -316,6 +319,7 @@ namespace Test
             foreach (ushort secondFlag in secondFlagsKeys)
             {
                 sw.WriteLine($"  0x{secondFlag:X4}: {secondFlags[secondFlag].Count}");
+                secondFlags[secondFlag].Sort();
                 foreach (string path in secondFlags[secondFlag])
                 {
                     sw.WriteLine($"    {path}");
@@ -346,6 +350,7 @@ namespace Test
             foreach (ushort thirdFlag in thirdFlagsKeys)
             {
                 sw.WriteLine($"  0x{thirdFlag:X4}: {thirdFlags[thirdFlag].Count}");
+                thirdFlags[thirdFlag].Sort();
                 foreach (string path in thirdFlags[thirdFlag])
                 {
                     sw.WriteLine($"    {path}");
@@ -376,6 +381,7 @@ namespace Test
             foreach (uint datetime in datetimesKeys)
             {
                 sw.WriteLine($"  0x{datetime:X4}: {datetimes[datetime].Count}");
+                datetimes[datetime].Sort();
                 foreach (string path in datetimes[datetime])
                 {
                     sw.WriteLine($"    {path}");
@@ -408,6 +414,7 @@ namespace Test
             {
                 string lengthName = Test.PerFileStatistics.MapHeaderLengthToDescriptor(length);
                 sw.WriteLine($"  {lengthName} ({length}): {headerLengths[length].Count}");
+                headerLengths[length].Sort();
                 foreach (string path in headerLengths[length])
                 {
                     sw.WriteLine($"    {path}");
