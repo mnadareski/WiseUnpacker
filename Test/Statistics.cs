@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using SabreTools.Models.WiseInstaller;
-using SabreTools.Models.WiseInstaller.Actions;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
 
@@ -31,68 +30,18 @@ namespace Test
 
         #endregion
 
-        #region Overlay Header
+        #region Per-File Statistics
 
         /// <summary>
-        /// Mapping of found header flags
+        /// Per-file statistics map
         /// </summary>
-        private readonly List<string>[] _flags = new List<string>[32];
-
-        /// <summary>
-        /// Mapping for files that should be contained
-        /// </summary>
-        private readonly List<string>[] _shouldContainFile = new List<string>[13];
-
-        /// <summary>
-        /// Inflated hashes of WISE0001.DLL
-        /// </summary>
-        private readonly Dictionary<string, List<string>> _wiseDllHashes = [];
-
-        #endregion
-
-        #region Script
-
-        /// <summary>
-        /// Mapping of first flags in script files
-        /// </summary>
-        private readonly Dictionary<ushort, List<string>> _firstFlags = [];
-
-        /// <summary>
-        /// Mapping of found DLL function calls
-        /// </summary>
-        private readonly Dictionary<string, List<string>> _functions = [];
-
-        /// <summary>
-        /// Mapping of found opcodes
-        /// </summary>
-        private readonly Dictionary<OperationCode, List<string>> _opcodes = [];
-
-        /// <summary>
-        /// All paths that have "short" headers
-        /// </summary>
-        private readonly List<string> _shortHeaders = [];
-
-        /// <summary>
-        /// All paths that have "middle" headers
-        /// </summary>
-        private readonly List<string> _middleHeaders = [];
+        private readonly Dictionary<string, PerFileStatistics> _perFileStatistics = [];
 
         #endregion
 
         #endregion
 
-        public Statistics()
-        {
-            for (int i = 0; i < _flags.Length; i++)
-            {
-                _flags[i] = [];
-            }
-
-            for (int i = 0; i < _shouldContainFile.Length; i++)
-            {
-                _shouldContainFile[i] = [];
-            }
-        }
+        #region Processing
 
         /// <summary>
         /// Add an errored file path
@@ -131,10 +80,10 @@ namespace Test
         /// <param name="hash">Hash of the inflated DLL</param>
         public void AddWiseDllHash(string file, string hash)
         {
-            if (!_wiseDllHashes.ContainsKey(hash))
-                _wiseDllHashes[hash] = [];
+            if (!_perFileStatistics.ContainsKey(file))
+                _perFileStatistics[file] = new();
 
-            _wiseDllHashes[hash].Add(file);
+            _perFileStatistics[file].WiseDllHash = hash;
         }
 
         /// <summary>
@@ -144,51 +93,10 @@ namespace Test
         /// <param name="header">WiseOverlayHeader to gather statistics from</param>
         public void ProcessStatistics(string file, WiseOverlayHeader header)
         {
-            // Flags
-            for (int i = 0; i < 32; i++)
-            {
-                int flags = (int)header.Flags;
-                int compare = 1 << i;
+            if (!_perFileStatistics.ContainsKey(file))
+                _perFileStatistics[file] = new();
 
-                if ((flags & compare) == compare)
-                {
-                    // Ensure the key
-                    if (_flags[i] == null)
-                        _flags[i] = [];
-
-                    // Store each file only once
-                    if (!_flags[i].Contains(file))
-                        _flags[i].Add(file);
-                }
-            }
-
-            // Contained Files
-            if (header.DibDeflatedSize > 0)
-                _shouldContainFile[0].Add(file);
-            if (header.WiseScriptDeflatedSize > 0)
-                _shouldContainFile[1].Add(file);
-            if (header.WiseDllDeflatedSize > 0)
-                _shouldContainFile[2].Add(file);
-            if (header.Ctl3d32DeflatedSize > 0)
-                _shouldContainFile[3].Add(file);
-            if (header.SomeData4DeflatedSize > 0)
-                _shouldContainFile[4].Add(file);
-            if (header.RegToolDeflatedSize > 0)
-                _shouldContainFile[5].Add(file);
-            if (header.ProgressDllDeflatedSize > 0)
-                _shouldContainFile[6].Add(file);
-            if (header.SomeData7DeflatedSize > 0)
-                _shouldContainFile[7].Add(file);
-            if (header.SomeData8DeflatedSize > 0)
-                _shouldContainFile[8].Add(file);
-            if (header.SomeData9DeflatedSize > 0)
-                _shouldContainFile[9].Add(file);
-            if (header.SomeData10DeflatedSize > 0)
-                _shouldContainFile[10].Add(file);
-            if (header.InstallScriptDeflatedSize > 0)
-                _shouldContainFile[11].Add(file);
-            if (header.FinalFileDeflatedSize > 0)
-                _shouldContainFile[12].Add(file);
+            _perFileStatistics[file].ProcessStatistics(header);
         }
 
         /// <summary>
@@ -198,58 +106,15 @@ namespace Test
         /// <param name="script">WiseScript to gather statistics from</param>
         public void ProcessStatistics(string file, WiseScript script)
         {
-            // First Flags
-            ushort flags = script.Model.Header?.Flags ?? 0;
-            if (!_firstFlags.ContainsKey(script.Model.Header?.Flags ?? 0))
-                _firstFlags[flags] = [];
+            if (!_perFileStatistics.ContainsKey(file))
+                _perFileStatistics[file] = new();
 
-            _firstFlags[flags].Add(file);
-
-            // Short Header
-            if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
-            {
-                if (script.Model.Header.DateTime == 0x00000000)
-                    _shortHeaders.Add(file);
-                else
-                    _middleHeaders.Add(file);
-            }
-
-            // Actions
-                if (script.States != null)
-                {
-                    foreach (var state in script.States)
-                    {
-                        // Ensure the key
-                        if (!_opcodes.ContainsKey(state.Op))
-                            _opcodes[state.Op] = [];
-
-                        // Store each file only once
-                        if (!_opcodes[state.Op].Contains(file))
-                            _opcodes[state.Op].Add(file);
-                    }
-                }
-
-            // Function Calls
-            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.CallDllFunction))
-            {
-                var states = Array.FindAll(script.States, s => s.Op == OperationCode.CallDllFunction);
-                foreach (var state in states)
-                {
-                    // Get the function as an item
-                    if (state.Data is not CallDllFunction function)
-                        continue;
-
-                    // Ensure the key
-                    string functionName = function.FunctionName ?? "INVALID";
-                    if (!_functions.ContainsKey(functionName))
-                        _functions[functionName] = [];
-
-                    // Store each file only once
-                    if (!_functions[functionName].Contains(file))
-                        _functions[functionName].Add(file);
-                }
-            }
+            _perFileStatistics[file].ProcessStatistics(script);
         }
+
+        #endregion
+
+        #region Printing
 
         /// <summary>
         /// Write all capture statistics to file
@@ -318,24 +183,50 @@ namespace Test
             sw.WriteLine("Overlay Header");
             sw.WriteLine("-------------------------");
 
-            // Flag Counts
+            #region Flag Counts
+
             sw.WriteLine("Flag Counts:");
-            for (int i = 0; i < _flags.Length; i++)
+
+            int[] flagCounts = new int[32];
+            Array.ForEach([.. _perFileStatistics.Values], s =>
+            {
+                for (int i = 0; i < flagCounts.Length; i++)
+                {
+                    flagCounts[i] += s.Flags[i] ? 1 : 0;
+                }
+            });
+            for (int i = 0; i < flagCounts.Length; i++)
             {
                 uint bitValue = 1u << i;
                 string bitName = Enum.GetName(typeof(OverlayHeaderFlags), bitValue) ?? "Undefined";
-                sw.WriteLine($"  Bit {i} ({bitName}): {_flags[i].Count}");
+                sw.WriteLine($"  Bit {i} ({bitName}): {flagCounts[i]}");
             }
 
             sw.WriteLine();
 
-            // Should Contain File
+            #endregion
+
+            #region Should Contain File
+
             sw.WriteLine("Should Contain File:");
-            for (int i = 0; i < _shouldContainFile.Length; i++)
+
+            var shouldContainFile = new List<string>[13];
+            Array.ForEach([.. _perFileStatistics], kvp =>
+            {
+                for (int i = 0; i < shouldContainFile.Length; i++)
+                {
+                    if (shouldContainFile[i] == default)
+                        shouldContainFile[i] = [];
+
+                    if (kvp.Value.ShouldContainFile[i])
+                        shouldContainFile[i].Add(kvp.Key);
+                }
+            });
+            for (int i = 0; i < shouldContainFile.Length; i++)
             {
                 string filename = MapFileIndexToName(i);
-                sw.WriteLine($"  {filename} ({i}): {_shouldContainFile[i].Count}");
-                foreach (string path in _shouldContainFile[i])
+                sw.WriteLine($"  {filename} ({i}): {shouldContainFile[i].Count}");
+                foreach (string path in shouldContainFile[i])
                 {
                     sw.WriteLine($"    {path}");
                 }
@@ -343,21 +234,39 @@ namespace Test
 
             sw.WriteLine();
 
-            // WISE0001.DLL Hashes
+            #endregion
+
+            #region WISE0001.DLL Hashes
+
             sw.WriteLine("WISE0001.DLL Hashes:");
-            List<string> wiseDllHashesKeys = [.. _wiseDllHashes.Keys];
+
+            Dictionary<string, List<string>> wiseDllHashes = [];
+            Array.ForEach([.. _perFileStatistics], kvp =>
+            {
+                string? hash = kvp.Value.WiseDllHash;
+                if (hash != null && !wiseDllHashes.ContainsKey(hash))
+                    wiseDllHashes[hash] = [];
+
+                if (hash != null)
+                    wiseDllHashes[hash].Add(kvp.Key);
+            });
+
+            List<string> wiseDllHashesKeys = [.. wiseDllHashes.Keys];
             wiseDllHashesKeys.Sort();
 
             foreach (string hash in wiseDllHashesKeys)
             {
-                sw.WriteLine($"  {hash}:");
-                foreach (string path in _wiseDllHashes[hash])
+                sw.WriteLine($"  {hash}: {wiseDllHashes[hash].Count}");
+                foreach (string path in wiseDllHashes[hash])
                 {
                     sw.WriteLine($"    {path}");
                 }
             }
 
             sw.WriteLine();
+
+            #endregion
+
             sw.Flush();
         }
 
@@ -370,53 +279,86 @@ namespace Test
             sw.WriteLine("Script");
             sw.WriteLine("-------------------------");
 
-            // First Flags
-            if (_firstFlags.Count > 0)
+            #region First Flags
+
+            sw.WriteLine("First Flags:");
+
+            Dictionary<ushort, List<string>> firstFlags = [];
+            Array.ForEach([.. _perFileStatistics], kvp =>
             {
-                sw.WriteLine("First Flags:");
-                List<ushort> firstFlagsKeys = [.. _firstFlags.Keys];
-                firstFlagsKeys.Sort();
+                ushort flag = kvp.Value.FirstFlag;
+                if (!firstFlags.ContainsKey(flag))
+                    firstFlags[flag] = [];
 
-                foreach (byte flags in firstFlagsKeys)
+                firstFlags[flag].Add(kvp.Key);
+            });
+
+            List<ushort> firstFlagsKeys = [.. firstFlags.Keys];
+            firstFlagsKeys.Sort();
+
+            foreach (ushort firstFlag in firstFlagsKeys)
+            {
+                sw.WriteLine($"  0x{firstFlag:X4}: {firstFlags[firstFlag].Count}");
+                foreach (string path in firstFlags[firstFlag])
                 {
-                    sw.WriteLine($"  0x{flags:X4}:");
-                    foreach (string path in _firstFlags[flags])
-                    {
-                        sw.WriteLine($"    {path}");
-                    }
+                    sw.WriteLine($"    {path}");
                 }
-
-                sw.WriteLine();
             }
 
-            // Short Headers
-            if (_shortHeaders.Count > 0)
-            {
-                sw.WriteLine("Short Header:");
-                _shortHeaders.Sort();
-                foreach (string path in _shortHeaders)
-                {
-                    sw.WriteLine($"  {path}");
-                }
+            sw.WriteLine();
 
-                sw.WriteLine();
+            #endregion
+
+            #region Header Prefix Lengths
+
+            sw.WriteLine("Header Prefix Lengths:");
+
+            Dictionary<int, List<string>> headerLengths = [];
+            Array.ForEach([.. _perFileStatistics], kvp =>
+            {
+                int length = kvp.Value.HeaderPrefixLength;
+                if (!headerLengths.ContainsKey(length))
+                    headerLengths[length] = [];
+
+                headerLengths[length].Add(kvp.Key);
+            });
+
+            List<int> headerLengthsKeys = [.. headerLengths.Keys];
+            headerLengthsKeys.Sort();
+
+            foreach (int length in headerLengthsKeys)
+            {
+                string lengthName = MapHeaderLengthToDescriptor(length);
+                sw.WriteLine($"  {lengthName} ({length}): {headerLengths[length].Count}");
+                foreach (string path in headerLengths[length])
+                {
+                    sw.WriteLine($"    {path}");
+                }
             }
 
-            // Middle Headers
-            if (_middleHeaders.Count > 0)
-            {
-                sw.WriteLine("Middle Header:");
-                _middleHeaders.Sort();
-                foreach (string path in _middleHeaders)
-                {
-                    sw.WriteLine($"  {path}");
-                }
+            sw.WriteLine();
 
-                sw.WriteLine();
-            }
+            #endregion
+
+            #region Opcodes
+
+            var enumValues = (OperationCode[])Enum.GetValues(typeof(OperationCode));
+            Dictionary<OperationCode, List<string>> opcodes = [];
+            Array.ForEach([.. _perFileStatistics], kvp =>
+            {
+                foreach (var enumValue in enumValues)
+                {
+                    bool containsValue = kvp.Value.Opcodes.Contains(enumValue);
+                    if (containsValue && !opcodes.ContainsKey(enumValue))
+                        opcodes[enumValue] = [];
+
+                    if (containsValue)
+                        opcodes[enumValue].Add(kvp.Key);
+                }
+            });
 
             // Contains Invalid0x01
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x01, out var contains0x01) && contains0x01.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x01, out var contains0x01) && contains0x01.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x01:");
                 contains0x01.Sort();
@@ -429,7 +371,7 @@ namespace Test
             }
 
             // Contains Invalid0x0E
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x0E, out var contains0x0E) && contains0x0E.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x0E, out var contains0x0E) && contains0x0E.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x0E:");
                 contains0x0E.Sort();
@@ -442,7 +384,7 @@ namespace Test
             }
 
             // Contains Invalid0x13
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x13, out var contains0x13) && contains0x13.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x13, out var contains0x13) && contains0x13.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x13:");
                 contains0x13.Sort();
@@ -455,7 +397,7 @@ namespace Test
             }
 
             // Contains InstallODBCDriver
-            if (_opcodes.TryGetValue(OperationCode.InstallODBCDriver, out var contains0x19) && contains0x19.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.InstallODBCDriver, out var contains0x19) && contains0x19.Count > 0)
             {
                 sw.WriteLine("Contains InstallODBCDriver:");
                 contains0x19.Sort();
@@ -468,7 +410,7 @@ namespace Test
             }
 
             // Contains Invalid0x1F
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x1F, out var contains0x1F) && contains0x1F.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x1F, out var contains0x1F) && contains0x1F.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x1F:");
                 contains0x1F.Sort();
@@ -481,7 +423,7 @@ namespace Test
             }
 
             // Contains Invalid0x20
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x20, out var contains0x20) && contains0x20.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x20, out var contains0x20) && contains0x20.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x20:");
                 contains0x20.Sort();
@@ -494,7 +436,7 @@ namespace Test
             }
 
             // Contains Invalid0x21
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x21, out var contains0x21) && contains0x21.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x21, out var contains0x21) && contains0x21.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x21:");
                 contains0x21.Sort();
@@ -507,7 +449,7 @@ namespace Test
             }
 
             // Contains Invalid0x22
-            if (_opcodes.TryGetValue(OperationCode.Invalid0x22, out var contains0x22) && contains0x22.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Invalid0x22, out var contains0x22) && contains0x22.Count > 0)
             {
                 sw.WriteLine("Contains Invalid0x22:");
                 contains0x22.Sort();
@@ -520,7 +462,7 @@ namespace Test
             }
 
             // Contains Unknown0x24
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x24, out var contains0x24) && contains0x24.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Unknown0x24, out var contains0x24) && contains0x24.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x24:");
                 contains0x24.Sort();
@@ -533,7 +475,7 @@ namespace Test
             }
 
             // Contains Unknown0x25
-            if (_opcodes.TryGetValue(OperationCode.Unknown0x25, out var contains0x25) && contains0x25.Count > 0)
+            if (opcodes.TryGetValue(OperationCode.Unknown0x25, out var contains0x25) && contains0x25.Count > 0)
             {
                 sw.WriteLine("Contains Unknown0x25:");
                 contains0x25.Sort();
@@ -545,8 +487,24 @@ namespace Test
                 sw.WriteLine();
             }
 
+            #endregion
+
+            #region Functions
+
+            Dictionary<string, List<string>> functions = [];
+            Array.ForEach([.. _perFileStatistics], kvp =>
+            {
+                foreach (string function in kvp.Value.Functions)
+                {
+                    if (!functions.ContainsKey(function))
+                        functions[function] = [];
+
+                    functions[function].Add(kvp.Key);
+                }
+            });
+
             // Contains Unmapped Function
-            var unmappedFunctions = Array.FindAll([.. _functions.Keys], k =>
+            var unmappedFunctions = Array.FindAll([.. functions.Keys], k =>
             {
                 string? functionName = k.FromWiseFunctionId();
                 return functionName == null || functionName.StartsWith("UNDEFINED");
@@ -557,7 +515,7 @@ namespace Test
                 List<string> containsUnmappedFunction = [];
                 foreach (string function in unmappedFunctions)
                 {
-                    foreach (string path in _functions[function])
+                    foreach (string path in functions[function])
                     {
                         if (!containsUnmappedFunction.Contains(path))
                             containsUnmappedFunction.Add(path);
@@ -578,8 +536,15 @@ namespace Test
             }
 
             sw.WriteLine();
+
+            #endregion
+
             sw.Flush();
         }
+
+        #endregion
+
+        #region Helpers
 
         /// <summary>
         /// Map a file index to the output name
@@ -606,5 +571,23 @@ namespace Test
                 _ => $"Unknown File {index}",
             };
         }
+
+        /// <summary>
+        /// Map a header length to a known descriptor
+        /// </summary>
+        /// <param name="length">Length to map</param>
+        /// <returns>Mapped descriptor, if possible</returns>
+        private static string MapHeaderLengthToDescriptor(int length)
+        {
+            return length switch
+            {
+                18 => "Short",
+                38 => "Middle",
+                43 => "Normal",
+                _ => $"Unknown Length {length}",
+            };
+        }
+
+        #endregion
     }
 }
