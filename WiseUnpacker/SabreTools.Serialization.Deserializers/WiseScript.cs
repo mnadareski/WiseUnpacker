@@ -214,7 +214,7 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.GetSystemInformation => ParseGetSystemInformation(data),
                     OperationCode.GetTemporaryFilename => ParseGetTemporaryFilename(data),
                     OperationCode.PlayMultimediaFile => ParsePlayMultimediaFile(data),
-                    OperationCode.NewEvent => ParseNewEvent(data, ref op0x18skip),
+                    OperationCode.NewEvent => ParseNewEvent(data, languageCount, shortDllCall, ref op0x18skip),
                     OperationCode.InstallODBCDriver => ParseUnknown0x19(data),
                     OperationCode.ConfigODBCDataSource => ParseConfigODBCDataSource(data),
                     OperationCode.IncludeScript => ParseIncludeScript(data),
@@ -727,9 +727,11 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a NewEvent
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="languageCount">Language counter from the header</param>
+        /// <param name="shortDllCall">Indicates a short DLL call</param>
         /// <param name="op0x18skip">Current 0x18 skip value</param>
         /// <returns>Filled NewEvent on success, null on error</returns>
-        internal static NewEvent ParseNewEvent(Stream data, ref int op0x18skip)
+        internal static NewEvent ParseNewEvent(Stream data, int languageCount, bool shortDllCall, ref int op0x18skip)
         {
             // If the end of the stream has been reached
             if (data.Position >= data.Length)
@@ -738,10 +740,17 @@ namespace SabreTools.Serialization.Deserializers
             // If the skip amount needs to be determined
             if (op0x18skip == -1)
             {
+                long current = data.Position;
                 byte nextByte = data.ReadByteValue();
-                data.Seek(-1, SeekOrigin.Current);
+                data.Seek(current, SeekOrigin.Begin);
 
                 op0x18skip = nextByte == 0 || nextByte == 0xFF ? 6 : 0;
+                if (nextByte == 0x09)
+                {
+                    var possible = ParseCallDllFunction(data, languageCount, shortDllCall);
+                    op0x18skip = (possible.FunctionName == null || possible.FunctionName.Length == 0) ? 6 : 0;
+                    data.Seek(current, SeekOrigin.Begin);
+                }
             }
 
             var obj = new NewEvent();
