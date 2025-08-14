@@ -307,7 +307,8 @@ namespace Test
                 if (length != -1 && !headerLengths.ContainsKey(length))
                     headerLengths[length] = [];
 
-                headerLengths[length].Add(kvp.Key);
+                if (length != -1)
+                    headerLengths[length].Add(kvp.Key);
             });
 
             List<int> headerLengthsKeys = [.. headerLengths.Keys];
