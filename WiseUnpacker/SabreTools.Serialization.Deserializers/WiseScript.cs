@@ -179,6 +179,7 @@ namespace SabreTools.Serialization.Deserializers
             byte languageCount = header.LanguageCount;
             bool shortDllCall = header.Unknown_22?.Length != 22
                 && header.SomeOffset1 == 0x00000000
+                && header.Flags != 0x0008
                 && header.Flags != 0x0014;
 
             // Initialize important loop information
