@@ -72,6 +72,11 @@ namespace Test
         /// </summary>
         private readonly List<string> _shortHeaders = [];
 
+        /// <summary>
+        /// All paths that have "middle" headers
+        /// </summary>
+        private readonly List<string> _middleHeaders = [];
+
         #endregion
 
         #endregion
@@ -202,22 +207,27 @@ namespace Test
 
             // Short Header
             if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
-                _shortHeaders.Add(file);
+            {
+                if (script.Model.Header.DateTime == 0x00000000)
+                    _shortHeaders.Add(file);
+                else
+                    _middleHeaders.Add(file);
+            }
 
             // Actions
-            if (script.States != null)
-            {
-                foreach (var state in script.States)
+                if (script.States != null)
                 {
-                    // Ensure the key
-                    if (!_opcodes.ContainsKey(state.Op))
-                        _opcodes[state.Op] = [];
+                    foreach (var state in script.States)
+                    {
+                        // Ensure the key
+                        if (!_opcodes.ContainsKey(state.Op))
+                            _opcodes[state.Op] = [];
 
-                    // Store each file only once
-                    if (!_opcodes[state.Op].Contains(file))
-                        _opcodes[state.Op].Add(file);
+                        // Store each file only once
+                        if (!_opcodes[state.Op].Contains(file))
+                            _opcodes[state.Op].Add(file);
+                    }
                 }
-            }
 
             // Function Calls
             if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.CallDllFunction))
@@ -385,6 +395,19 @@ namespace Test
                 sw.WriteLine("Short Header:");
                 _shortHeaders.Sort();
                 foreach (string path in _shortHeaders)
+                {
+                    sw.WriteLine($"  {path}");
+                }
+
+                sw.WriteLine();
+            }
+
+            // Middle Headers
+            if (_middleHeaders.Count > 0)
+            {
+                sw.WriteLine("Middle Header:");
+                _middleHeaders.Sort();
+                foreach (string path in _middleHeaders)
                 {
                     sw.WriteLine($"  {path}");
                 }
@@ -563,7 +586,7 @@ namespace Test
         /// </summary>
         /// <param name="index">File index to map</param>
         /// <returns>Mapped name, if possible</returns>
-        private string MapFileIndexToName(int index)
+        private static string MapFileIndexToName(int index)
         {
             return index switch
             {
