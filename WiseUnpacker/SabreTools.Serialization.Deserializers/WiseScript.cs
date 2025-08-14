@@ -73,7 +73,10 @@ namespace SabreTools.Serialization.Deserializers
             {
                 // TODO: Figure out if this maps to existing fields
                 header.Flags = data.ReadByteValue();
-                header.Unknown_22 = data.ReadBytes(17);
+                header.UnknownU16_1 = data.ReadUInt16LittleEndian();
+                header.UnknownU16_2 = data.ReadUInt16LittleEndian();
+                header.DateTime = data.ReadUInt32LittleEndian();
+                header.Unknown_22 = data.ReadBytes(9);
 
                 goto ReadStrings;
             }
@@ -175,7 +178,7 @@ namespace SabreTools.Serialization.Deserializers
             // Extract required information
             byte languageCount = header.LanguageCount;
             bool shortDllCall = header.Unknown_22?.Length != 22
-                && header.DateTime == 0x00000000
+                && header.SomeOffset1 == 0x00000000
                 && header.Flags != 0x0014;
 
             // Initialize important loop information
