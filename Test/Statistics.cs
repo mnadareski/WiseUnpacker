@@ -74,19 +74,6 @@ namespace Test
         }
 
         /// <summary>
-        /// Add a WISE0001.DLL size
-        /// </summary>
-        /// <param name="file">Path of the file containing the compressed DLL</param>
-        /// <param name="hash">Hash of the inflated DLL</param>
-        public void AddWiseDllHash(string file, string hash)
-        {
-            if (!PerFileStatistics.ContainsKey(file))
-                PerFileStatistics[file] = new();
-
-            PerFileStatistics[file].WiseDllHash = hash;
-        }
-
-        /// <summary>
         /// Process statistics for a WiseOverlayHeader
         /// </summary>
         /// <param name="file">Path of the file that contained the header</param>

@@ -126,8 +126,6 @@ namespace Test
                 // Process header statistics and print
                 _statistics.ProcessStatistics(file, header);
                 PrintOverlayHeader(filenameBase, header, options);
-                if (options.PerFile)
-                    PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
 
                 // Seek to the script offset
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
@@ -143,7 +141,12 @@ namespace Test
                 // Try to extract the script
                 var scriptStream = new MemoryStream();
                 if (InflateWrapper.ExtractStream(stream, scriptStream, expectedScript, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.FAIL)
+                {
+                    if (options.PerFile)
+                        PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
+
                     return;
+                }
 
                 // Create the expected script output information
                 var expectedDll = new DeflateInfo
@@ -161,9 +164,13 @@ namespace Test
                         dllStream.Seek(0, SeekOrigin.Begin);
                         string? dllHash = HashTool.GetStreamHash(dllStream, HashType.SHA1, leaveOpen: true);
                         if (dllHash != null)
-                            _statistics.AddWiseDllHash(file, dllHash);
+                            fileStatistics.WiseDllHash = dllHash;
                     }
                 }
+
+                // Output overlay header stats with WISE0001.DLL hashes
+                if (options.PerFile)
+                    PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
 
                 // Try to parse the script information
                 scriptStream?.Seek(0, SeekOrigin.Begin);
