@@ -255,7 +255,7 @@ namespace Test
         /// </summary>
         /// <param name="index">File index to map</param>
         /// <returns>Mapped name, if possible</returns>
-        private static string MapFileIndexToName(int index)
+        public static string MapFileIndexToName(int index)
         {
             return index switch
             {
@@ -281,7 +281,7 @@ namespace Test
         /// </summary>
         /// <param name="length">Length to map</param>
         /// <returns>Mapped descriptor, if possible</returns>
-        private static string MapHeaderLengthToDescriptor(int length)
+        public static string MapHeaderLengthToDescriptor(int length)
         {
             return length switch
             {

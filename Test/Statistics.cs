@@ -224,7 +224,7 @@ namespace Test
             });
             for (int i = 0; i < shouldContainFile.Length; i++)
             {
-                string filename = MapFileIndexToName(i);
+                string filename = PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {shouldContainFile[i].Count}");
                 foreach (string path in shouldContainFile[i])
                 {
@@ -328,7 +328,7 @@ namespace Test
 
             foreach (int length in headerLengthsKeys)
             {
-                string lengthName = MapHeaderLengthToDescriptor(length);
+                string lengthName = PerFileStatistics.MapHeaderLengthToDescriptor(length);
                 sw.WriteLine($"  {lengthName} ({length}): {headerLengths[length].Count}");
                 foreach (string path in headerLengths[length])
                 {
@@ -540,52 +540,6 @@ namespace Test
             #endregion
 
             sw.Flush();
-        }
-
-        #endregion
-
-        #region Helpers
-
-        /// <summary>
-        /// Map a file index to the output name
-        /// </summary>
-        /// <param name="index">File index to map</param>
-        /// <returns>Mapped name, if possible</returns>
-        private static string MapFileIndexToName(int index)
-        {
-            return index switch
-            {
-                0 => "WiseColors.dib",
-                1 => "WiseScript.bin",
-                2 => "WISE0001.DLL",
-                3 => "CTL3D32.DLL",
-                4 => "FILE0004",
-                5 => "Ocxreg32.EXE",
-                6 => "PROGRESS.DLL",
-                7 => "FILE0007",
-                8 => "FILE0008",
-                9 => "FILE0009",
-                10 => "FILE000A",
-                11 => "INSTALL_SCRIPT",
-                12 => "FILE0XX.DAT",
-                _ => $"Unknown File {index}",
-            };
-        }
-
-        /// <summary>
-        /// Map a header length to a known descriptor
-        /// </summary>
-        /// <param name="length">Length to map</param>
-        /// <returns>Mapped descriptor, if possible</returns>
-        private static string MapHeaderLengthToDescriptor(int length)
-        {
-            return length switch
-            {
-                18 => "Short",
-                38 => "Middle",
-                43 => "Normal",
-                _ => $"Unknown Length {length}",
-            };
         }
 
         #endregion
