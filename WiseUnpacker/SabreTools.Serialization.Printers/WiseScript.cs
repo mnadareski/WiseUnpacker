@@ -247,18 +247,18 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, EndBlockStatement data)
         {
             builder.AppendLine($"    Data: EndBlockStatement");
-            builder.AppendLine(data.Operand_1, $"      Unknown");
+            builder.AppendLine(data.Operand_1, $"      Operand 1");
             builder.AppendLine();
         }
 
         private static void Print(StringBuilder builder, CallDllFunction data)
         {
             builder.AppendLine($"    Data: CallDllFunction");
-            builder.AppendLine(data.Flags, $"      Unknown");
+            builder.AppendLine(data.Flags, $"      Flags");
             builder.AppendLine(data.DllPath, $"      DLL path");
             builder.AppendLine(data.FunctionName, $"      Function name");
             builder.AppendLine(data.FunctionName.FromWiseFunctionId(), $"      Derived action name");
-            builder.AppendLine(data.Operand_4, $"      Unknown");
+            builder.AppendLine(data.Operand_4, $"      Operand 4");
             builder.AppendLine(data.ReturnVariable, $"      Return variable");
             builder.AppendLine($"      Entries");
             builder.AppendLine("      -------------------------");
@@ -596,7 +596,7 @@ namespace SabreTools.Serialization.Printers
         private static void Print(StringBuilder builder, CheckConfiguration data, int i)
         {
             builder.AppendLine($"      Entry {i}: CheckConfiguration");
-            builder.AppendLine(data.DataFlags, $"Data flags");
+            builder.AppendLine(data.DataFlags, $"        Data flags");
             builder.AppendLine(data.Message, $"        Message");
             builder.AppendLine(data.Title, $"        Title");
             builder.AppendLine();

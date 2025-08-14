@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
 using SabreTools.Serialization;
@@ -123,8 +124,8 @@ namespace Test
                 // Seek to the script offset
                 stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
 
-                // Create the expected output information
-                var expected = new DeflateInfo
+                // Create the expected script output information
+                var expectedScript = new DeflateInfo
                 {
                     InputSize = header.WiseScriptDeflatedSize,
                     OutputSize = header.WiseScriptInflatedSize,
@@ -132,13 +133,33 @@ namespace Test
                 };
 
                 // Try to extract the script
-                var extracted = new MemoryStream();
-                if (InflateWrapper.ExtractStream(stream, extracted, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.FAIL)
+                var scriptStream = new MemoryStream();
+                if (InflateWrapper.ExtractStream(stream, scriptStream, expectedScript, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.FAIL)
                     return;
 
+                // Create the expected script output information
+                var expectedDll = new DeflateInfo
+                {
+                    InputSize = header.WiseDllDeflatedSize,
+                    OutputSize = -1,
+                    Crc32 = 0,
+                };
+
+                // Try to extract WISE0001.DLL
+                using (var dllStream = new MemoryStream())
+                {
+                    if (InflateWrapper.ExtractStream(stream, dllStream, expectedDll, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                    {
+                        dllStream.Seek(0, SeekOrigin.Begin);
+                        string? dllHash = HashTool.GetStreamHash(dllStream, HashType.SHA1, leaveOpen: true);
+                        if (dllHash != null)
+                            _statistics.AddWiseDllHash(file, dllHash);
+                    }
+                }
+
                 // Try to parse the script information
-                extracted?.Seek(0, SeekOrigin.Begin);
-                var script = WiseScript.Create(extracted);
+                scriptStream?.Seek(0, SeekOrigin.Begin);
+                var script = WiseScript.Create(scriptStream);
                 if (script == null)
                 {
                     _statistics.AddErroredPath(file);

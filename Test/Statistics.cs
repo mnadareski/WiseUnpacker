@@ -43,6 +43,11 @@ namespace Test
         /// </summary>
         private readonly List<string>[] _shouldContainFile = new List<string>[13];
 
+        /// <summary>
+        /// Inflated hashes of WISE0001.DLL
+        /// </summary>
+        private readonly Dictionary<string, List<string>> _wiseDllHashes = [];
+
         #endregion
 
         #region Script
@@ -112,6 +117,19 @@ namespace Test
         {
             if (!_invalidPaths.Contains(file))
                 _invalidPaths.Add(file);
+        }
+
+        /// <summary>
+        /// Add a WISE0001.DLL size
+        /// </summary>
+        /// <param name="file">Path of the file containing the compressed DLL</param>
+        /// <param name="hash">Hash of the inflated DLL</param>
+        public void AddWiseDllHash(string file, string hash)
+        {
+            if (!_wiseDllHashes.ContainsKey(hash))
+                _wiseDllHashes[hash] = [];
+
+            _wiseDllHashes[hash].Add(file);
         }
 
         /// <summary>
@@ -308,6 +326,22 @@ namespace Test
                 string filename = MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {_shouldContainFile[i].Count}");
                 foreach (string path in _shouldContainFile[i])
+                {
+                    sw.WriteLine($"    {path}");
+                }
+            }
+
+            sw.WriteLine();
+
+            // WISE0001.DLL Hashes
+            sw.WriteLine("WISE0001.DLL Hashes:");
+            List<string> wiseDllHashesKeys = [.. _wiseDllHashes.Keys];
+            wiseDllHashesKeys.Sort();
+
+            foreach (string hash in wiseDllHashesKeys)
+            {
+                sw.WriteLine($"  {hash}:");
+                foreach (string path in _wiseDllHashes[hash])
                 {
                     sw.WriteLine($"    {path}");
                 }
