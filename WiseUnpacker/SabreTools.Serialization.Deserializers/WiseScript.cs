@@ -185,6 +185,10 @@ namespace SabreTools.Serialization.Deserializers
             // Initialize important loop information
             int op0x18skip = -1;
             bool? registryDll = null;
+            bool switched = false;
+
+            // Store the start of the state machine
+            long machineStart = data.Position;
 
             // Store all states in order
             List<MachineState> states = [];
@@ -233,13 +237,29 @@ namespace SabreTools.Serialization.Deserializers
                     OperationCode.Unknown0x24 => ParseUnknown0x24(data),
                     OperationCode.Unknown0x25 => ParseUnknown0x25(data),
 
-                    //_ => null,
-                    _ => throw new IndexOutOfRangeException(nameof(op)),
+                    // Handled separately below
+                    _ => null,
                 };
 
-                // Debug statement
+                // If an error is detected, try parsing with flipped short DLL call values
                 if (stateData == null)
-                    Console.WriteLine($"Opcode {op} resulted in null data");
+                {
+                    // If there has already been one switch, don't try again
+                    if (switched)
+                        throw new IndexOutOfRangeException(nameof(op));
+
+                    // Debug statement
+                    Console.WriteLine($"Opcode {op} resulted in null data, trying with alternate values");
+
+                    // Reset the state
+                    switched = true;
+                    shortDllCall = !shortDllCall;
+                    states.Clear();
+
+                    // Seek to the start of the machine and try again
+                    data.Seek(machineStart, SeekOrigin.Begin);
+                    continue;
+                }
 
                 var state = new MachineState
                 {
