@@ -58,7 +58,7 @@ namespace SabreTools.Serialization.Deserializers
 
             var header = new ScriptHeader();
 
-            // Attempt to read strings at 0x12
+            // Attempt to read strings at 0x12 (Short)
             data.Seek(current + 0x12, SeekOrigin.Begin);
             string? ftpUrl = data.ReadNullTerminatedAnsiString();
             string? logPath = data.ReadNullTerminatedAnsiString();
@@ -81,7 +81,7 @@ namespace SabreTools.Serialization.Deserializers
                 goto ReadStrings;
             }
 
-            // Attempt to read strings at 0x26
+            // Attempt to read strings at 0x26 (Middle)
             data.Seek(current + 0x26, SeekOrigin.Begin);
             ftpUrl = data.ReadNullTerminatedAnsiString();
             logPath = data.ReadNullTerminatedAnsiString();
@@ -106,7 +106,7 @@ namespace SabreTools.Serialization.Deserializers
                 goto ReadStrings;
             }
 
-            // Attempt to read strings at 0x34
+            // Attempt to read strings at 0x34 (Long)
             data.Seek(current + 0x34, SeekOrigin.Begin);
             ftpUrl = data.ReadNullTerminatedAnsiString();
             logPath = data.ReadNullTerminatedAnsiString();
@@ -131,7 +131,7 @@ namespace SabreTools.Serialization.Deserializers
                 goto ReadStrings;
             }
 
-            // Otherwise, assume a standard header
+            // Otherwise, assume a standard header (Normal)
             header.Flags = data.ReadByteValue();
             header.UnknownU16_1 = data.ReadUInt16LittleEndian();
             header.UnknownU16_2 = data.ReadUInt16LittleEndian();

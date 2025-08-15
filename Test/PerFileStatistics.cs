@@ -73,6 +73,7 @@ namespace Test
         /// - 18 bytes (Short)
         /// - 38 bytes (Middle)
         /// - 43 bytes (Normal)
+        /// - 52 bytes (Long)
         /// </remarks>
         public int? HeaderPrefixLength { get; private set; }
 
