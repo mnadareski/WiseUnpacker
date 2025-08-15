@@ -147,17 +147,13 @@ namespace Test
             Datetime = script.Model.Header?.DateTime ?? 0;
 
             // Header Length
-            if (script.Model.Header?.Unknown_22 != null && script.Model.Header.Unknown_22.Length != 22)
+            HeaderPrefixLength = script.Model.Header?.Unknown_22?.Length ?? 0 switch
             {
-                if (script.Model.Header.SomeOffset1 == 0x00000000)
-                    HeaderPrefixLength = 18;
-                else
-                    HeaderPrefixLength = 38;
-            }
-            else
-            {
-                HeaderPrefixLength = 43;
-            }
+                9 => 18,
+                17 => 38,
+                31 => 52,
+                _ => 43,
+            };
 
             // Actions
             foreach (var state in script.States ?? [])
@@ -318,6 +314,7 @@ namespace Test
                 18 => "Short",
                 38 => "Middle",
                 43 => "Normal",
+                52 => "Long",
                 _ => $"Unknown Length {length}",
             };
         }

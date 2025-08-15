@@ -350,6 +350,7 @@ namespace SabreTools.Serialization.Wrappers
             // Check section data
             foreach (var section in pex.Model.SectionTable ?? [])
             {
+                string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
                 long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
                 data.Seek(sectionOffset, SeekOrigin.Begin);
 
@@ -358,7 +359,6 @@ namespace SabreTools.Serialization.Wrappers
                     return true;
 
                 // Check after the resource table
-                string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
                 if (sectionName == ".rsrc")
                 {
                     // Data immediately following

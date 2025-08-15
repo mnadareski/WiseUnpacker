@@ -106,6 +106,31 @@ namespace SabreTools.Serialization.Deserializers
                 goto ReadStrings;
             }
 
+            // Attempt to read strings at 0x34
+            data.Seek(current + 0x34, SeekOrigin.Begin);
+            ftpUrl = data.ReadNullTerminatedAnsiString();
+            logPath = data.ReadNullTerminatedAnsiString();
+            messageFont = data.ReadNullTerminatedAnsiString();
+            data.Seek(current, SeekOrigin.Begin);
+
+            // If the strings are valid
+            if ((ftpUrl != null && (ftpUrl.Length == 0 || ftpUrl.Split('.').Length > 2))
+                && (logPath != null && (logPath.Length == 0 || logPath.StartsWith("%")))
+                && (messageFont != null && (messageFont.Length == 0 || !IsTypicalControlCode(messageFont, strict: true)))
+                && !(ftpUrl.Length == 0 && logPath.Length == 0 && messageFont.Length == 0))
+            {
+                header.Flags = data.ReadByteValue();
+                header.UnknownU16_1 = data.ReadUInt16LittleEndian();
+                header.UnknownU16_2 = data.ReadUInt16LittleEndian();
+                header.SomeOffset1 = data.ReadUInt32LittleEndian();
+                header.SomeOffset2 = data.ReadUInt32LittleEndian();
+                header.UnknownBytes_2 = data.ReadBytes(4);
+                header.DateTime = data.ReadUInt32LittleEndian();
+                header.Unknown_22 = data.ReadBytes(31);
+
+                goto ReadStrings;
+            }
+
             // Otherwise, assume a standard header
             header.Flags = data.ReadByteValue();
             header.UnknownU16_1 = data.ReadUInt16LittleEndian();
