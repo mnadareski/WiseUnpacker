@@ -148,7 +148,7 @@ namespace Test
             Datetime = script.Model.Header?.DateTime ?? 0;
 
             // Header Length
-            HeaderPrefixLength = script.Model.Header?.Unknown_22?.Length ?? 0 switch
+            HeaderPrefixLength = script.Model.Header?.VariableLengthData?.Length ?? 0 switch
             {
                 9 => 18,
                 17 => 38,

@@ -13,7 +13,7 @@ namespace SabreTools.Models.WiseInstaller
         /// The high byte (0x01) being any value but 0x00 indicates
         /// that a 32-bit library will be used.
         /// </remarks>
-        public ushort Flags { get; set; } // 0x00 - 0x01
+        public ushort Flags { get; set; }
 
         /// <summary>
         /// Unknown
@@ -26,7 +26,7 @@ namespace SabreTools.Models.WiseInstaller
         /// non-zero. The variable names use "SYS" as the template.
         /// The values are then seemingly read over?
         /// </remarks>
-        public ushort UnknownU16_1 { get; set; } // 0x02 - 0x03
+        public ushort UnknownU16_1 { get; set; }
 
         /// <summary>
         /// Unknown
@@ -39,7 +39,7 @@ namespace SabreTools.Models.WiseInstaller
         /// non-zero. The variable names use "SYS" as the template.
         /// The values are then seemingly read over?
         /// </remarks>
-        public ushort UnknownU16_2 { get; set; } // 0x04 - 0x05
+        public ushort UnknownU16_2 { get; set; }
 
         /// <summary>
         /// Total deflated size of OP 0x00 files?
@@ -54,7 +54,7 @@ namespace SabreTools.Models.WiseInstaller
         /// - 0x400 - Breaks a loop?
         /// - 0x800 - Returns 0?
         /// </remarks>
-        public uint SomeOffset1 { get; set; } // 0x05 - 0x08
+        public uint SomeOffset1 { get; set; }
 
         /// <summary>
         /// Unknown
@@ -62,7 +62,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <remarks>
         /// Used as a size to allocate memory in WISE0001.DLL
         /// </remarks>
-        public uint SomeOffset2 { get; set; } // 0x09 - 0x0C
+        public uint SomeOffset2 { get; set; }
 
         /// <summary>
         /// Unknown
@@ -75,31 +75,31 @@ namespace SabreTools.Models.WiseInstaller
         /// at the next null terminator. The string at that offset is
         /// then comapred to ...
         /// </remarks>
-        public byte[]? UnknownBytes_2 { get; set; } // 0x0D - 0x10
+        public byte[]? UnknownBytes_2 { get; set; }
 
         /// <summary>
         /// Creation of this WiseScript.bin since UNIX epoch
         /// </summary>
-        public uint DateTime { get; set; } // 0x11 - 0x14
+        public uint DateTime { get; set; }
 
         /// <summary>
         /// Unknown
         /// </summary>
         /// <remarks>
-        /// 22 bytes
-        /// 
-        /// byte[0]
-        ///     0x00 - ????
-        ///     0x40 - ????
-        /// byte[1]
-        ///     0x00 - ????
-        ///     0x10 - ????
-        public byte[]? Unknown_22 { get; set; } // 0x15 - 0x2B
+        /// This is a variable-length area of data that hasn't been
+        /// properly mapped yet. There are currently 4 documented
+        /// lengths of data:
+        /// - 9 - Short header data, missing some fields
+        /// - 17 - Middle header data, missing some fields
+        /// - 22 - Normal header data, all fields present
+        /// - 31 - Long header data, all fields present
+        /// </remarks>
+        public byte[]? VariableLengthData { get; set; }
 
         /// <summary>
         /// FTP URL for online downloading
         /// </summary>
-        public string? FTPURL { get; set; } // 0x2C -
+        public string? FTPURL { get; set; }
 
         /// <summary>
         /// Log pathname

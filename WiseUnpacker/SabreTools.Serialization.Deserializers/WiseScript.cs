@@ -76,7 +76,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.UnknownU16_1 = data.ReadUInt16LittleEndian();
                 header.UnknownU16_2 = data.ReadUInt16LittleEndian();
                 header.DateTime = data.ReadUInt32LittleEndian();
-                header.Unknown_22 = data.ReadBytes(9);
+                header.VariableLengthData = data.ReadBytes(9);
 
                 goto ReadStrings;
             }
@@ -101,7 +101,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.SomeOffset2 = data.ReadUInt32LittleEndian();
                 header.UnknownBytes_2 = data.ReadBytes(4);
                 header.DateTime = data.ReadUInt32LittleEndian();
-                header.Unknown_22 = data.ReadBytes(17);
+                header.VariableLengthData = data.ReadBytes(17);
 
                 goto ReadStrings;
             }
@@ -126,7 +126,7 @@ namespace SabreTools.Serialization.Deserializers
                 header.SomeOffset2 = data.ReadUInt32LittleEndian();
                 header.UnknownBytes_2 = data.ReadBytes(4);
                 header.DateTime = data.ReadUInt32LittleEndian();
-                header.Unknown_22 = data.ReadBytes(31);
+                header.VariableLengthData = data.ReadBytes(31);
 
                 goto ReadStrings;
             }
@@ -139,7 +139,7 @@ namespace SabreTools.Serialization.Deserializers
             header.SomeOffset2 = data.ReadUInt32LittleEndian();
             header.UnknownBytes_2 = data.ReadBytes(4);
             header.DateTime = data.ReadUInt32LittleEndian();
-            header.Unknown_22 = data.ReadBytes(22);
+            header.VariableLengthData = data.ReadBytes(22);
 
         ReadStrings:
             header.FTPURL = data.ReadNullTerminatedAnsiString();
@@ -202,7 +202,7 @@ namespace SabreTools.Serialization.Deserializers
         {
             // Extract required information
             byte languageCount = header.LanguageCount;
-            bool shortDllCall = header.Unknown_22?.Length != 22
+            bool shortDllCall = header.VariableLengthData?.Length != 22
                 && header.SomeOffset1 == 0x00000000
                 && header.Flags != 0x0008
                 && header.Flags != 0x0014;
