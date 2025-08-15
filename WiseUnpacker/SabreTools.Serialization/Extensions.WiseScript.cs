@@ -43,13 +43,15 @@ namespace SabreTools.Serialization
                 "f36" => "Start/Stop Service",
                 "f38" => "Check HTTP Connection",
 
+                // Defined in Helper Libraries
+                "f5" => "Unknown",
+                "f14" => "Unknown",
+                "f18" => "Unknown",
+
                 // Undefined function IDs
                 "f4" => $"UNDEFINED {functionId}",
-                "f5" => $"UNDEFINED {functionId}",
                 "f6" => $"UNDEFINED {functionId}",
                 "f7" => $"UNDEFINED {functionId}",
-                "f14" => $"UNDEFINED {functionId}",
-                "f18" => $"UNDEFINED {functionId}",
                 "f24" => $"UNDEFINED {functionId}",
                 "f26" => $"UNDEFINED {functionId}",
                 "f32" => $"UNDEFINED {functionId}",
