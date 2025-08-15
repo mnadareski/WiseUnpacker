@@ -342,6 +342,9 @@ namespace SabreTools.Models.WiseInstaller
 
         WISE_FLAG_UNKNOWN_10 = 0x00000400,
 
+        /// <remarks>
+        /// May be related to requireAdministrator
+        /// </remarks>
         WISE_FLAG_UNKNOWN_11 = 0x00000800,
 
         /// <remarks>
@@ -355,6 +358,9 @@ namespace SabreTools.Models.WiseInstaller
 
         WISE_FLAG_UNKNOWN_15 = 0x00008000,
 
+        /// <remarks>
+        /// May be related to requireAdministrator
+        /// </remarks>
         WISE_FLAG_UNKNOWN_16 = 0x00010000,
 
         WISE_FLAG_UNKNOWN_17 = 0x00020000,
