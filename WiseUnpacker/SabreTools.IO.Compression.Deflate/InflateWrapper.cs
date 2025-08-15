@@ -1,7 +1,10 @@
 using System;
 using System.IO;
+using System.Text;
 using SabreTools.Hashing;
 using SabreTools.IO.Extensions;
+using SabreTools.Models.PKZIP;
+using static SabreTools.Models.PKZIP.Constants;
 
 namespace SabreTools.IO.Compression.Deflate
 {
@@ -137,7 +140,7 @@ namespace SabreTools.IO.Compression.Deflate
             long current = source.Position;
 
             // Parse the PKZIP header, if it exists
-            Models.PKZIP.LocalFileHeader? zipHeader = Serialization.Deserializers.PKZIP.ParseLocalFileHeader(source);
+            LocalFileHeader? zipHeader = ParseLocalFileHeader(source);
             long zipHeaderBytes = source.Position - current;
 
             // Always trust the PKZIP CRC-32 value over what is supplied
@@ -263,6 +266,51 @@ namespace SabreTools.IO.Compression.Deflate
 
             // Verify the extracted data
             return VerifyExtractedData(source, current, expected, actual, includeDebug);
+        }
+
+        /// <summary>
+        /// Parse a Stream into a local file header
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <returns>Filled local file header on success, null on error</returns>
+        /// <remarks>Mirror of method in Serialization</remarks>
+        private static LocalFileHeader? ParseLocalFileHeader(Stream data)
+        {
+            var header = new LocalFileHeader();
+
+            header.Signature = data.ReadUInt32LittleEndian();
+            if (header.Signature != LocalFileHeaderSignature)
+                return null;
+
+            header.Version = data.ReadUInt16LittleEndian();
+            header.Flags = (GeneralPurposeBitFlags)data.ReadUInt16LittleEndian();
+            header.CompressionMethod = (CompressionMethod)data.ReadUInt16LittleEndian();
+            header.LastModifedFileTime = data.ReadUInt16LittleEndian();
+            header.LastModifiedFileDate = data.ReadUInt16LittleEndian();
+            header.CRC32 = data.ReadUInt32LittleEndian();
+            header.CompressedSize = data.ReadUInt32LittleEndian();
+            header.UncompressedSize = data.ReadUInt32LittleEndian();
+            header.FileNameLength = data.ReadUInt16LittleEndian();
+            header.ExtraFieldLength = data.ReadUInt16LittleEndian();
+
+            if (header.FileNameLength > 0 && data.Position + header.FileNameLength <= data.Length)
+            {
+                byte[] filenameBytes = data.ReadBytes(header.FileNameLength);
+                if (filenameBytes.Length != header.FileNameLength)
+                    return null;
+
+                header.FileName = Encoding.ASCII.GetString(filenameBytes);
+            }
+            if (header.ExtraFieldLength > 0 && data.Position + header.ExtraFieldLength <= data.Length)
+            {
+                byte[] extraBytes = data.ReadBytes(header.ExtraFieldLength);
+                if (extraBytes.Length != header.ExtraFieldLength)
+                    return null;
+
+                header.ExtraField = extraBytes;
+            }
+
+            return header;
         }
 
         /// <summary>
