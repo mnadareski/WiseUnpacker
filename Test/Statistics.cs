@@ -127,7 +127,7 @@ namespace Test
             // Invalid Paths
             if (_invalidPaths.Count > 0)
             {
-                sw.WriteLine("Invalid Paths:");
+                sw.WriteLine($"Invalid Paths: {_invalidPaths.Count}");
                 _invalidPaths.Sort();
                 foreach (string path in _invalidPaths)
                 {
@@ -138,7 +138,7 @@ namespace Test
             // Errored Paths
             if (_erroredPaths.Count > 0)
             {
-                sw.WriteLine("Errored Paths:");
+                sw.WriteLine($"Errored Paths: {_erroredPaths.Count}");
                 _erroredPaths.Sort();
                 foreach (string path in _erroredPaths)
                 {
@@ -149,7 +149,7 @@ namespace Test
             // Failed Extract Paths
             if (_failedExtractPaths.Count > 0)
             {
-                sw.WriteLine("Failed Extract Paths:");
+                sw.WriteLine($"Failed Extract Paths: {_failedExtractPaths.Count}");
                 _failedExtractPaths.Sort();
                 foreach (string path in _failedExtractPaths)
                 {
