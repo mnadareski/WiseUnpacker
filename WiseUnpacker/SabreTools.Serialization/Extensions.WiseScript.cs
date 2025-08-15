@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace SabreTools.Serialization
 {
     public static partial class Extensions
@@ -55,7 +57,7 @@ namespace SabreTools.Serialization
 
                 // External DLL
                 null => null,
-                _ => functionId.StartsWith("f") ? $"UNDEFINED {functionId}" : $"External: {functionId}",
+                _ => Regex.IsMatch(functionId, @"^f[0-9]{1,2}$") ? $"UNDEFINED {functionId}" : $"External: {functionId}",
             };
         }
     }
