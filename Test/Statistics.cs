@@ -35,7 +35,7 @@ namespace Test
         /// <summary>
         /// Per-file statistics map
         /// </summary>
-        public Dictionary<string, PerFileStatistics> PerFileStatistics { get; } = [];
+        public Dictionary<string, PerFileStatistics> FilesMap { get; } = [];
 
         #endregion
 
@@ -80,10 +80,10 @@ namespace Test
         /// <param name="header">WiseOverlayHeader to gather statistics from</param>
         public void ProcessStatistics(string file, WiseOverlayHeader header)
         {
-            if (!PerFileStatistics.ContainsKey(file))
-                PerFileStatistics[file] = new();
+            if (!FilesMap.ContainsKey(file))
+                FilesMap[file] = new();
 
-            PerFileStatistics[file].ProcessStatistics(header);
+            FilesMap[file].ProcessStatistics(header);
         }
 
         /// <summary>
@@ -93,10 +93,10 @@ namespace Test
         /// <param name="script">WiseScript to gather statistics from</param>
         public void ProcessStatistics(string file, WiseScript script)
         {
-            if (!PerFileStatistics.ContainsKey(file))
-                PerFileStatistics[file] = new();
+            if (!FilesMap.ContainsKey(file))
+                FilesMap[file] = new();
 
-            PerFileStatistics[file].ProcessStatistics(script);
+            FilesMap[file].ProcessStatistics(script);
         }
 
         #endregion
@@ -175,7 +175,7 @@ namespace Test
             sw.WriteLine("Flag Counts:");
 
             int[] flagCounts = new int[32];
-            Array.ForEach([.. PerFileStatistics.Values], s =>
+            Array.ForEach([.. FilesMap.Values], s =>
             {
                 for (int i = 0; i < flagCounts.Length; i++)
                 {
@@ -198,7 +198,7 @@ namespace Test
             sw.WriteLine("Should Contain File:");
 
             var shouldContainFile = new List<string>[13];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 for (int i = 0; i < shouldContainFile.Length; i++)
                 {
@@ -229,7 +229,7 @@ namespace Test
             sw.WriteLine("Header-Defined Files Hashes:");
 
             var headerDefinedFilesHashes = new Dictionary<string, List<string>>[13];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 for (int i = 0; i < 13; i++)
                 {
@@ -287,7 +287,7 @@ namespace Test
             sw.WriteLine("First Flag:");
 
             Dictionary<ushort, List<string>> firstFlags = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 ushort? flag = kvp.Value.FirstFlag;
                 if (flag == null)
@@ -321,7 +321,7 @@ namespace Test
             sw.WriteLine("Second Flag:");
 
             Dictionary<ushort, List<string>> secondFlags = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 ushort? flag = kvp.Value.SecondFlag;
                 if (flag == null)
@@ -355,7 +355,7 @@ namespace Test
             sw.WriteLine("Third Flag:");
 
             Dictionary<ushort, List<string>> thirdFlags = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 ushort? flag = kvp.Value.ThirdFlag;
                 if (flag == null)
@@ -389,7 +389,7 @@ namespace Test
             sw.WriteLine("Header Prefix Lengths:");
 
             Dictionary<int, List<string>> headerLengths = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 int? length = kvp.Value.HeaderPrefixLength;
                 if (length == null)
@@ -423,7 +423,7 @@ namespace Test
 
             var enumValues = (OperationCode[])Enum.GetValues(typeof(OperationCode));
             Dictionary<OperationCode, List<string>> opcodes = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 foreach (var enumValue in enumValues)
                 {
@@ -571,7 +571,7 @@ namespace Test
             #region Functions
 
             Dictionary<string, List<string>> functions = [];
-            Array.ForEach([.. PerFileStatistics], kvp =>
+            Array.ForEach([.. FilesMap], kvp =>
             {
                 foreach (string function in kvp.Value.Functions)
                 {

@@ -104,10 +104,10 @@ namespace Test
                 Directory.CreateDirectory(tempDirectory);
 
             // Ensure the statistics object is created
-            if (!_statistics.PerFileStatistics.ContainsKey(file))
-                _statistics.PerFileStatistics[file] = new();
+            if (!_statistics.FilesMap.ContainsKey(file))
+                _statistics.FilesMap[file] = new();
 
-            var fileStatistics = _statistics.PerFileStatistics[file];
+            var fileStatistics = _statistics.FilesMap[file];
 
             Console.WriteLine($"Attempting to print info for {file}");
 
