@@ -224,31 +224,45 @@ namespace Test
 
             #endregion
 
-            #region WISE0001.DLL Hashes
+            #region Header-Defined Files Hashes
 
-            sw.WriteLine("WISE0001.DLL Hashes:");
+            sw.WriteLine("Header-Defined Files Hashes:");
 
-            Dictionary<string, List<string>> wiseDllHashes = [];
+            var headerDefinedFilesHashes = new Dictionary<string, List<string>>[13];
             Array.ForEach([.. PerFileStatistics], kvp =>
             {
-                string? hash = kvp.Value.WiseDllHash;
-                if (hash != null && !wiseDllHashes.ContainsKey(hash))
-                    wiseDllHashes[hash] = [];
-
-                if (hash != null)
-                    wiseDllHashes[hash].Add(kvp.Key);
-            });
-
-            List<string> wiseDllHashesKeys = [.. wiseDllHashes.Keys];
-            wiseDllHashesKeys.Sort();
-
-            foreach (string hash in wiseDllHashesKeys)
-            {
-                sw.WriteLine($"  {hash}: {wiseDllHashes[hash].Count}");
-                wiseDllHashes[hash].Sort();
-                foreach (string path in wiseDllHashes[hash])
+                for (int i = 0; i < 13; i++)
                 {
-                    sw.WriteLine($"    {path}");
+                    string? hash = kvp.Value.HeaderDefinedFileHashes[i];
+                    if (hash == null)
+                        continue;
+
+                    if (headerDefinedFilesHashes[i] == default)
+                        headerDefinedFilesHashes[i] = [];
+                    if (!headerDefinedFilesHashes[i].ContainsKey(hash))
+                        headerDefinedFilesHashes[i][hash] = [];
+
+                    headerDefinedFilesHashes[i][hash].Add(kvp.Key);
+                }
+            });
+            for (int i = 0; i < 13; i++)
+            {
+                List<string> headerDefinedFileHashesKeys = [.. headerDefinedFilesHashes[i].Keys];
+                headerDefinedFileHashesKeys.Sort();
+
+                string filename = Test.PerFileStatistics.MapFileIndexToName(i);
+                sw.WriteLine($"  {filename} ({i}):");
+
+                for (int j = 0; j < headerDefinedFileHashesKeys.Count; j++)
+                {
+                    string hash = headerDefinedFileHashesKeys[j];
+                    headerDefinedFilesHashes[i][hash].Sort();
+
+                    sw.WriteLine($"    {hash}:");
+                    foreach (string path in headerDefinedFilesHashes[i][hash])
+                    {
+                        sw.WriteLine($"      {path}");
+                    }
                 }
             }
 
@@ -280,7 +294,7 @@ namespace Test
                     return;
 
                 if (!firstFlags.ContainsKey(flag.Value))
-                        firstFlags[flag.Value] = [];
+                    firstFlags[flag.Value] = [];
 
                 firstFlags[flag.Value].Add(kvp.Key);
             });
@@ -382,7 +396,7 @@ namespace Test
                     return;
 
                 if (!headerLengths.ContainsKey(length.Value))
-                        headerLengths[length.Value] = [];
+                    headerLengths[length.Value] = [];
 
                 headerLengths[length.Value].Add(kvp.Key);
             });

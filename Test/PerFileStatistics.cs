@@ -23,9 +23,14 @@ namespace Test
         public bool[] Flags { get; } = new bool[32];
 
         /// <summary>
-        /// Files that should be contained
+        /// Files who have deflated sizes in the header
         /// </summary>
         public bool[] ShouldContainFile { get; } = new bool[13];
+
+        /// <summary>
+        /// Hashes of the header defined files
+        /// </summary>
+        public string?[] HeaderDefinedFileHashes { get; } = new string[13];
 
         /// <summary>
         /// Inflated hashe of WISE0001.DLL
@@ -213,8 +218,14 @@ namespace Test
 
             sw.WriteLine();
 
-            // WISE0001.DLL Hashe
-            sw.WriteLine($"WISE0001.DLL Hash: {WiseDllHash}");
+            // Header-Defined Files Hashes
+            sw.WriteLine("File Hashes:");
+            for (int i = 0; i < HeaderDefinedFileHashes.Length; i++)
+            {
+                string filename = MapFileIndexToName(i);
+                sw.WriteLine($"  {filename} ({i}): {HeaderDefinedFileHashes[i]}");
+            }
+
             sw.WriteLine();
 
             sw.Flush();

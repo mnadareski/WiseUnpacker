@@ -127,45 +127,14 @@ namespace Test
                 _statistics.ProcessStatistics(file, header);
                 PrintOverlayHeader(filenameBase, header, options);
 
-                // Seek to the script offset
-                stream.Seek(header.DibDeflatedSize, SeekOrigin.Current);
-
-                // Create the expected script output information
-                var expectedScript = new DeflateInfo
-                {
-                    InputSize = header.WiseScriptDeflatedSize,
-                    OutputSize = header.WiseScriptInflatedSize,
-                    Crc32 = 0,
-                };
-
-                // Try to extract the script
-                var scriptStream = new MemoryStream();
-                if (InflateWrapper.ExtractStream(stream, scriptStream, expectedScript, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.FAIL)
+                // Process header-defined files
+                var scriptStream = ProcessHeaderDefinedFiles(stream, options, fileStatistics, header);
+                if (scriptStream == null)
                 {
                     if (options.PerFile)
                         PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
 
                     return;
-                }
-
-                // Create the expected script output information
-                var expectedDll = new DeflateInfo
-                {
-                    InputSize = header.WiseDllDeflatedSize,
-                    OutputSize = -1,
-                    Crc32 = 0,
-                };
-
-                // Try to extract WISE0001.DLL
-                using (var dllStream = new MemoryStream())
-                {
-                    if (InflateWrapper.ExtractStream(stream, dllStream, expectedDll, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
-                    {
-                        dllStream.Seek(0, SeekOrigin.Begin);
-                        string? dllHash = HashTool.GetStreamHash(dllStream, HashType.SHA1, leaveOpen: true);
-                        if (dllHash != null)
-                            fileStatistics.WiseDllHash = dllHash;
-                    }
                 }
 
                 // Output overlay header stats with WISE0001.DLL hashes
@@ -194,6 +163,312 @@ namespace Test
                 Console.WriteLine(options.Debug ? ex : "[Exception opening file, please try again]");
                 Console.WriteLine();
             }
+        }
+
+        /// <summary>
+        /// Process header-defined files
+        /// </summary>
+        /// <param name="stream">Stream that represents the extractable data</param>
+        /// <param name="options">User-defined options</param>
+        /// <param name="fileStatistics">Per-file statistics to add hashes to</param>
+        /// <param name="header">Overlay header to pull information from</param>
+        /// <returns>Populated stream representing the script on success, null otherwise</returns>
+        private static Stream? ProcessHeaderDefinedFiles(Stream stream, Options options, PerFileStatistics fileStatistics, WiseOverlayHeader header)
+        {
+            #region WiseColors.dib
+
+            var expected = new DeflateInfo
+            {
+                InputSize = header.DibDeflatedSize,
+                OutputSize = header.DibInflatedSize,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[0] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region WiseScript.bin
+
+            // Create the expected script output information
+            expected = new DeflateInfo
+            {
+                InputSize = header.WiseScriptDeflatedSize,
+                OutputSize = header.WiseScriptInflatedSize,
+                Crc32 = 0,
+            };
+
+            // Try to extract the script
+            var scriptStream = new MemoryStream();
+            var scriptResult = InflateWrapper.ExtractStream(stream, scriptStream, expected, header.IsPKZIP, options.Debug, out _);
+            if (scriptResult == ExtractionStatus.FAIL)
+            {
+                return null;
+            }
+            else if (scriptResult == ExtractionStatus.GOOD)
+            {
+                scriptStream.Seek(0, SeekOrigin.Begin);
+                string? tempHash = HashTool.GetStreamHash(scriptStream, HashType.SHA1, leaveOpen: true);
+                if (tempHash != null)
+                    fileStatistics.HeaderDefinedFileHashes[1] = tempHash;
+
+                scriptStream.Seek(0, SeekOrigin.Begin);
+            }
+
+            #endregion
+
+            #region WISE0001.DLL
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.WiseDllDeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[2] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region CTL3D32.DLL
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.Ctl3d32DeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[3] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region FILE0004
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.SomeData4DeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[4] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region Ocxreg32.EXE
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.RegToolDeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[5] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region PROGRESS.DLL
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.ProgressDllDeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[6] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region FILE0007
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.SomeData7DeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[7] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region FILE0008
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.SomeData8DeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[8] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region FILE0009
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.SomeData9DeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[9] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region FILE000A
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.SomeData10DeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[10] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region INSTALL_SCRIPT
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.InstallScriptDeflatedSize,
+                OutputSize = -1,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[11] = tempHash;
+                }
+            }
+
+            #endregion
+
+            #region FILE0XX.DAT
+
+            expected = new DeflateInfo
+            {
+                InputSize = header.FinalFileDeflatedSize,
+                OutputSize = header.FinalFileInflatedSize,
+                Crc32 = 0,
+            };
+
+            using (var tempStream = new MemoryStream())
+            {
+                if (InflateWrapper.ExtractStream(stream, tempStream, expected, header.IsPKZIP, options.Debug, out _) == ExtractionStatus.GOOD)
+                {
+                    tempStream.Seek(0, SeekOrigin.Begin);
+                    string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
+                    if (tempHash != null)
+                        fileStatistics.HeaderDefinedFileHashes[12] = tempHash;
+                }
+            }
+
+            #endregion
+
+            return scriptStream;
         }
 
         /// <summary>
