@@ -145,21 +145,21 @@ namespace Test
         public void ProcessStatistics(WiseScript script)
         {
             // First Flags
-            FirstFlag = script.Model.Header?.Flags ?? 0;
-            SecondFlag = script.Model.Header?.UnknownU16_1 ?? 0;
-            ThirdFlag = script.Model.Header?.UnknownU16_2 ?? 0;
+            FirstFlag = script.Flags;
+            SecondFlag = script.UnknownU16_1;
+            ThirdFlag = script.UnknownU16_2;
 
             // Datetime
-            Datetime = script.Model.Header?.DateTime ?? 0;
+            Datetime = script.DateTime;
 
             // Header Length
-            HeaderPrefixLength = script.Model.Header?.VariableLengthData?.Length switch
+            HeaderPrefixLength = script.VariableLengthData?.Length switch
             {
                 9 => 18,
                 17 => 38,
                 22 => 43,
                 31 => 52,
-                _ => script.Model.Header?.VariableLengthData?.Length,
+                _ => script.VariableLengthData?.Length,
             };
 
             // Actions

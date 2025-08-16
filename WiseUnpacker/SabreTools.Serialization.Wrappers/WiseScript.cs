@@ -20,8 +20,41 @@ namespace SabreTools.Serialization.Wrappers
 
         #region Extension Properties
 
+        /// <inheritdoc cref="ScriptHeader.DateTime"/>
+        public uint DateTime => Model.Header?.DateTime ?? 0;
+
+        /// <inheritdoc cref="ScriptHeader.Flags"/>
+        public ushort Flags => Model.Header?.Flags ?? 0;
+
+        /// <inheritdoc cref="ScriptHeader.FontSize"/>
+        public uint FontSize => Model.Header?.FontSize ?? 0;
+
+        /// <inheritdoc cref="ScriptHeader.FTPURL"/>
+        public string? FTPURL => Model.Header?.FTPURL;
+
+        /// <inheritdoc cref="ScriptFile.HeaderStrings"/>
+        public string[]? HeaderStrings => Model.Header?.HeaderStrings;
+
+        /// <inheritdoc cref="ScriptHeader.LanguageCount"/>
+        public byte LanguageCount => Model.Header?.LanguageCount ?? 0;
+
+        /// <inheritdoc cref="ScriptHeader.LogPathname"/>
+        public string? LogPathname => Model.Header?.LogPathname;
+
+        /// <inheritdoc cref="ScriptHeader.MessageFont"/>
+        public string? MessageFont => Model.Header?.MessageFont;
+
         /// <inheritdoc cref="ScriptFile.States"/>
         public MachineState[]? States => Model.States;
+
+        /// <inheritdoc cref="ScriptHeader.UnknownU16_1"/>
+        public ushort UnknownU16_1 => Model.Header?.UnknownU16_1 ?? 0;
+
+        /// <inheritdoc cref="ScriptHeader.UnknownU16_2"/>
+        public ushort UnknownU16_2 => Model.Header?.UnknownU16_2 ?? 0;
+
+        /// <inheritdoc cref="ScriptFile.VariableLengthData"/>
+        public byte[]? VariableLengthData => Model.Header?.VariableLengthData;
 
         #endregion
 
