@@ -247,6 +247,9 @@ namespace Test
             });
             for (int i = 0; i < 13; i++)
             {
+                if (headerDefinedFilesHashes[i] != null && headerDefinedFilesHashes[i].Count > 0)
+                    continue;
+
                 List<string> headerDefinedFileHashesKeys = [.. headerDefinedFilesHashes[i].Keys];
                 headerDefinedFileHashesKeys.Sort();
 
