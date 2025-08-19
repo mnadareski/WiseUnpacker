@@ -21,7 +21,7 @@ namespace SabreTools.Serialization.Deserializers
             try
             {
                 long initialOffset = data.Position;
-                var wiseSectionHeader = ParseWiseSectionHeader(data);
+                var wiseSectionHeader = ParseWiseSectionHeader(data, initialOffset);
 
                 // Checks if version was able to be read
                 if (wiseSectionHeader.Version == null)
@@ -53,13 +53,14 @@ namespace SabreTools.Serialization.Deserializers
                 return null;
             }
         }
-        
+
         /// <summary>
         /// Parse a Stream into a WiseSectionHeader
         /// </summary>
         /// <param name="data">Stream to parse</param>
+        /// <param name="initialOffset"></param>
         /// <returns>Filled WiseSectionHeader on success, null on error</returns>
-        private static WiseSectionHeader ParseWiseSectionHeader(Stream data)
+        private static WiseSectionHeader ParseWiseSectionHeader(Stream data, long initialOffset)
         {
             var header = new WiseSectionHeader();
             
@@ -68,18 +69,20 @@ namespace SabreTools.Serialization.Deserializers
             // Find offset of "WIS", determine header length, read presumed version value
             foreach (int offset in WisOffsets)
             {
-                data.Seek(offset, 0);
+                data.Seek(initialOffset + offset, 0);
                 byte[] checkBytes = data.ReadBytes(3);
                 if (checkBytes.EqualsExactly(WisString))
                 {
                     headerLength = WiseSectionHeaderLengthDictionary[offset];
-                    data.Seek(offset - WiseSectionVersionOffsetDictionary[offset], 0);
-                    header.Version = data.ReadBytes(WiseSectionVersionOffsetDictionary[offset]);
+                    int versionOffset = WiseSectionVersionOffsetDictionary[offset];
+                    data.Seek(initialOffset + offset - versionOffset, 0);
+                    header.Version = data.ReadBytes(versionOffset);
                     break;
                 }
             }
             
-            data.Seek(0, 0);
+            //Seek back to the beginning of the section
+            data.Seek(initialOffset, 0);
             
             // Is there a better way to handle returning at the proper time besides just hardcoding return checks?
             header.UnknownValue0 = data.ReadUInt32LittleEndian();
@@ -90,16 +93,12 @@ namespace SabreTools.Serialization.Deserializers
             header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.MSIFileEntryLength = data.ReadUInt32LittleEndian();
             if (headerLength == 6)
-            {
                 return header;
-            }
             
             header.UnknownValue7 = data.ReadUInt32LittleEndian();
             header.UnknownValue8 = data.ReadUInt32LittleEndian();
             if (headerLength == 8)
-            {
                 return header;
-            }
             
             header.UnknownValue9 = data.ReadUInt32LittleEndian();
             header.UnknownValue10 = data.ReadUInt32LittleEndian();
@@ -111,15 +110,11 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue16 = data.ReadUInt32LittleEndian();
             header.UnknownValue17 = data.ReadUInt32LittleEndian();
             if (headerLength == 17)
-            {
                 return header;
-            }
             
             header.UnknownValue18 = data.ReadUInt32LittleEndian();
             if (headerLength == 18)
-            {
                 return header;
-            }
             
             return header;
         }
