@@ -18,6 +18,9 @@ namespace SabreTools.Serialization.Deserializers
 
             try
             {
+                // Cache the current offset
+                long initialOffset = data.Position;
+
                 var script = new ScriptFile();
 
                 #region Header
