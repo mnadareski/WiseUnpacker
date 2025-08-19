@@ -54,6 +54,22 @@ namespace SabreTools.Models.WiseInstaller
         ];
         
         /// <summary>
+        /// "WIS" string for WiseSection 57, 49, 53
+        /// </summary>
+        public static readonly byte[] WisString =
+        [
+            0x57, 0x49, 0x53,
+        ];
+        
+        /// <summary>
+        /// List of currently observed offsets for the "WIS" string in WiseSection
+        /// </summary>
+        public static readonly int[] WisOffsets =
+        [
+            32, 33, 41, 77, 78, 82,
+        ];
+        
+        /// <summary>
         /// Size of the header for a WiseSection
         /// </summary>
         public static readonly Dictionary<int, int> WiseSectionHeaderLengthDictionary = new Dictionary<int, int>()
