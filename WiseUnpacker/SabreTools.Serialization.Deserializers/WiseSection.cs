@@ -80,7 +80,9 @@ namespace SabreTools.Serialization.Deserializers
                     break;
                 }
             }
+            
             data.Seek(0, 0);
+            
             // Is there a better way to handle returning at the proper time besides just hardcoding return checks?
             header.UnknownValue0 = data.ReadUInt32LittleEndian();
             header.SecondExecutableFileEntryLength = data.ReadUInt32LittleEndian();
@@ -93,12 +95,14 @@ namespace SabreTools.Serialization.Deserializers
             {
                 return header;
             }
+            
             header.UnknownValue7 = data.ReadUInt32LittleEndian();
             header.UnknownValue8 = data.ReadUInt32LittleEndian();
             if (headerLength == 8)
             {
                 return header;
             }
+            
             header.UnknownValue9 = data.ReadUInt32LittleEndian();
             header.UnknownValue10 = data.ReadUInt32LittleEndian();
             header.UnknownValue11 = data.ReadUInt32LittleEndian();
@@ -112,11 +116,13 @@ namespace SabreTools.Serialization.Deserializers
             {
                 return header;
             }
+            
             header.UnknownValue18 = data.ReadUInt32LittleEndian();
             if (headerLength == 18)
             {
                 return header;
             }
+            
             return header;
         }
     }
