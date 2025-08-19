@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace SabreTools.Models.WiseInstaller
 {
     public static class Constants
@@ -49,5 +52,31 @@ namespace SabreTools.Models.WiseInstaller
             0x01, 0x02, 0x02, 0x01, 0x01, 0x01, 0x02, 0x00,
             0x00, 0x00, 0x00, 0x02, 0x01, 0x01, 0x00, 0x00,
         ];
+        
+        /// <summary>
+        /// Size of the header for a WiseSection
+        /// </summary>
+        public static readonly Dictionary<int, int> WiseSectionHeaderLengthDictionary = new Dictionary<int, int>()
+        {
+            {32, 6},
+            {33, 6},
+            {41, 8},
+            {77, 17},
+            {78, 17},
+            {82, 18},
+        };
+        
+        /// <summary>
+        /// Offset from "WIS" string to be used as length of version field.
+        /// </summary>
+        public static readonly Dictionary<int, int> WiseSectionVersionOffsetDictionary = new Dictionary<int, int>()
+        {
+            {32, 4},
+            {33, 5},
+            {41, 5},
+            {77, 5},
+            {78, 6},
+            {82, 6},
+        };
     }
 }

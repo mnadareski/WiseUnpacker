@@ -4,6 +4,7 @@ using System.Text;
 using SabreTools.IO.Extensions;
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Matching;
+using static SabreTools.Models.WiseInstaller.Constants;
 
 namespace SabreTools.Serialization.Deserializers
 {
@@ -16,6 +17,8 @@ namespace SabreTools.Serialization.Deserializers
             if (data == null || !data.CanRead)
                 return null;
 
+            // Cache the current offset
+            long initialOffset = data.Position;
             try
             {
                 var wiseSectionHeader = ParseWiseSectionHeader(data);
@@ -70,45 +73,10 @@ namespace SabreTools.Serialization.Deserializers
                 data.Seek(offset, 0);
                 if (data.ReadBytes(3).EqualsExactly(WISstring))
                 {
-                    // I assume there's a way to do this with matching statements, but c# matching statements don't seem
-                    // to support multiple lines of code in the match, or setting variables equal to something.
-                    switch(offset)
-                    {
-                        case 32:
-                            headerLength = 6;
-                            data.Seek(offset - 4, 0);
-                            header.Version = data.ReadBytes(4);
-                            break;
-                        case 33:
-                            headerLength = 6;
-                            data.Seek(offset - 5, 0);
-                            header.Version = data.ReadBytes(5);
-                            break;
-                        case 41:
-                            headerLength = 8;
-                            data.Seek(offset - 5, 0);
-                            header.Version = data.ReadBytes(5);
-                            break;
-                        case 77:
-                            headerLength = 17;
-                            data.Seek(offset - 5, 0);
-                            header.Version = data.ReadBytes(5);
-                            break;
-                        case 78:
-                            headerLength = 17;
-                            data.Seek(offset - 6, 0);
-                            header.Version = data.ReadBytes(6);
-                            break;
-                        case 82:
-                            headerLength = 18;
-                            data.Seek(offset - 6, 0);
-                            header.Version = data.ReadBytes(6);
-                            break;
-                        default: // how do I actually return null on error? It just gives me a compile error if I try.
-                            headerLength = -1;
-                            //return null; 
-                            break;
-                    }
+                    headerLength = WiseSectionHeaderLengthDictionary[offset];
+                    data.Seek(offset - WiseSectionVersionOffsetDictionary[offset], 0);
+                    header.Version = data.ReadBytes(WiseSectionVersionOffsetDictionary[offset]);
+                    break;
                 }
             }
             data.Seek(0, 0);
