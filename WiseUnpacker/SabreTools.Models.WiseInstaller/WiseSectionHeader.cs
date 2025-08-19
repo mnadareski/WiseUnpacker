@@ -66,7 +66,7 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Value 6, the size of the "main" msi installer file entry. Always at the end of the file entries.
         /// </summary>
-        public uint MSIFileEntryLength { get; set; }
+        public uint MsiFileEntryLength { get; set; }
 
         /// <summary>
         /// Unknown value 7. Currently unobserved in any samples.

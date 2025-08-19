@@ -28,9 +28,9 @@ namespace SabreTools.Serialization.Deserializers
                     return null;
 
                 // Main MSI file
-                if (wiseSectionHeader.MSIFileEntryLength == 0)
+                if (wiseSectionHeader.MsiFileEntryLength == 0)
                     return null;
-                else if (wiseSectionHeader.MSIFileEntryLength >= data.Length)
+                else if (wiseSectionHeader.MsiFileEntryLength >= data.Length)
                     return null;
 
                 // First executable file
@@ -91,7 +91,7 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue3 = data.ReadUInt32LittleEndian();
             header.UnknownValue4 = data.ReadUInt32LittleEndian();
             header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
-            header.MSIFileEntryLength = data.ReadUInt32LittleEndian();
+            header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
             if (headerLength == 6)
                 return header;
             
