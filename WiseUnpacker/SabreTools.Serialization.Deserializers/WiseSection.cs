@@ -64,12 +64,15 @@ namespace SabreTools.Serialization.Deserializers
         private static WiseSectionHeader ParseWiseSectionHeader(Stream data)
         {
             var header = new WiseSectionHeader();
+            
             int headerLength = -1; // indexed from 0
+            
             // Find offset of "WIS", determine header length, read presumed version value
             foreach (int offset in WisOffsets)
             {
                 data.Seek(offset, 0);
-                if (data.ReadBytes(3).EqualsExactly(WisString))
+                byte[] checkBytes = data.ReadBytes(3);
+                if (checkBytes.EqualsExactly(WisString))
                 {
                     headerLength = WiseSectionHeaderLengthDictionary[offset];
                     data.Seek(offset - WiseSectionVersionOffsetDictionary[offset], 0);
