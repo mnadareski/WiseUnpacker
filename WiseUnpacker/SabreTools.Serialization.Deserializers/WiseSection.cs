@@ -18,9 +18,9 @@ namespace SabreTools.Serialization.Deserializers
                 return null;
 
             // Cache the current offset
-            long initialOffset = data.Position;
             try
             {
+                long initialOffset = data.Position;
                 var wiseSectionHeader = ParseWiseSectionHeader(data);
 
                 // Checks if version was able to be read
