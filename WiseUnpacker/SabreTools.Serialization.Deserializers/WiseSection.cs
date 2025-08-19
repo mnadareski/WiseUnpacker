@@ -54,8 +54,6 @@ namespace SabreTools.Serialization.Deserializers
             }
         }
         
-        
-        
         /// <summary>
         /// Parse a Stream into a WiseSectionHeader
         /// </summary>
