@@ -7,10 +7,10 @@ using static SabreTools.Models.WiseInstaller.Constants;
 
 namespace SabreTools.Serialization.Deserializers
 {
-    public class WiseSection : BaseBinaryDeserializer<Models.WiseInstaller.Section>
+    public class WiseSection : BaseBinaryDeserializer<Section>
     {
         /// <inheritdoc/>
-        public override Models.WiseInstaller.Section? Deserialize(Stream? data)
+        public override Section? Deserialize(Stream? data)
         {
             // If the data is invalid
             if (data == null || !data.CanRead)
@@ -22,7 +22,7 @@ namespace SabreTools.Serialization.Deserializers
                 // Cache the current offset
                 long initialOffset = data.Position;
 
-                var section = new Models.WiseInstaller.Section();
+                var section = new Section();
 
                 #region Header
 
