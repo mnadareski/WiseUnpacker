@@ -7,7 +7,6 @@ using SabreTools.IO.Streams;
 using SabreTools.Matching;
 using SabreTools.Models.NewExecutable;
 using SabreTools.Models.WiseInstaller;
-using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
 {
