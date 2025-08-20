@@ -84,7 +84,6 @@ namespace SabreTools.Serialization.Deserializers
             //Seek back to the beginning of the section
             data.Seek(initialOffset, 0);
             
-            // Is there a better way to handle returning at the proper time besides just hardcoding return checks?
             header.UnknownValue0 = data.ReadUInt32LittleEndian();
             header.SecondExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.UnknownValue2 = data.ReadUInt32LittleEndian();

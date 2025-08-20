@@ -37,7 +37,6 @@ namespace SabreTools.Models.WiseInstaller
         /// observed to be an executable, filename unknown. Likely assists with extraction. A few samples with a
         /// non-0x00 value 1 seem to have value 5 as 0x00, meaning that it being observed as the second file may just be
         /// coincidence, and values 1 and 5 may refer to files with a specific purpose/meaning.
-
         /// </summary>
         public uint SecondExecutableFileEntryLength { get; set; }
 
@@ -127,7 +126,6 @@ namespace SabreTools.Models.WiseInstaller
         /// Unknown value 18. Currently unobserved in any samples.
         /// </summary>
         public uint UnknownValue18 { get; set; }
-
         
         /// <summary>
         /// Byte array representing version. Byte array used due to unknown size and type for version.

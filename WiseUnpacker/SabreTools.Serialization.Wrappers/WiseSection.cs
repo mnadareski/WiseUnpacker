@@ -140,11 +140,11 @@ namespace SabreTools.Serialization.Wrappers
 
             try
             {
-                var mkb = Deserializers.WiseSection.DeserializeStream(data);
-                if (mkb == null)
+                var model = Deserializers.WiseSection.DeserializeStream(data);
+                if (model == null)
                     return null;
 
-                return new WiseSection(mkb, data);
+                return new WiseSection(model, data);
             }
             catch
             {
