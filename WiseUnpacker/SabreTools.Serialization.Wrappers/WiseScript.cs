@@ -108,11 +108,11 @@ namespace SabreTools.Serialization.Wrappers
 
             try
             {
-                var mkb = Deserializers.WiseScript.DeserializeStream(data);
-                if (mkb == null)
+                var model = Deserializers.WiseScript.DeserializeStream(data);
+                if (model == null)
                     return null;
 
-                return new WiseScript(mkb, data);
+                return new WiseScript(model, data);
             }
             catch
             {

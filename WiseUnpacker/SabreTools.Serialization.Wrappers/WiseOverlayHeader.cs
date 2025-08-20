@@ -140,11 +140,11 @@ namespace SabreTools.Serialization.Wrappers
 
             try
             {
-                var mkb = Deserializers.WiseOverlayHeader.DeserializeStream(data);
-                if (mkb == null)
+                var model = Deserializers.WiseOverlayHeader.DeserializeStream(data);
+                if (model == null)
                     return null;
 
-                return new WiseOverlayHeader(mkb, data);
+                return new WiseOverlayHeader(model, data);
             }
             catch
             {
