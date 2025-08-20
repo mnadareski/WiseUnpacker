@@ -249,7 +249,7 @@ namespace SabreTools.Serialization.Wrappers
             header = null;
 
             // Attempt to deserialize the file as either NE or PE
-            var wrapper = CreateExecutableWrapper(data);
+            var wrapper = WrapperFactory2.CreateExecutableWrapper(data);
             if (wrapper is NewExecutable ne)
             {
                 return FindOverlayHeader(data, ne, includeDebug, out header);
@@ -435,7 +435,7 @@ namespace SabreTools.Serialization.Wrappers
 
             // Parse the executable and recurse
             data.Seek(resourceOffset, SeekOrigin.Begin);
-            var resourceExe = CreateExecutableWrapper(data);
+            var resourceExe = WrapperFactory2.CreateExecutableWrapper(data);
             if (resourceExe is not PortableExecutable resourcePex)
             {
                 if (includeDebug) Console.Error.WriteLine("Could not find the overlay header");
@@ -547,54 +547,6 @@ namespace SabreTools.Serialization.Wrappers
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Create an instance of a wrapper based on the executable type
-        /// </summary>
-        /// <param name="stream">Stream data to parse</param>
-        /// <returns>IWrapper representing the executable, null on error</returns>
-        /// <remarks>Adapted from SabreTools.Serialization.Wrappers.WrapperFactory</remarks>
-        private static IWrapper? CreateExecutableWrapper(Stream stream)
-        {
-            // Cache the current position
-            long current = stream.Position;
-
-            // Try to get an MS-DOS wrapper first
-            var wrapper = MSDOS.Create(stream);
-            if (wrapper == null || wrapper is not MSDOS msdos)
-                return null;
-
-            // Check for a valid new executable address
-            if (msdos.Model.Header?.NewExeHeaderAddr == null || current + msdos.Model.Header.NewExeHeaderAddr >= stream.Length)
-                return wrapper;
-
-            // Try to read the executable info
-            stream.Seek(current + msdos.Model.Header.NewExeHeaderAddr, SeekOrigin.Begin);
-            var magic = stream.ReadBytes(4);
-
-            // If we didn't get valid data at the offset
-            if (magic == null)
-            {
-                return wrapper;
-            }
-
-            // New Executable
-            else if (magic.StartsWith(Models.NewExecutable.Constants.SignatureBytes))
-            {
-                stream.Seek(current, SeekOrigin.Begin);
-                return NewExecutable.Create(stream);
-            }
-
-            // Portable Executable
-            else if (magic.StartsWith(Models.PortableExecutable.Constants.SignatureBytes))
-            {
-                stream.Seek(current, SeekOrigin.Begin);
-                return PortableExecutable.Create(stream);
-            }
-
-            // Everything else fails
-            return null;
         }
 
         /// <summary>
