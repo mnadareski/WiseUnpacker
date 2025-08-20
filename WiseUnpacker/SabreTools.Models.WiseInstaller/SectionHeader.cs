@@ -29,7 +29,7 @@ namespace SabreTools.Models.WiseInstaller
     /// All values not explicitly mentioned to never have been observed have been observed in at least one installer
     /// thus far.
     /// </summary>
-    public class WiseSectionHeader
+    public class SectionHeader
     {
         /// <summary>
         /// Unknown value 0.
@@ -136,15 +136,5 @@ namespace SabreTools.Models.WiseInstaller
         /// Byte array representing version. Byte array used due to unknown size and type for version.
         /// </summary>
         public byte[]? Version { get; set; }
-
-        /// <summary>
-        /// Strings for the section. Size and any breakup of strings currently unknown.
-        /// </summary>
-        public string? Strings { get; set; }
-
-        /// <summary>
-        /// 1 or more entries.
-        /// </summary>
-        public WiseSectionFileEntry[]? Entries { get; set; }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.Matching;
@@ -6,10 +7,10 @@ using static SabreTools.Models.WiseInstaller.Constants;
 
 namespace SabreTools.Serialization.Deserializers
 {
-    public class WiseSection : BaseBinaryDeserializer<WiseSectionHeader>
+    public class WiseSection : BaseBinaryDeserializer<Models.WiseInstaller.Section>
     {
         /// <inheritdoc/>
-        public override WiseSectionHeader? Deserialize(Stream? data)
+        public override Models.WiseInstaller.Section? Deserialize(Stream? data)
         {
             // If the data is invalid
             if (data == null || !data.CanRead)
@@ -20,6 +21,10 @@ namespace SabreTools.Serialization.Deserializers
             {
                 // Cache the current offset
                 long initialOffset = data.Position;
+
+                var section = new Models.WiseInstaller.Section();
+
+                #region Header
 
                 var wiseSectionHeader = ParseWiseSectionHeader(data, initialOffset);
 
@@ -45,7 +50,28 @@ namespace SabreTools.Serialization.Deserializers
                 else if (wiseSectionHeader.SecondExecutableFileEntryLength >= data.Length)
                     return null;
 
-                return wiseSectionHeader;
+                section.Header = wiseSectionHeader;
+
+                #endregion
+
+                #region Strings
+
+                // TODO: Parse strings
+                section.Strings = null;
+
+                #endregion
+
+                #region Entries
+
+                var entries = new List<FileEntry>();
+
+                // TODO: Parse file entries
+
+                section.Entries = [.. entries];
+
+                #endregion
+
+                return section;
             }
             catch
             {
@@ -60,9 +86,9 @@ namespace SabreTools.Serialization.Deserializers
         /// <param name="data">Stream to parse</param>
         /// <param name="initialOffset">Initial offset to use in address comparisons</param>
         /// <returns>Filled WiseSectionHeader on success, null on error</returns>
-        private static WiseSectionHeader? ParseWiseSectionHeader(Stream data, long initialOffset)
+        private static SectionHeader? ParseWiseSectionHeader(Stream data, long initialOffset)
         {
-            var header = new WiseSectionHeader();
+            var header = new SectionHeader();
 
             // Find offset of "WIS", determine header length, read presumed version value
             int headerLength = -1;

@@ -3,7 +3,7 @@ namespace SabreTools.Models.WiseInstaller
     /// <summary>
     /// File entry
     /// </summary>
-    public class WiseSectionFileEntry
+    public class FileEntry
     {
         /// <summary>
         /// The file data. Size known from header values.
@@ -11,8 +11,8 @@ namespace SabreTools.Models.WiseInstaller
         public byte[]? File { get; set; }
 
         /// <summary>
-        /// CRC32
+        /// CRC-32
         /// </summary>
-        public byte[]? Crc32 { get; set; }
+        public uint Crc32 { get; set; }
     }
 }

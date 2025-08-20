@@ -5,7 +5,7 @@ using SabreTools.Models.WiseInstaller;
 
 namespace SabreTools.Serialization.Wrappers
 {
-    public class WiseSection : WrapperBase<WiseSectionHeader>
+    public class WiseSection : WrapperBase<Section>
     {
         #region Descriptive Properties
 
@@ -16,85 +16,85 @@ namespace SabreTools.Serialization.Wrappers
 
         #region Extension Properties
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue0"/>
-        public uint UnknownValue0 => Model.UnknownValue0;
+        /// <inheritdoc cref="SectionHeader.UnknownValue0"/>
+        public uint UnknownValue0 => Model.Header?.UnknownValue0 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.SecondExecutableFileEntryLength"/> // TODO: VERIFY ON CHANGE
-        public uint SecondExecutableFileEntryLength => Model.SecondExecutableFileEntryLength;
+        /// <inheritdoc cref="SectionHeader.SecondExecutableFileEntryLength"/> // TODO: VERIFY ON CHANGE
+        public uint SecondExecutableFileEntryLength => Model.Header?.SecondExecutableFileEntryLength ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue2"/>
-        public uint UnknownValue2 => Model.UnknownValue2;
+        /// <inheritdoc cref="SectionHeader.UnknownValue2"/>
+        public uint UnknownValue2 => Model.Header?.UnknownValue2 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue3"/>
-        public uint UnknownValue3 => Model.UnknownValue3;
+        /// <inheritdoc cref="SectionHeader.UnknownValue3"/>
+        public uint UnknownValue3 => Model.Header?.UnknownValue3 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue4"/>
-        public uint UnknownValue4 => Model.UnknownValue4;
+        /// <inheritdoc cref="SectionHeader.UnknownValue4"/>
+        public uint UnknownValue4 => Model.Header?.UnknownValue4 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.FirstExecutableFileEntryLength"/>
-        public uint FirstExecutableFileEntryLength => Model.FirstExecutableFileEntryLength;// TODO: VERIFY ON CHANGE
+        /// <inheritdoc cref="SectionHeader.FirstExecutableFileEntryLength"/>
+        public uint FirstExecutableFileEntryLength => Model.Header?.FirstExecutableFileEntryLength ?? 0; // TODO: VERIFY ON CHANGE
 
-        /// <inheritdoc cref="WiseSectionHeader.MsiFileEntryLength"/>
-        public uint MsiFileEntryLength => Model.MsiFileEntryLength;
+        /// <inheritdoc cref="SectionHeader.MsiFileEntryLength"/>
+        public uint MsiFileEntryLength => Model.Header?.MsiFileEntryLength ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue7"/>
-        public uint UnknownValue7 => Model.UnknownValue7;
+        /// <inheritdoc cref="SectionHeader.UnknownValue7"/>
+        public uint UnknownValue7 => Model.Header?.UnknownValue7 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue8"/>
-        public uint UnknownValue8 => Model.UnknownValue8;
+        /// <inheritdoc cref="SectionHeader.UnknownValue8"/>
+        public uint UnknownValue8 => Model.Header?.UnknownValue8 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue9"/>
-        public uint UnknownValue9 => Model.UnknownValue9;
+        /// <inheritdoc cref="SectionHeader.UnknownValue9"/>
+        public uint UnknownValue9 => Model.Header?.UnknownValue9 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue10"/>
-        public uint UnknownValue10 => Model.UnknownValue10;
+        /// <inheritdoc cref="SectionHeader.UnknownValue10"/>
+        public uint UnknownValue10 => Model.Header?.UnknownValue10 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue11"/>
-        public uint UnknownValue11 => Model.UnknownValue11;
+        /// <inheritdoc cref="SectionHeader.UnknownValue11"/>
+        public uint UnknownValue11 => Model.Header?.UnknownValue11 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue12"/>
-        public uint UnknownValue12 => Model.UnknownValue12;
+        /// <inheritdoc cref="SectionHeader.UnknownValue12"/>
+        public uint UnknownValue12 => Model.Header?.UnknownValue12 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue13"/>
-        public uint UnknownValue13 => Model.UnknownValue13;
+        /// <inheritdoc cref="SectionHeader.UnknownValue13"/>
+        public uint UnknownValue13 => Model.Header?.UnknownValue13 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue14"/>
-        public uint UnknownValue14 => Model.UnknownValue14;
+        /// <inheritdoc cref="SectionHeader.UnknownValue14"/>
+        public uint UnknownValue14 => Model.Header?.UnknownValue14 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue15"/>
-        public uint UnknownValue15 => Model.UnknownValue15;
+        /// <inheritdoc cref="SectionHeader.UnknownValue15"/>
+        public uint UnknownValue15 => Model.Header?.UnknownValue15 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue16"/>
-        public uint UnknownValue16 => Model.UnknownValue16;
+        /// <inheritdoc cref="SectionHeader.UnknownValue16"/>
+        public uint UnknownValue16 => Model.Header?.UnknownValue16 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue17"/>
-        public uint UnknownValue17 => Model.UnknownValue17;
+        /// <inheritdoc cref="SectionHeader.UnknownValue17"/>
+        public uint UnknownValue17 => Model.Header?.UnknownValue17 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.UnknownValue18"/>
-        public uint UnknownValue18 => Model.UnknownValue18;
+        /// <inheritdoc cref="SectionHeader.UnknownValue18"/>
+        public uint UnknownValue18 => Model.Header?.UnknownValue18 ?? 0;
 
-        /// <inheritdoc cref="WiseSectionHeader.Version"/>
-        public byte[]? Version => Model.Version;
+        /// <inheritdoc cref="SectionHeader.Version"/>
+        public byte[]? Version => Model.Header?.Version;
 
-        /// <inheritdoc cref="WiseSectionHeader.Strings"/>
+        /// <inheritdoc cref="SectionHeader.Strings"/>
         public string? Strings => Model.Strings;
 
-        /// <inheritdoc cref="WiseSectionHeader.Entries"/>
-        public WiseSectionFileEntry[]? Entries => Model.Entries;
+        /// <inheritdoc cref="SectionHeader.Entries"/>
+        public FileEntry[]? Entries => Model.Entries;
 
         #endregion
 
         #region Constructors
 
         /// <inheritdoc/>
-        public WiseSection(WiseSectionHeader? model, byte[]? data, int offset)
+        public WiseSection(Section? model, byte[]? data, int offset)
             : base(model, data, offset)
         {
             // All logic is handled by the base class
         }
 
         /// <inheritdoc/>
-        public WiseSection(WiseSectionHeader? model, Stream? data)
+        public WiseSection(Section? model, Stream? data)
             : base(model, data)
         {
             // All logic is handled by the base class
