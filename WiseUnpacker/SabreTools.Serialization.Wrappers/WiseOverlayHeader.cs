@@ -7,7 +7,6 @@ using SabreTools.IO.Streams;
 using SabreTools.Matching;
 using SabreTools.Models.NewExecutable;
 using SabreTools.Models.WiseInstaller;
-using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
 {
@@ -640,9 +639,9 @@ namespace SabreTools.Serialization.Wrappers
         /// <see href="https://codeberg.org/CYBERDEV/REWise/src/branch/master/src/exefile.c"/>
         private static long GetOverlayAddress(Stream data, NewExecutable nex)
         {
-            // Get the end of the file, if possible
-            int endOfFile = nex.GetEndOfFile();
-            if (endOfFile == -1)
+            // Get the available source length, if possible
+            long dataLength = nex.Length;
+            if (dataLength == -1)
                 return -1;
 
             // If a required property is missing
@@ -700,11 +699,11 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Address of the overlay, if it exists
         /// </summary>
-        private static long GetOverlayAddress(PortableExecutable pex, long dataOffset, out long endOfFile)
+        private static long GetOverlayAddress(PortableExecutable pex, long dataOffset, out long dataLength)
         {
-            // Get the end of the file, if possible
-            endOfFile = pex.GetEndOfFile();
-            if (endOfFile == -1)
+            // Get the available source length, if possible
+            dataLength = pex.Length;
+            if (dataLength == -1)
                 return -1;
 
             // If the section table is missing
@@ -715,8 +714,8 @@ namespace SabreTools.Serialization.Wrappers
             if (pex.Model.OptionalHeader?.CertificateTable != null)
             {
                 int certificateTableAddress = (int)pex.Model.OptionalHeader.CertificateTable.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
-                if (certificateTableAddress != 0 && dataOffset + certificateTableAddress < endOfFile)
-                    endOfFile = dataOffset + certificateTableAddress;
+                if (certificateTableAddress != 0 && dataOffset + certificateTableAddress < dataLength)
+                    dataLength = dataOffset + certificateTableAddress;
             }
 
             // Search through all sections and find the furthest a section goes
