@@ -9,7 +9,7 @@ namespace SabreTools.Models.WiseInstaller
         /// The file data. Size known from header values.
         /// </summary>
         public byte[]? File { get; set; }
-        
+
         /// <summary>
         /// CRC32
         /// </summary>

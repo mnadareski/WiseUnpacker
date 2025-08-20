@@ -1,9 +1,7 @@
-using System;
 using System.IO;
-using System.Text;
 using SabreTools.IO.Extensions;
-using SabreTools.Models.WiseInstaller;
 using SabreTools.Matching;
+using SabreTools.Models.WiseInstaller;
 using static SabreTools.Models.WiseInstaller.Constants;
 
 namespace SabreTools.Serialization.Deserializers
@@ -20,11 +18,13 @@ namespace SabreTools.Serialization.Deserializers
             // Cache the current offset
             try
             {
+                // Cache the current offset
                 long initialOffset = data.Position;
+
                 var wiseSectionHeader = ParseWiseSectionHeader(data, initialOffset);
 
                 // Checks if version was able to be read
-                if (wiseSectionHeader.Version == null)
+                if (wiseSectionHeader?.Version == null)
                     return null;
 
                 // Main MSI file
@@ -38,7 +38,7 @@ namespace SabreTools.Serialization.Deserializers
                     return null;
                 else if (wiseSectionHeader.FirstExecutableFileEntryLength >= data.Length)
                     return null;
-                
+
                 // Second executable file
                 if (wiseSectionHeader.SecondExecutableFileEntryLength == 0)
                     return null;
@@ -58,32 +58,35 @@ namespace SabreTools.Serialization.Deserializers
         /// Parse a Stream into a WiseSectionHeader
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <param name="initialOffset"></param>
+        /// <param name="initialOffset">Initial offset to use in address comparisons</param>
         /// <returns>Filled WiseSectionHeader on success, null on error</returns>
-        private static WiseSectionHeader ParseWiseSectionHeader(Stream data, long initialOffset)
+        private static WiseSectionHeader? ParseWiseSectionHeader(Stream data, long initialOffset)
         {
             var header = new WiseSectionHeader();
-            
-            int headerLength = -1; // indexed from 0
-            
+
             // Find offset of "WIS", determine header length, read presumed version value
+            int headerLength = -1;
             foreach (int offset in WisOffsets)
             {
                 data.Seek(initialOffset + offset, 0);
                 byte[] checkBytes = data.ReadBytes(3);
-                if (checkBytes.EqualsExactly(WisString))
-                {
-                    headerLength = WiseSectionHeaderLengthDictionary[offset];
-                    int versionOffset = WiseSectionVersionOffsetDictionary[offset];
-                    data.Seek(initialOffset + offset - versionOffset, 0);
-                    header.Version = data.ReadBytes(versionOffset);
-                    break;
-                }
+                if (!checkBytes.EqualsExactly(WisString))
+                    continue;
+
+                headerLength = WiseSectionHeaderLengthDictionary[offset];
+                int versionOffset = WiseSectionVersionOffsetDictionary[offset];
+
+                data.Seek(initialOffset + offset - versionOffset, 0);
+                header.Version = data.ReadBytes(versionOffset);
             }
-            
+
+            // If the header length couldn't be determined
+            if (headerLength < 0)
+                return null;
+
             //Seek back to the beginning of the section
             data.Seek(initialOffset, 0);
-            
+
             header.UnknownValue0 = data.ReadUInt32LittleEndian();
             header.SecondExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.UnknownValue2 = data.ReadUInt32LittleEndian();
@@ -93,12 +96,12 @@ namespace SabreTools.Serialization.Deserializers
             header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
             if (headerLength == 6)
                 return header;
-            
+
             header.UnknownValue7 = data.ReadUInt32LittleEndian();
             header.UnknownValue8 = data.ReadUInt32LittleEndian();
             if (headerLength == 8)
                 return header;
-            
+
             header.UnknownValue9 = data.ReadUInt32LittleEndian();
             header.UnknownValue10 = data.ReadUInt32LittleEndian();
             header.UnknownValue11 = data.ReadUInt32LittleEndian();
@@ -110,11 +113,11 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue17 = data.ReadUInt32LittleEndian();
             if (headerLength == 17)
                 return header;
-            
+
             header.UnknownValue18 = data.ReadUInt32LittleEndian();
             if (headerLength == 18)
                 return header;
-            
+
             return header;
         }
     }

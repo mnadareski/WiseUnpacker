@@ -1,13 +1,7 @@
 using System;
 using System.IO;
-using System.Text;
 using SabreTools.IO.Compression.Deflate;
-using SabreTools.IO.Extensions;
-using SabreTools.IO.Streams;
-using SabreTools.Matching;
-using SabreTools.Models.NewExecutable;
 using SabreTools.Models.WiseInstaller;
-using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
 {
@@ -156,7 +150,6 @@ namespace SabreTools.Serialization.Wrappers
 
         #region Extraction
 
-
         /// <summary>
         /// Extract all files from a Wise Self-Extracting installer to an output directory
         /// </summary>
@@ -215,8 +208,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if the files extracted successfully, false otherwise</returns>
-        private bool ExtractHeaderDefinedFiles(Stream data, string outputDirectory, bool includeDebug,
-            out long dataStart)
+        private bool ExtractHeaderDefinedFiles(Stream data, string outputDirectory, bool includeDebug, out long dataStart)
         {
             // Determine where the remaining compressed data starts
             dataStart = data.Position;
