@@ -136,5 +136,10 @@ namespace SabreTools.Models.WiseInstaller
         /// Byte array representing version. Byte array used due to unknown size and type for version.
         /// </summary>
         public byte[]? Version { get; set; }
+
+        /// <summary>
+        /// Strings for the section. Size and any breakup of strings currently unknown.
+        /// </summary>
+        public string? Strings { get; set; }
     }
 }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.Matching;
@@ -7,10 +6,10 @@ using static SabreTools.Models.WiseInstaller.Constants;
 
 namespace SabreTools.Serialization.Deserializers
 {
-    public class WiseSection : BaseBinaryDeserializer<Section>
+    public class WiseSectionHeader : BaseBinaryDeserializer<SectionHeader>
     {
         /// <inheritdoc/>
-        public override Section? Deserialize(Stream? data)
+        public override SectionHeader? Deserialize(Stream? data)
         {
             // If the data is invalid
             if (data == null || !data.CanRead)
@@ -22,56 +21,31 @@ namespace SabreTools.Serialization.Deserializers
                 // Cache the current offset
                 long initialOffset = data.Position;
 
-                var section = new Section();
-
-                #region Header
-
-                var wiseSectionHeader = ParseWiseSectionHeader(data, initialOffset);
+                var header = ParseWiseSectionHeader(data, initialOffset);
 
                 // Checks if version was able to be read
-                if (wiseSectionHeader?.Version == null)
+                if (header?.Version == null)
                     return null;
 
                 // Main MSI file
-                if (wiseSectionHeader.MsiFileEntryLength == 0)
+                if (header.MsiFileEntryLength == 0)
                     return null;
-                else if (wiseSectionHeader.MsiFileEntryLength >= data.Length)
+                else if (header.MsiFileEntryLength >= data.Length)
                     return null;
 
                 // First executable file
-                if (wiseSectionHeader.FirstExecutableFileEntryLength == 0)
+                if (header.FirstExecutableFileEntryLength == 0)
                     return null;
-                else if (wiseSectionHeader.FirstExecutableFileEntryLength >= data.Length)
+                else if (header.FirstExecutableFileEntryLength >= data.Length)
                     return null;
 
                 // Second executable file
-                if (wiseSectionHeader.SecondExecutableFileEntryLength == 0)
+                if (header.SecondExecutableFileEntryLength == 0)
                     return null;
-                else if (wiseSectionHeader.SecondExecutableFileEntryLength >= data.Length)
+                else if (header.SecondExecutableFileEntryLength >= data.Length)
                     return null;
 
-                section.Header = wiseSectionHeader;
-
-                #endregion
-
-                #region Strings
-
-                // TODO: Parse strings
-                section.Strings = null;
-
-                #endregion
-
-                #region Entries
-
-                var entries = new List<FileEntry>();
-
-                // TODO: Parse file entries
-
-                section.Entries = [.. entries];
-
-                #endregion
-
-                return section;
+                return header;
             }
             catch
             {
@@ -143,6 +117,9 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue18 = data.ReadUInt32LittleEndian();
             if (headerLength == 18)
                 return header;
+
+            // TODO: Parse strings
+            header.Strings = null;
 
             return header;
         }
