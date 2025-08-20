@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using SabreTools.IO.Compression.Deflate;
+using SabreTools.IO.Extensions;
 using SabreTools.Models.WiseInstaller;
 
 namespace SabreTools.Serialization.Wrappers
@@ -180,7 +181,8 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            data.Seek(data.Length - 1, 0);// do I need to subtract 1?
+            // Seeks to end of section to extract back to front
+            data.Seek(data.Length - 1, 0); // do I need to subtract 1?
 
             // Extract the header-defined files
             bool extracted = header.ExtractHeaderDefinedFiles(data, outputDirectory, includeDebug, out long dataStart);
@@ -257,6 +259,145 @@ namespace SabreTools.Serialization.Wrappers
 
             dataStart = data.Position;
             return true;
+        }
+
+        /// <summary>
+        /// Attempt to extract a file defined by a filename
+        /// </summary>
+        /// <param name="source">Stream representing the deflated data</param>
+        /// <param name="filename">Output filename, null to auto-generate</param>
+        /// <param name="outputDirectory">Output directory to write to</param>
+        /// <param name="entrySize">Expected size of the file plus crc32</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns>Extraction status representing the final state</returns>
+        /// <remarks>Assumes that the current stream position is the end of where the data lives</remarks>
+        private ExtractionStatus ExtractFile(Stream source,
+            string filename,
+            string outputDirectory,
+            uint entrySize,
+            bool includeDebug)
+        {
+            // Debug output
+            if (includeDebug) Console.WriteLine($"Attempting to extract {filename}");
+
+            // Extract the file
+            var destination = new MemoryStream();
+            ExtractionStatus status = ExtractStream(source,
+                destination,
+                entrySize,
+                includeDebug);
+
+            // If the extracted data is invalid
+            if (status != ExtractionStatus.GOOD || destination == null)
+                return status;
+            
+            // Ensure the full output directory exists
+            filename = Path.Combine(outputDirectory, filename);
+            var directoryName = Path.GetDirectoryName(filename);
+            if (directoryName != null && !Directory.Exists(directoryName))
+                Directory.CreateDirectory(directoryName);
+
+            // Write the output file
+            File.WriteAllBytes(filename, destination.ToArray());
+            return status;
+        }
+        
+        /// <summary>
+        /// Extract source data with a trailing CRC-32 checksum
+        /// </summary>
+        /// <param name="source">Stream representing the deflated data</param>
+        /// <param name="destination">Stream where the inflated data will be written</param>
+        /// <param name="entrySize">Expected size of the file plus crc32</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns></returns>
+        public static ExtractionStatus ExtractStreamWithChecksum(Stream source,
+            Stream destination,
+            uint entrySize,
+            bool includeDebug)
+        {
+            // Debug output
+            if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write:{entrySize - 4}");
+
+            
+                
+            //if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write: {entrySize - 4}, Expected CRC-32: {expected.Crc32:X8}");    
+            // Check the validity of the inputs
+            if (entrySize == 0)
+            {
+                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read 0 bytes");
+                return ExtractionStatus.INVALID;
+            }
+            else if (entrySize > (source.Position)) // TODO: include header plus string length
+            {
+                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read {entrySize} bytes but only {source.Position} bytes remain");
+                return ExtractionStatus.INVALID;
+            }
+
+            // Cache the current offset
+            long current = source.Position;
+
+            // Extract the file
+            var actual = Inflate(source, destination);
+            if (actual == null)
+            {
+                if (includeDebug) Console.Error.WriteLine($"Could not extract");
+                return ExtractionStatus.FAIL;
+            }
+
+            // Seek to the true end of the data
+            source.Seek(current + actual.InputSize, SeekOrigin.Begin);
+
+            // If the read value is off-by-one after checksum
+            if (actual.InputSize == expected.InputSize - 5)
+            {
+                // If not at the end of the file, get the corrected offset
+                if (source.Position + 5 < source.Length)
+                {
+                    // TODO: What does this byte represent?
+                    byte padding = source.ReadByteValue();
+                    actual.InputSize += 1;
+
+                    // Debug output
+                    if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X2}");
+                }
+                else
+                {
+                    // Debug output
+                    if (includeDebug) Console.WriteLine($"Not enough data to adjust offset");
+                }
+            }
+
+            // If there is enough data to read the full CRC
+            uint deflateCrc;
+            if (source.Position + 4 < source.Length)
+            {
+                deflateCrc = source.ReadUInt32LittleEndian();
+                actual.InputSize += 4;
+            }
+            // Otherwise, read what is possible and pad with 0x00
+            else
+            {
+                byte[] deflateCrcBytes = new byte[4];
+                int realCrcLength = source.Read(deflateCrcBytes, 0, (int)(source.Length - source.Position));
+
+                // Parse as a little-endian 32-bit value
+                deflateCrc = (uint)(deflateCrcBytes[0]
+                            | (deflateCrcBytes[1] << 8)
+                            | (deflateCrcBytes[2] << 16)
+                            | (deflateCrcBytes[3] << 24));
+
+                actual.InputSize += realCrcLength;
+            }
+
+            // If the CRC to check isn't set
+            if (expected.Crc32 == 0)
+                expected.Crc32 = deflateCrc;
+
+            // Debug output
+            if (includeDebug) Console.WriteLine($"DeflateStream CRC-32: {deflateCrc:X8}");
+
+            // Verify the extracted data
+            return VerifyExtractedData(source, current, expected, actual, includeDebug);
         }
 
         #endregion
