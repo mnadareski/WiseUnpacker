@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
+using SabreTools.Models.BFPK;
 using SabreTools.Models.WiseInstaller;
 
 namespace SabreTools.Serialization.Wrappers
@@ -77,8 +79,11 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="SectionHeader.Version"/>
         public byte[]? Version => Model.Version;
 
+        /// <inheritdoc cref="SectionHeader.StringValues"/>
+        public byte[]? StringValues => Model.StringValues;
+        
         /// <inheritdoc cref="SectionHeader.Strings"/>
-        public string? Strings => Model.Strings;
+        public byte[]? Strings => Model.Strings;
 
         #endregion
 
@@ -181,9 +186,6 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             }
 
-            // Seeks to end of section to extract back to front
-            data.Seek(data.Length - 1, 0); // do I need to subtract 1?
-
             // Extract the header-defined files
             bool extracted = header.ExtractHeaderDefinedFiles(data, outputDirectory, includeDebug, out long dataStart);
             if (!extracted)
@@ -217,47 +219,21 @@ namespace SabreTools.Serialization.Wrappers
             // Does output size include the crc32? Doesn't seem to?
 
             // Extract main MSI file
-            var expected = new DeflateInfo
-            {
-                InputSize = MsiFileEntryLength,
-                OutputSize = MsiFileEntryLength - 4,
-                Crc32 = 0
-            };
-            data.Seek(data.Position - MsiFileEntryLength, 0);
-            if (InflateWrapper.ExtractFile(data, "ExtractedMsi.msi", outputDirectory, expected, false, includeDebug)
+            if (ExtractFile(data, "ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug)
                 == ExtractionStatus.FAIL)
                 return false;
-            data.Seek(data.Position - MsiFileEntryLength, 0);
-
-            // Extract second executable, if it exists
-            expected = new DeflateInfo
-            {
-                InputSize = SecondExecutableFileEntryLength,
-                OutputSize =
-                    SecondExecutableFileEntryLength - 4,
-                Crc32 = 0
-            };
-            data.Seek(data.Position - SecondExecutableFileEntryLength, 0);
-            if (InflateWrapper.ExtractFile(data, "WiseScript.bin", outputDirectory, expected, false, includeDebug)
-                == ExtractionStatus.FAIL)
-                return false;
-            data.Seek(data.Position - SecondExecutableFileEntryLength, 0);
 
             // Extract first executable, if it exists
-            expected = new DeflateInfo
-            {
-                InputSize = FirstExecutableFileEntryLength,
-                OutputSize =
-                    FirstExecutableFileEntryLength - 4,
-                Crc32 = 0
-            };
-            data.Seek(data.Position - FirstExecutableFileEntryLength, 0);
-            if (InflateWrapper.ExtractFile(data, "WISE0001.DLL", outputDirectory, expected, false, includeDebug)
+            if (ExtractFile(data, "FirstExecutable.exe", outputDirectory, FirstExecutableFileEntryLength, includeDebug)
                 == ExtractionStatus.FAIL)
                 return false;
-            data.Seek(data.Position - FirstExecutableFileEntryLength, 0);
 
-            dataStart = data.Position;
+            // Extract second executable, if it exists
+            if (ExtractFile(data, "SecondExecutable.exe", outputDirectory, SecondExecutableFileEntryLength, 
+                includeDebug)
+                == ExtractionStatus.FAIL)
+                return false;
+            
             return true;
         }
 
@@ -282,7 +258,7 @@ namespace SabreTools.Serialization.Wrappers
 
             // Extract the file
             var destination = new MemoryStream();
-            ExtractionStatus status = ExtractStream(source,
+            ExtractionStatus status = ExtractStreamWithChecksum(source,
                 destination,
                 entrySize,
                 includeDebug);
@@ -305,8 +281,8 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Extract source data with a trailing CRC-32 checksum
         /// </summary>
-        /// <param name="source">Stream representing the deflated data</param>
-        /// <param name="destination">Stream where the inflated data will be written</param>
+        /// <param name="source">Stream representing the source data</param>
+        /// <param name="destination">Stream where the file data will be written</param>
         /// <param name="entrySize">Expected size of the file plus crc32</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns></returns>
@@ -317,9 +293,7 @@ namespace SabreTools.Serialization.Wrappers
         {
             // Debug output
             if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write:{entrySize - 4}");
-
             
-                
             //if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write: {entrySize - 4}, Expected CRC-32: {expected.Crc32:X8}");    
             // Check the validity of the inputs
             if (entrySize == 0)
@@ -337,67 +311,31 @@ namespace SabreTools.Serialization.Wrappers
             long current = source.Position;
 
             // Extract the file
-            var actual = Inflate(source, destination);
-            if (actual == null)
+            // TODO: read in blocks so you can hash as you read?
+            try
             {
+                byte[] actual = source.ReadBytes((int)entrySize - 4);
+                using var hasher = new HashWrapper(HashType.CRC32);
+                hasher.Process(actual, 0, actual.Length);
+                hasher.Terminate();
+                byte[] hashBytes = hasher.CurrentHashBytes!;
+                uint actualCrc32 = BitConverter.ToUInt32(hashBytes, 0);
+                uint expectedCrc32 = source.ReadUInt32();
+                if (expectedCrc32 != actualCrc32)
+                {
+                    if (includeDebug) Console.Error.WriteLine($"Mismatched CRC-32 values!");
+                    return ExtractionStatus.BAD_CRC;
+                }
+                // Debug output
+                if (includeDebug) Console.WriteLine($"CRC-32: {actualCrc32:X8}");
+                return ExtractionStatus.GOOD;
+            }
+            catch
+            {
+                // TODO: How to handle error handling?
                 if (includeDebug) Console.Error.WriteLine($"Could not extract");
                 return ExtractionStatus.FAIL;
             }
-
-            // Seek to the true end of the data
-            source.Seek(current + actual.InputSize, SeekOrigin.Begin);
-
-            // If the read value is off-by-one after checksum
-            if (actual.InputSize == expected.InputSize - 5)
-            {
-                // If not at the end of the file, get the corrected offset
-                if (source.Position + 5 < source.Length)
-                {
-                    // TODO: What does this byte represent?
-                    byte padding = source.ReadByteValue();
-                    actual.InputSize += 1;
-
-                    // Debug output
-                    if (includeDebug) Console.WriteLine($"Off-by-one padding byte detected: 0x{padding:X2}");
-                }
-                else
-                {
-                    // Debug output
-                    if (includeDebug) Console.WriteLine($"Not enough data to adjust offset");
-                }
-            }
-
-            // If there is enough data to read the full CRC
-            uint deflateCrc;
-            if (source.Position + 4 < source.Length)
-            {
-                deflateCrc = source.ReadUInt32LittleEndian();
-                actual.InputSize += 4;
-            }
-            // Otherwise, read what is possible and pad with 0x00
-            else
-            {
-                byte[] deflateCrcBytes = new byte[4];
-                int realCrcLength = source.Read(deflateCrcBytes, 0, (int)(source.Length - source.Position));
-
-                // Parse as a little-endian 32-bit value
-                deflateCrc = (uint)(deflateCrcBytes[0]
-                            | (deflateCrcBytes[1] << 8)
-                            | (deflateCrcBytes[2] << 16)
-                            | (deflateCrcBytes[3] << 24));
-
-                actual.InputSize += realCrcLength;
-            }
-
-            // If the CRC to check isn't set
-            if (expected.Crc32 == 0)
-                expected.Crc32 = deflateCrc;
-
-            // Debug output
-            if (includeDebug) Console.WriteLine($"DeflateStream CRC-32: {deflateCrc:X8}");
-
-            // Verify the extracted data
-            return VerifyExtractedData(source, current, expected, actual, includeDebug);
         }
 
         #endregion

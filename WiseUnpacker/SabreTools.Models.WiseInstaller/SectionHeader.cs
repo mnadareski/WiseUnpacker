@@ -136,10 +136,31 @@ namespace SabreTools.Models.WiseInstaller
         /// Byte array representing version. Byte array used due to unknown size and type for version.
         /// </summary>
         public byte[]? Version { get; set; }
+        
+        /// <summary>
+        /// String representing the WIS[etc].TMP string
+        /// </summary>
+        public string? TmpString { get; set; }
+        
+        /// <summary>
+        /// String representing the GUID string.
+        /// </summary>
+        public string? GuidString { get; set; }
+        
+        /// <summary>
+        /// Font size, going by behavior of normal wise installers.
+        /// </summary>
+        public uint FontSize { get; set; }
+        
+        /// <summary>
+        /// Byte array representing string lengths and info. Individual strings not predefined since number of strings
+        /// will likely vary between many installers.
+        /// </summary>
+        public byte[]? StringValues { get; set; }
 
         /// <summary>
         /// Strings for the section. Size and any breakup of strings currently unknown.
         /// </summary>
-        public string? Strings { get; set; }
+        public byte[]? Strings { get; set; }
     }
 }
