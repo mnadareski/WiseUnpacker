@@ -98,29 +98,28 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue4 = data.ReadUInt32LittleEndian();
             header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
-            if (headerLength == 6)
-                return header;
-
-            header.UnknownValue7 = data.ReadUInt32LittleEndian();
-            header.UnknownValue8 = data.ReadUInt32LittleEndian();
-            if (headerLength == 8)
-                return header;
-
-            header.UnknownValue9 = data.ReadUInt32LittleEndian();
-            header.UnknownValue10 = data.ReadUInt32LittleEndian();
-            header.UnknownValue11 = data.ReadUInt32LittleEndian();
-            header.UnknownValue12 = data.ReadUInt32LittleEndian();
-            header.UnknownValue13 = data.ReadUInt32LittleEndian();
-            header.UnknownValue14 = data.ReadUInt32LittleEndian();
-            header.UnknownValue15 = data.ReadUInt32LittleEndian();
-            header.UnknownValue16 = data.ReadUInt32LittleEndian();
-            header.UnknownValue17 = data.ReadUInt32LittleEndian();
-            if (headerLength == 17)
-                return header;
-
-            header.UnknownValue18 = data.ReadUInt32LittleEndian();
-            if (headerLength == 18)
-                return header;
+            if (headerLength != 6)
+            {
+                header.UnknownValue7 = data.ReadUInt32LittleEndian();
+                header.UnknownValue8 = data.ReadUInt32LittleEndian();
+                if (headerLength != 8)
+                {
+                    header.UnknownValue9 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue10 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue11 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue12 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue13 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue14 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue15 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue16 = data.ReadUInt32LittleEndian();
+                    header.UnknownValue17 = data.ReadUInt32LittleEndian();
+                    if (headerLength != 17)
+                    {
+                        header.UnknownValue18 = data.ReadUInt32LittleEndian();
+                    }
+                }
+            }
+            
 
             // Parse strings
             // TODO: Count size of string section for later size verification
@@ -135,15 +134,29 @@ namespace SabreTools.Serialization.Deserializers
             header.StringValues = data.ReadBytes(preStringBytesSize);
             List<byte> stringList = new List<byte>(); // List of string bytes to be set to final value
             int counter = 0;
-            bool zeroByte = false;
+            bool endNow = false;
             while (counter < preStringBytesSize) // Iterate pre-string byte array
             {
                 byte currentByte = header.StringValues[counter];
                 if (currentByte == 0x01) // Prepends non-string-size indicators
                 {
                     counter++;
-                    for (int i = counter; i < preStringBytesSize; i++)
+                    for (int i = counter; i <= preStringBytesSize; i++)
                     {
+                        if (i == preStringBytesSize)
+                        {
+                            
+                            byte checkForZero = 0x00;
+                            while (checkForZero == 0x00)
+                            {
+                                checkForZero = data.ReadByteValue();
+                            }
+                            data.Seek(data.Position - 1, 0);
+                            endNow = true;
+                            break;
+                        }
+                        currentByte = header.StringValues[counter];
+                        
                         // 0x01 followed by one more 0x01 seems to indicate to skip 2 null bytes, but 0x01 followed by
                         // three more 0x01 seems to indicate an unspecified length of null bytes that must be skipped.
                         // It has already been observed it mean 22 or 27 between 2 samples.
@@ -152,7 +165,7 @@ namespace SabreTools.Serialization.Deserializers
                         // after you've read all the strings successfully.
                         if (currentByte == 0x00)
                         {
-                            zeroByte = true;
+                            endNow = true;
                             break;
                         }
                         else if (currentByte != 0x01)
@@ -168,9 +181,10 @@ namespace SabreTools.Serialization.Deserializers
                         counter++;
                     }
                 }
-                if (zeroByte == true)
+                if (endNow == true)
                     break;
-                stringList.AddRange(data.ReadBytes(currentByte));
+                byte[] currentString = data.ReadBytes(currentByte);
+                stringList.AddRange(currentString);
                 counter++;
             }
             

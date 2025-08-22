@@ -218,20 +218,22 @@ namespace SabreTools.Serialization.Wrappers
 
             // Does output size include the crc32? Doesn't seem to?
 
-            // Extract main MSI file
-            if (ExtractFile(data, "ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug)
-                == ExtractionStatus.FAIL)
-                return false;
-
+            // Comparing against extractionstatus GOOD for now.
+            
             // Extract first executable, if it exists
             if (ExtractFile(data, "FirstExecutable.exe", outputDirectory, FirstExecutableFileEntryLength, includeDebug)
-                == ExtractionStatus.FAIL)
+                != ExtractionStatus.GOOD)
                 return false;
 
             // Extract second executable, if it exists
             if (ExtractFile(data, "SecondExecutable.exe", outputDirectory, SecondExecutableFileEntryLength, 
                 includeDebug)
-                == ExtractionStatus.FAIL)
+                != ExtractionStatus.GOOD)
+                return false;
+            
+            // Extract main MSI file
+            if (ExtractFile(data, "ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug)
+                != ExtractionStatus.GOOD)
                 return false;
             
             return true;
@@ -301,7 +303,7 @@ namespace SabreTools.Serialization.Wrappers
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read 0 bytes");
                 return ExtractionStatus.INVALID;
             }
-            else if (entrySize > (source.Position)) // TODO: include header plus string length
+            else if (entrySize > (source.Length - source.Position))
             {
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read {entrySize} bytes but only {source.Position} bytes remain");
                 return ExtractionStatus.INVALID;
@@ -328,6 +330,7 @@ namespace SabreTools.Serialization.Wrappers
                 }
                 // Debug output
                 if (includeDebug) Console.WriteLine($"CRC-32: {actualCrc32:X8}");
+                destination.Write(actual, 0, actual.Length);
                 return ExtractionStatus.GOOD;
             }
             catch
