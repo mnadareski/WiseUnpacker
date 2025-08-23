@@ -122,6 +122,7 @@ namespace Test
                 { 
                     stream.Seek(0, SeekOrigin.Begin);
                     IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
+                    bool matchFound = false;
                     if (pe is PortableExecutable pex)
                     {
                         // Check section data
@@ -134,6 +135,7 @@ namespace Test
                             // Check after the resource table
                             if (sectionName == ".WISE")
                             {
+                                matchFound = true;
                                 // End of section
                                 uint sectionSize = section.SizeOfRawData;
                                 stream.Seek(sectionOffset, SeekOrigin.Begin);
@@ -153,8 +155,11 @@ namespace Test
                             }
                         }
                     }
-                    _statistics.AddInvalidPath(file);
-                    Console.WriteLine($"No valid header could be found in {file}, skipping...");
+                    if (!matchFound)
+                    {
+                        _statistics.AddInvalidPath(file);
+                        Console.WriteLine($"No valid header could be found in {file}, skipping...");
+                    }
                     return;
                 }
 

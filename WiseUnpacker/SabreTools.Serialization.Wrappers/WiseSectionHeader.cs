@@ -19,8 +19,8 @@ namespace SabreTools.Serialization.Wrappers
 
         #region Extension Properties
 
-        /// <inheritdoc cref="SectionHeader.UnknownValue0"/>
-        public uint UnknownValue0 => Model.UnknownValue0;
+        /// <inheritdoc cref="SectionHeader.UnknownDataSize"/>
+        public uint UnknownDataSize => Model.UnknownDataSize;
 
         /// <inheritdoc cref="SectionHeader.SecondExecutableFileEntryLength"/> // TODO: VERIFY ON CHANGE
         public uint SecondExecutableFileEntryLength => Model.SecondExecutableFileEntryLength;
@@ -46,8 +46,8 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="SectionHeader.UnknownValue8"/>
         public uint UnknownValue8 => Model.UnknownValue8;
 
-        /// <inheritdoc cref="SectionHeader.UnknownValue9"/>
-        public uint UnknownValue9 => Model.UnknownValue9;
+        /// <inheritdoc cref="SectionHeader.ThirdExecutableFileEntryLength"/>
+        public uint ThirdExecutableFileEntryLength => Model.ThirdExecutableFileEntryLength;
 
         /// <inheritdoc cref="SectionHeader.UnknownValue10"/>
         public uint UnknownValue10 => Model.UnknownValue10;
@@ -231,6 +231,12 @@ namespace SabreTools.Serialization.Wrappers
                 != ExtractionStatus.GOOD)
                 return false;
             
+            // Extract second executable, if it exists
+            if (ExtractFile(data, "ThirdExecutable.exe", outputDirectory, ThirdExecutableFileEntryLength, 
+                    includeDebug)
+                != ExtractionStatus.GOOD)
+                return false;
+            
             // Extract main MSI file
             if (ExtractFile(data, "ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug)
                 != ExtractionStatus.GOOD)
@@ -260,10 +266,21 @@ namespace SabreTools.Serialization.Wrappers
 
             // Extract the file
             var destination = new MemoryStream();
-            ExtractionStatus status = ExtractStreamWithChecksum(source,
-                destination,
-                entrySize,
-                includeDebug);
+            ExtractionStatus status;
+            if (!(Version != null && Version[1] == 0x01))
+            {
+                status = ExtractStreamWithChecksum(source,
+                    destination,
+                    entrySize,
+                    includeDebug);   
+            }
+            else // hack for Codesited5.exe , very early and very strange.
+            {
+                status = ExtractStreamWithoutChecksum(source,
+                    destination,
+                    entrySize,
+                    includeDebug);
+            }
 
             // If the extracted data is invalid
             if (status != ExtractionStatus.GOOD || destination == null)
@@ -294,14 +311,14 @@ namespace SabreTools.Serialization.Wrappers
             bool includeDebug)
         {
             // Debug output
-            if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write:{entrySize - 4}");
+            if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write:{entrySize - 4}"); // clamp to zero
             
             //if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write: {entrySize - 4}, Expected CRC-32: {expected.Crc32:X8}");    
             // Check the validity of the inputs
             if (entrySize == 0)
             {
                 if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read 0 bytes");
-                return ExtractionStatus.INVALID;
+                return ExtractionStatus.GOOD; // If size is 0, then it shouldn't be extracted
             }
             else if (entrySize > (source.Length - source.Position))
             {
@@ -330,6 +347,55 @@ namespace SabreTools.Serialization.Wrappers
                 }
                 // Debug output
                 if (includeDebug) Console.WriteLine($"CRC-32: {actualCrc32:X8}");
+                destination.Write(actual, 0, actual.Length);
+                return ExtractionStatus.GOOD;
+            }
+            catch
+            {
+                // TODO: How to handle error handling?
+                if (includeDebug) Console.Error.WriteLine($"Could not extract");
+                return ExtractionStatus.FAIL;
+            }
+        }
+                /// <summary>
+        /// Extract source data without a trailing CRC-32 checksum
+        /// </summary>
+        /// <param name="source">Stream representing the source data</param>
+        /// <param name="destination">Stream where the file data will be written</param>
+        /// <param name="entrySize">Expected size of the file</param>
+        /// <param name="includeDebug">True to include debug data, false otherwise</param>
+        /// <returns></returns>
+        public static ExtractionStatus ExtractStreamWithoutChecksum(Stream source,
+            Stream destination,
+            uint entrySize,
+            bool includeDebug)
+        {
+            // Debug output
+            if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write:{entrySize - 4}");
+            
+            //if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write: {entrySize - 4}, Expected CRC-32: {expected.Crc32:X8}");    
+            // Check the validity of the inputs
+            if (entrySize == 0)
+            {
+                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read 0 bytes");
+                return ExtractionStatus.GOOD; // If size is 0, then it shouldn't be extracted
+            }
+            else if (entrySize > (source.Length - source.Position))
+            {
+                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read {entrySize} bytes but only {source.Position} bytes remain");
+                return ExtractionStatus.INVALID;
+            }
+
+            // Cache the current offset
+            long current = source.Position;
+
+            // Extract the file
+            // TODO: read in blocks so you can hash as you read?
+            try
+            {
+                byte[] actual = source.ReadBytes((int)entrySize);
+                // Debug output
+                if (includeDebug) Console.WriteLine($"No CRC-32!");
                 destination.Write(actual, 0, actual.Length);
                 return ExtractionStatus.GOOD;
             }
