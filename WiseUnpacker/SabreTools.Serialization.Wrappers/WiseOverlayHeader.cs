@@ -531,7 +531,7 @@ namespace SabreTools.Serialization.Wrappers
             // Loop through and try to read all additional files
             for (; ; fileno++)
             {
-                string nextPart = longDigits ? $"{filePattern}{fileno:3}" : $"{filePattern}{fileno:2}";
+                string nextPart = longDigits ? $"{filePattern}{fileno:D3}" : $"{filePattern}{fileno:D2}";
                 if (!File.Exists(nextPart))
                 {
                     if (includeDebug) Console.WriteLine($"Part {nextPart} was not found");
