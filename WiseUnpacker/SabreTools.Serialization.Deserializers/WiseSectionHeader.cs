@@ -198,6 +198,8 @@ namespace SabreTools.Serialization.Deserializers
                 }
                 else if (currentByte == 0x01) // Prepends non-string-size indicators
                 {
+                    // 01 01 01 01: entering font section
+                    // 01 5D 5C 01: link section; 5D and 5C are string sizes
                     int oneCount = 1;
                     counter++;
                     for (int i = counter; i <= preStringBytesSize; i++)

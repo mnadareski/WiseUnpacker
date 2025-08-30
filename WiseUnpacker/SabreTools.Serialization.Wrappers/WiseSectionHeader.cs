@@ -232,6 +232,10 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
             
             // Extract second executable, if it exists
+            // If there's a size provided for the second executable but no size for the first executable, the size of
+            // the second executable appears to be some unrelated value that's larger than the second executable
+            // actually is. Currently unable to extract properly in these cases, as no header value in such installers
+            // seems to actually correspond to the real size of the second executable.
             if (ExtractFile(data, "ThirdExecutable.exe", outputDirectory, ThirdExecutableFileEntryLength, 
                     includeDebug)
                 != ExtractionStatus.GOOD)
