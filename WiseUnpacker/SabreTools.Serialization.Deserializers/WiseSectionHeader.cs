@@ -173,7 +173,7 @@ namespace SabreTools.Serialization.Deserializers
                 byte currentByte = header.StringValues[counter];
                 if (languageSectionCounter == 2) // now doing third byte after language section begins
                 {
-                    if (currentByte == 0x00) // this should never happen
+                    if (currentByte == 0x00) // this should never happen.
                     {
                         endNow = true;
                         break;
