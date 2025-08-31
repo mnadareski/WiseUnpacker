@@ -101,7 +101,7 @@ namespace SabreTools.Models.WiseInstaller
             {41, 18},
             {77, 19},
             {78, 19},
-            {82, 19}, // why was this originally 20
+            {82, 19}, 
         };
     }
 }

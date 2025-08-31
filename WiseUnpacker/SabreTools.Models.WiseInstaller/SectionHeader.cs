@@ -174,6 +174,6 @@ namespace SabreTools.Models.WiseInstaller
         /// <summary>
         /// Strings for the section. Size and any breakup of strings currently unknown.
         /// </summary>
-        public byte[]? Strings { get; set; }
+        public byte[][]? Strings { get; set; }
     }
 }

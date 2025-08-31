@@ -83,7 +83,7 @@ namespace SabreTools.Serialization.Wrappers
         public byte[]? StringValues => Model.StringValues;
         
         /// <inheritdoc cref="SectionHeader.Strings"/>
-        public byte[]? Strings => Model.Strings;
+        public byte[][]? Strings => Model.Strings;
 
         #endregion
 
@@ -213,22 +213,13 @@ namespace SabreTools.Serialization.Wrappers
         {
             // Determine where the remaining compressed data starts
             dataStart = data.Position;
-
-            // This has to run back to front due to lacking any other known way to derive offsets
-
-            // Does output size include the crc32? Doesn't seem to?
-
-            // Comparing against extractionstatus GOOD for now.
             
             // Extract first executable, if it exists
-            if (ExtractFile(data, "FirstExecutable.exe", outputDirectory, FirstExecutableFileEntryLength, includeDebug)
-                != ExtractionStatus.GOOD)
+            if (ExtractFile(data, "FirstExecutable.exe", outputDirectory, FirstExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                 return false;
 
             // Extract second executable, if it exists
-            if (ExtractFile(data, "SecondExecutable.exe", outputDirectory, SecondExecutableFileEntryLength, 
-                includeDebug)
-                != ExtractionStatus.GOOD)
+            if (ExtractFile(data, "SecondExecutable.exe", outputDirectory, SecondExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                 return false;
             
             // Extract second executable, if it exists
@@ -236,14 +227,11 @@ namespace SabreTools.Serialization.Wrappers
             // the second executable appears to be some unrelated value that's larger than the second executable
             // actually is. Currently unable to extract properly in these cases, as no header value in such installers
             // seems to actually correspond to the real size of the second executable.
-            if (ExtractFile(data, "ThirdExecutable.exe", outputDirectory, ThirdExecutableFileEntryLength, 
-                    includeDebug)
-                != ExtractionStatus.GOOD)
+            if (ExtractFile(data, "ThirdExecutable.exe", outputDirectory, ThirdExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                 return false;
             
             // Extract main MSI file
-            if (ExtractFile(data, "ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug)
-                != ExtractionStatus.GOOD)
+            if (ExtractFile(data, "ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                 return false;
             
             return true;

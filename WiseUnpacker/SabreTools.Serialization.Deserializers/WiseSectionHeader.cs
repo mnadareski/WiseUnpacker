@@ -25,9 +25,9 @@ namespace SabreTools.Serialization.Deserializers
 
                 var header = ParseWiseSectionHeader(data, initialOffset);
 
-                // Checks if version was able to be read
-                if (header?.Version == null)
+                if (header == null)
                     return null;
+                
 
                 // Main MSI file
                 if (header.MsiFileEntryLength == 0)
@@ -77,6 +77,11 @@ namespace SabreTools.Serialization.Deserializers
 
                 data.Seek(initialOffset + offset - versionOffset, 0);
                 header.Version = data.ReadBytes(versionOffset);
+                if (header.Version == null)
+                {
+                    // TODO: error output
+                    return null;
+                }
                 localWisOffset = offset;
             }
 
@@ -94,50 +99,49 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue4 = data.ReadUInt32LittleEndian();
             header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
-            if (headerLength != 6)
+            // Read common values
+
+            if (headerLength > 6)
             {
                 header.UnknownValue7 = data.ReadUInt32LittleEndian();
                 header.UnknownValue8 = data.ReadUInt32LittleEndian();
-                if (headerLength != 8)
-                {
-                    header.ThirdExecutableFileEntryLength = data.ReadUInt32LittleEndian();
-                    header.UnknownValue10 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue11 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue12 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue13 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue14 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue15 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue16 = data.ReadUInt32LittleEndian();
-                    header.UnknownValue17 = data.ReadUInt32LittleEndian();
-                    if (headerLength != 17)
-                    {
-                        header.UnknownValue18 = data.ReadUInt32LittleEndian();
-                    }
-                }
+            }
+
+            if (headerLength > 8)
+            {
+                header.ThirdExecutableFileEntryLength = data.ReadUInt32LittleEndian();
+                header.UnknownValue10 = data.ReadUInt32LittleEndian();
+                header.UnknownValue11 = data.ReadUInt32LittleEndian();
+                header.UnknownValue12 = data.ReadUInt32LittleEndian();
+                header.UnknownValue13 = data.ReadUInt32LittleEndian();
+                header.UnknownValue14 = data.ReadUInt32LittleEndian();
+                header.UnknownValue15 = data.ReadUInt32LittleEndian();
+                header.UnknownValue16 = data.ReadUInt32LittleEndian();
+                header.UnknownValue17 = data.ReadUInt32LittleEndian(); 
             }
             
-
+            if (headerLength > 17)
+            {
+                header.UnknownValue18 = data.ReadUInt32LittleEndian();
+            }
+            
             // Parse strings
             // TODO: Count size of string section for later size verification
             
             data.Seek(initialOffset + localWisOffset, 0);
-            header.TmpString = data.ReadNullTerminatedString(Encoding.ASCII); // read .TMP string
-            header.GuidString = data.ReadNullTerminatedString(Encoding.ASCII); // read GUID string
+            header.TmpString = data.ReadNullTerminatedAnsiString();
+            header.GuidString = data.ReadNullTerminatedAnsiString();
             // TODO: better way to figure out how far it's needed to advance?
+            int versionSize;
             if (header.Version == null)
             {
                 // TODO: error output
                 return null;
             }
-            int versionSize;
             if (header.Version[header.Version.Length - 1] == 0x02)
-            {
                 versionSize = header.Version[header.Version.Length - 3];
-            }
             else
-            {
                 versionSize = header.Version[header.Version.Length - 2];
-            }
             if (versionSize != 1) // third byte seems to indicate size of NonWiseVer
             {
 
@@ -163,7 +167,7 @@ namespace SabreTools.Serialization.Deserializers
                 preStringBytesSize = 2; // hack for Codesited5.exe , very early and very strange.
             }
             header.StringValues = data.ReadBytes(preStringBytesSize);
-            List<byte> stringList = new List<byte>(); // List of string bytes to be set to final value
+            List<byte[]> stringList = new List<byte[]>(); // List of string bytes to be set to final value
             int counter = 0;
             bool endNow = false;
             bool languageSection = false;
@@ -190,8 +194,8 @@ namespace SabreTools.Serialization.Deserializers
                                 return null;
                             }
                             byte[]? extraLanguageStringArray = Encoding.ASCII.GetBytes(extraLanguageString);
-                            stringList.AddRange(incrementBytes);
-                            stringList.AddRange(extraLanguageStringArray);
+                            stringList.Add(incrementBytes);
+                            stringList.Add(extraLanguageStringArray);
                         }
                         break;
                     }
@@ -258,7 +262,7 @@ namespace SabreTools.Serialization.Deserializers
                 if (endNow == true)
                     break;
                 byte[] currentString = data.ReadBytes(currentByte); // System.Text.Encoding.ASCII.GetString(currentString);
-                stringList.AddRange(currentString);
+                stringList.Add(currentString);
                 counter++;
                 if (languageSection)
                 {
@@ -267,7 +271,7 @@ namespace SabreTools.Serialization.Deserializers
             }
             
             // Strings stored as byte array since one "string" can contain multiple null-terminated strings.
-            header.Strings = stringList.ToArray(); 
+            header.Strings = [.. stringList]; 
 
             // Should really be done in the wrapper, but almost everything there is static so there's no good place
             if (header.UnknownDataSize != 0) // Not sure what this data is. Might be a wisescript?
