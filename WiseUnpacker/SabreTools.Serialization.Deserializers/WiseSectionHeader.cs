@@ -28,7 +28,6 @@ namespace SabreTools.Serialization.Deserializers
                 if (header == null)
                     return null;
                 
-
                 // Main MSI file
                 if (header.MsiFileEntryLength == 0)
                     return null;
@@ -77,12 +76,13 @@ namespace SabreTools.Serialization.Deserializers
 
                 data.Seek(initialOffset + offset - versionOffset, 0);
                 header.Version = data.ReadBytes(versionOffset);
-                if (header.Version == null)
-                {
-                    // TODO: error output
-                    return null;
-                }
                 localWisOffset = offset;
+            }
+            
+            if (header.Version == null)
+            {
+                // TODO: error output
+                return null;
             }
 
             // If the header length couldn't be determined
@@ -127,24 +127,34 @@ namespace SabreTools.Serialization.Deserializers
             
             // Parse strings
             // TODO: Count size of string section for later size verification
+
+            PreStringValuesHelper(data, ref header, initialOffset, localWisOffset, out int preStringBytesSize);
             
+            StringHelper(data, ref header, initialOffset, localWisOffset, preStringBytesSize);
+            
+            // Should really be done in the wrapper, but almost everything there is static so there's no good place
+            if (header.UnknownDataSize != 0) // Not sure what this data is. Might be a wisescript?
+            {
+                data.Seek(data.Position + header.UnknownDataSize, 0);
+            }
+
+            return header;
+        }
+
+        private static void PreStringValuesHelper(Stream data, ref SectionHeader header, long initialOffset, int localWisOffset, out int preStringBytesSize)
+        {
             data.Seek(initialOffset + localWisOffset, 0);
             header.TmpString = data.ReadNullTerminatedAnsiString();
             header.GuidString = data.ReadNullTerminatedAnsiString();
             // TODO: better way to figure out how far it's needed to advance?
             int versionSize;
-            if (header.Version == null)
-            {
-                // TODO: error output
-                return null;
-            }
             if (header.Version[header.Version.Length - 1] == 0x02)
                 versionSize = header.Version[header.Version.Length - 3];
             else
                 versionSize = header.Version[header.Version.Length - 2];
+            
             if (versionSize != 1) // third byte seems to indicate size of NonWiseVer
             {
-
                 byte[] stringBytes = data.ReadBytes(versionSize);
                 header.NonWiseVersion = Encoding.ASCII.GetString(stringBytes);
                 if (localWisOffset <= 77)
@@ -156,17 +166,24 @@ namespace SabreTools.Serialization.Deserializers
                     header.PreFontValue = data.ReadBytes(4);
                 }
             }
+            
             else // If that third byte is 0x01, no NonWiseVersion string is present.
             {
                 header.PreFontValue = data.ReadBytes(3);
             }
+            
             header.FontSize = data.ReadByte(); 
-            int preStringBytesSize = WiseSectionPreStringBytesSize[localWisOffset];
+            preStringBytesSize = WiseSectionPreStringBytesSize[localWisOffset];
             if (header.Version[1] == 0x01)
             {
                 preStringBytesSize = 2; // hack for Codesited5.exe , very early and very strange.
             }
-            header.StringValues = data.ReadBytes(preStringBytesSize);
+        }
+
+        private static void StringHelper(Stream data, ref SectionHeader header, long initialOffset,
+            int localWisOffset, int preStringBytesSize)
+        {
+                        header.StringValues = data.ReadBytes(preStringBytesSize);
             List<byte[]> stringList = new List<byte[]>(); // List of string bytes to be set to final value
             int counter = 0;
             bool endNow = false;
@@ -272,14 +289,6 @@ namespace SabreTools.Serialization.Deserializers
             
             // Strings stored as byte array since one "string" can contain multiple null-terminated strings.
             header.Strings = [.. stringList]; 
-
-            // Should really be done in the wrapper, but almost everything there is static so there's no good place
-            if (header.UnknownDataSize != 0) // Not sure what this data is. Might be a wisescript?
-            {
-                data.Seek(data.Position + header.UnknownDataSize, 0);
-            }
-
-            return header;
         }
     }
 }
