@@ -17,7 +17,6 @@ namespace SabreTools.Serialization.Deserializers
             if (data == null || !data.CanRead)
                 return null;
 
-            // Cache the current offset
             try
             {
                 // Cache the current offset
@@ -26,7 +25,7 @@ namespace SabreTools.Serialization.Deserializers
                 var header = ParseWiseSectionHeader(data, initialOffset);
                 if (header == null)
                     return null;
-                
+
                 // Main MSI file
                 if (header.MsiFileEntryLength == 0)
                     return null;
@@ -59,10 +58,12 @@ namespace SabreTools.Serialization.Deserializers
         private static SectionHeader? ParseWiseSectionHeader(Stream data, long initialOffset)
         {
             var header = new SectionHeader();
-            int localWisOffset = -1;
+
+            // Setup required variables
+            int wisOffset = -1;
+            int headerLength = -1;
 
             // Find offset of "WIS", determine header length, read presumed version value
-            int headerLength = -1;
             foreach (int offset in WisOffsets)
             {
                 data.Seek(initialOffset + offset, 0);
@@ -75,17 +76,14 @@ namespace SabreTools.Serialization.Deserializers
 
                 data.Seek(initialOffset + offset - versionOffset, 0);
                 header.Version = data.ReadBytes(versionOffset);
-                localWisOffset = offset;
+                wisOffset = offset;
             }
-            
+
+            // If the header is invalid
             if (header.Version == null)
                 return null;
-            
-
-            if (localWisOffset < initialOffset)
+            if (wisOffset < 0)
                 return null;
-
-            // If the header length couldn't be determined
             if (headerLength < 0)
                 return null;
 
@@ -117,121 +115,156 @@ namespace SabreTools.Serialization.Deserializers
                 header.UnknownValue14 = data.ReadUInt32LittleEndian();
                 header.UnknownValue15 = data.ReadUInt32LittleEndian();
                 header.UnknownValue16 = data.ReadUInt32LittleEndian();
-                header.UnknownValue17 = data.ReadUInt32LittleEndian(); 
+                header.UnknownValue17 = data.ReadUInt32LittleEndian();
             }
-            
+
             if (headerLength > 17)
             {
                 header.UnknownValue18 = data.ReadUInt32LittleEndian();
             }
-            
-            // Parse strings
-            // TODO: Count size of string section for later size verification
 
-            PreStringValuesHelper(data, header, initialOffset, localWisOffset, header.Version, out int preStringBytesSize);
-            
-            byte[][]? stringArrays = StringHelper(data, header, preStringBytesSize);
+            // Seek to the WIS string offset
+            data.Seek(initialOffset + wisOffset, SeekOrigin.Begin);
+
+            // Read the consistent strings
+            header.TmpString = data.ReadNullTerminatedAnsiString();
+            header.GuidString = data.ReadNullTerminatedAnsiString();
+
+            // Parse the pre-string section
+            int preStringBytesSize = GetPreStringBytesSize(data, header, wisOffset);
+            if (preStringBytesSize <= 0)
+                return null;
+
+            // Read the pre-string bytes
+            header.PreStringValues = data.ReadBytes(preStringBytesSize);
+
+            // Try to read the string arrays
+            // TODO: Count size of string section for later size verification
+            byte[][]? stringArrays = ParseStringTable(data, header.PreStringValues);
             if (stringArrays == null)
                 return null;
-            
+
+            // Set the string arrays
             header.Strings = stringArrays;
-            
-            // Should really be done in the wrapper, but almost everything there is static so there's no good place
-            if (header.UnknownDataSize != 0) // Not sure what this data is. Might be a wisescript?
-            {
-                data.Seek(data.Position + header.UnknownDataSize, 0);
-            }
+
+            // Not sure what this data is. Might be a wisescript?
+            // TODO: Should really be done in the wrapper, but almost everything there is static so there's no good place\
+            if (header.UnknownDataSize != 0)
+                data.Seek(header.UnknownDataSize, SeekOrigin.Current);
 
             return header;
         }
 
         /// <summary>
-        /// Attempts to read the pre-string bytes that lay out how to read the strings.
+        /// Get the pre-string bytes size, if possible
         /// </summary>
         /// <param name="data">Stream to parse</param>
-        /// <param name="header">Section header</param>
-        /// <param name="initialOffset">Initial offset to use in address comparisons</param>
-        /// <param name="localWisOffset">Offset of WIS string, used to determine some other offsets and values</param>
-        /// <param name="version">What might be a version value for the .WISE installer</param>
-        /// <param name="preStringBytesSize">Assumed size of the pre-string bytes. Currently, not always accurate.</param>
-        /// <returns>True on success, false on failure.</returns>
-        private static bool PreStringValuesHelper(Stream data, SectionHeader header, long initialOffset, int localWisOffset, byte[] version, out int preStringBytesSize)
+        /// <param name="header">Section header to get information from</param>
+        /// <param name="wisOffset">Offset to the WIS string relative to the start of the header</param>
+        /// <returns>The size of the pre-string section</returns>
+        /// <remarks>
+        /// This method also sets <see cref="SectionHeader.NonWiseVersion"/> and
+        /// <see cref="SectionHeader.PreFontValue"/>, if possible.
+        /// </remarks>
+        private static int GetPreStringBytesSize(Stream data, SectionHeader header, int wisOffset)
         {
-            data.Seek(initialOffset + localWisOffset, 0);
-            header.TmpString = data.ReadNullTerminatedAnsiString();
-            header.GuidString = data.ReadNullTerminatedAnsiString();
+            // Handle a case that shouldn't happen
+            if (header.Version == null)
+                return 0;
+
             // TODO: better way to figure out how far it's needed to advance?
             int versionSize;
-            if (version[version.Length - 1] == 0x02)
-                versionSize = version[version.Length - 3];
+            if (header.Version[header.Version.Length - 1] == 0x02)
+                versionSize = header.Version[header.Version.Length - 3];
             else
-                versionSize = version[version.Length - 2];
-            
-            if (versionSize <= 1) // third byte seems to indicate size of NonWiseVer
+                versionSize = header.Version[header.Version.Length - 2];
+
+            // Third byte seems to indicate size of NonWiseVer
+            if (versionSize <= 1)
             {
                 byte[] stringBytes = data.ReadBytes(versionSize);
                 header.NonWiseVersion = Encoding.ASCII.GetString(stringBytes);
-                if (localWisOffset <= 77)
-                {
+                if (wisOffset <= 77)
                     header.PreFontValue = data.ReadBytes(2);
-                }
                 else
-                {
                     header.PreFontValue = data.ReadBytes(4);
-                }
             }
-            
-            else // If that third byte is 0x01, no NonWiseVersion string is present.
+
+            // If that third byte is 0x01, no NonWiseVersion string is present
+            else
             {
                 header.PreFontValue = data.ReadBytes(3);
             }
-            
-            header.FontSize = data.ReadByte(); 
-            preStringBytesSize = WiseSectionPreStringBytesSize[localWisOffset];
-            if (version[1] == 0x01)
-            {
-                preStringBytesSize = 2; // hack for Codesited5.exe , very early and very strange.
-            }
-            
-            return true;
+
+            header.FontSize = data.ReadByte();
+            int preStringBytesSize = WiseSectionPreStringBytesSize[wisOffset];
+
+            // Hack for Codesited5.exe , very early and very strange.
+            if (header.Version[1] == 0x01)
+                preStringBytesSize = 2;
+
+            return preStringBytesSize;
         }
 
         /// <summary>
-        /// Attempts to read the string section.
+        /// Parse the string table, if possible
         /// </summary>
-        /// <param name="data">Stream to parse</param>
-        /// <param name="header">Section header</param>
-        /// <param name="preStringBytesSize">Assumed size of the pre-string bytes. Currently, not always accurate.</param>
-        /// <returns>Array of byte arrays representing strings on success, null on failure.</returns>
-        private static byte[][]? StringHelper(Stream data, SectionHeader header, int preStringBytesSize)
+        /// <param name="data"></param>
+        /// <param name="header"></param>
+        /// <param name="preStringBytesSize"></param>
+        /// <returns>The filled string table on success, false otherwise</returns>
+        private static byte[][]? ParseStringTable(Stream data, byte[] preStringValues)
         {
-            header.PreStringValues = data.ReadBytes(preStringBytesSize);
-            List<byte[]> stringList = new List<byte[]>(); // List of string bytes to be set to final value
+            // QUESTION: Once `languageSection` below is set, it never
+            // seems to get unset. Is that intentional? Does it indicate
+            // that a new section has started entirely?
+
+            // Setup the loop variables
+            List<byte[]> stringList = [];
             int counter = 0;
             bool endNow = false;
             bool languageSection = false;
             int languageSectionCounter = 0;
-            while (counter < preStringBytesSize) // Iterate pre-string byte array
+
+            // Iterate pre-string byte array
+            while (counter < preStringValues.Length)
             {
-                byte currentByte = header.PreStringValues[counter];
-                if (languageSectionCounter == 2) // now doing third byte after language section begins
+                // Read the next byte value
+                byte currentByte = preStringValues[counter];
+                if (currentByte == 0x00)
+                    break;
+
+                // QUESTION: You only have 2 cases here, one of
+                // which never actually increments the counter.
+                // It's unclear what the `else` statement would
+                // be and if that would be considered an error case.
+                // My poor understanding of the code is reading that
+                // Only values of `0x01` and... something unknown
+                // are valid. The two cases here seem unrelated
+                // otherwise.
+
+                // Now doing third byte after language section begins
+                if (languageSectionCounter == 2)
                 {
-                    if (currentByte == 0x00) // this should never happen.
-                    {
-                        endNow = true;
+                    // This should never happen
+                    if (currentByte == 0x00)
                         break;
-                    }
-                    else if (currentByte == 0x01) 
+
+                    // QUESTION: What happens if the current byte is not 0 or 1?
+                    // Following this code, it seems to indicate that it just
+                    // reads the next string and continues. Is that the correct
+                    // behavior?
+
+                    if (currentByte == 0x01)
                     {
-                        int extraLanguages = header.PreStringValues[counter + 1];
+                        int extraLanguages = preStringValues[counter + 1];
                         for (int i = 0; i < extraLanguages; i++)
                         {
                             byte[]? incrementBytes = data.ReadBytes(2);
                             string? extraLanguageString = data.ReadNullTerminatedAnsiString();
-                            if (extraLanguageString == null) // this should never happen
-                            {
+                            if (extraLanguageString == null)
                                 return null;
-                            }
+
                             byte[]? extraLanguageStringArray = Encoding.ASCII.GetBytes(extraLanguageString);
                             stringList.Add(incrementBytes);
                             stringList.Add(extraLanguageStringArray);
@@ -239,48 +272,62 @@ namespace SabreTools.Serialization.Deserializers
                         break;
                     }
                 }
-                else if (currentByte == 0x01) // Prepends non-string-size indicators
+
+                // Prepends non-string-size indicators
+                else if (currentByte == 0x01)
                 {
                     // 01 01 01 01: entering font section
                     // 01 5D 5C 01: link section; 5D and 5C are string sizes
                     int oneCount = 1;
                     counter++;
-                    for (int i = counter; i <= preStringBytesSize; i++)
+                    for (int i = counter; i <= preStringValues.Length; i++)
                     {
-                        if (i == preStringBytesSize)
+                        // QUESTION: Normally in cases like this, you'd want to
+                        // compare to the last value, not the one at the length.
+                        // In C#, `arr[arr.Length]` is invalid because the final
+                        // index is `arr.Length - 1`. This for loop feels like it
+                        // will error out in that case.
+
+                        if (i == preStringValues.Length)
                         {
-                            
-                            byte checkForZero = 0x00;
-                            while (checkForZero == 0x00)
+                            byte checkForZero;
+                            do
                             {
                                 checkForZero = data.ReadByteValue();
-                            }
-                            data.Seek(data.Position - 1, 0);
+                            } while (checkForZero == 0x00);
+
+                            data.Seek(-1, SeekOrigin.Current);
                             endNow = true;
                             break;
                         }
-                        currentByte = header.PreStringValues[counter];
-                        
+
+                        // QUESTION: Did you mean for this to pull the
+                        // value from `i` and not `counter`? It seems like
+                        // it would just end up pulling the same value over
+                        // and over again otherwise.
+
+                        currentByte = preStringValues[counter];
+
                         // 0x01 followed by one more 0x01 seems to indicate to skip 2 null bytes, but 0x01 followed by
                         // three more 0x01 seems to indicate an unspecified length of null bytes that must be skipped.
                         // It has already been observed it mean 22 or 27 between 2 samples.
-                        
+
                         // If you encounter a null byte in the actual pre-string byte array, it seems to always be
                         // after you've read all the strings successfully.
-                        if (currentByte == 0x00) // this should never happen
+                        if (currentByte == 0x00)
                         {
-                            endNow = true; 
+                            endNow = true;
                             break;
                         }
-                        else if (currentByte != 0x01)
+                        else if (currentByte > 0x01)
                         {
-                            byte checkForZero = 0x00;
-                            while (checkForZero == 0x00)
+                            byte checkForZero;
+                            do
                             {
                                 checkForZero = data.ReadByteValue();
-                            }
+                            } while (checkForZero == 0x00);
 
-                            data.Seek(data.Position - 1, 0);
+                            data.Seek(-1, SeekOrigin.Current);
                             break;
                         }
                         else
@@ -289,27 +336,24 @@ namespace SabreTools.Serialization.Deserializers
                         }
                         counter++;
                     }
-                    if (oneCount == 4) 
-                    {
+
+                    if (oneCount == 4)
                         languageSection = true;
-                    }
                 }
-                else if (currentByte == 0x00) // this should never happen
-                {
-                    endNow = true;
-                }
-                if (endNow == true)
+
+                // If there was an issue
+                if (endNow)
                     break;
-                byte[] currentString = data.ReadBytes(currentByte); // System.Text.Encoding.ASCII.GetString(currentString);
+
+                // Read and add the string as a byte array
+                byte[] currentString = data.ReadBytes(currentByte);
                 stringList.Add(currentString);
+
                 counter++;
                 if (languageSection)
-                {
                     languageSectionCounter++;
-                }
             }
-            
-            // Strings stored as byte array since one "string" can contain multiple null-terminated strings.
+
             return [.. stringList];
         }
     }
