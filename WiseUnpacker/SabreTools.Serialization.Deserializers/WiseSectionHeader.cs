@@ -24,7 +24,6 @@ namespace SabreTools.Serialization.Deserializers
                 long initialOffset = data.Position;
 
                 var header = ParseWiseSectionHeader(data, initialOffset);
-
                 if (header == null)
                     return null;
                 
@@ -80,10 +79,11 @@ namespace SabreTools.Serialization.Deserializers
             }
             
             if (header.Version == null)
-            {
-                // TODO: error output
                 return null;
-            }
+            
+
+            if (localWisOffset < initialOffset)
+                return null;
 
             // If the header length couldn't be determined
             if (headerLength < 0)
@@ -92,6 +92,7 @@ namespace SabreTools.Serialization.Deserializers
             //Seek back to the beginning of the section
             data.Seek(initialOffset, 0);
 
+            // Read common values
             header.UnknownDataSize = data.ReadUInt32LittleEndian();
             header.SecondExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.UnknownValue2 = data.ReadUInt32LittleEndian();
@@ -99,7 +100,6 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue4 = data.ReadUInt32LittleEndian();
             header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
-            // Read common values
 
             if (headerLength > 6)
             {
@@ -130,11 +130,10 @@ namespace SabreTools.Serialization.Deserializers
 
             PreStringValuesHelper(data, header, initialOffset, localWisOffset, header.Version, out int preStringBytesSize);
             
-            byte[][]? stringArrays = StringHelper(data, header, initialOffset, localWisOffset, preStringBytesSize);
+            byte[][]? stringArrays = StringHelper(data, header, preStringBytesSize);
             if (stringArrays == null)
-            {
                 return null;
-            }
+            
             header.Strings = stringArrays;
             
             // Should really be done in the wrapper, but almost everything there is static so there's no good place
@@ -146,6 +145,16 @@ namespace SabreTools.Serialization.Deserializers
             return header;
         }
 
+        /// <summary>
+        /// Attempts to read the pre-string bytes that lay out how to read the strings.
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <param name="header">Section header</param>
+        /// <param name="initialOffset">Initial offset to use in address comparisons</param>
+        /// <param name="localWisOffset">Offset of WIS string, used to determine some other offsets and values</param>
+        /// <param name="version">What might be a version value for the .WISE installer</param>
+        /// <param name="preStringBytesSize">Assumed size of the pre-string bytes. Currently, not always accurate.</param>
+        /// <returns>True on success, false on failure.</returns>
         private static bool PreStringValuesHelper(Stream data, SectionHeader header, long initialOffset, int localWisOffset, byte[] version, out int preStringBytesSize)
         {
             data.Seek(initialOffset + localWisOffset, 0);
@@ -187,8 +196,14 @@ namespace SabreTools.Serialization.Deserializers
             return true;
         }
 
-        private static byte[][]? StringHelper(Stream data, SectionHeader header, long initialOffset,
-            int localWisOffset, int preStringBytesSize)
+        /// <summary>
+        /// Attempts to read the string section.
+        /// </summary>
+        /// <param name="data">Stream to parse</param>
+        /// <param name="header">Section header</param>
+        /// <param name="preStringBytesSize">Assumed size of the pre-string bytes. Currently, not always accurate.</param>
+        /// <returns>Array of byte arrays representing strings on success, null on failure.</returns>
+        private static byte[][]? StringHelper(Stream data, SectionHeader header, int preStringBytesSize)
         {
             header.PreStringValues = data.ReadBytes(preStringBytesSize);
             List<byte[]> stringList = new List<byte[]>(); // List of string bytes to be set to final value
