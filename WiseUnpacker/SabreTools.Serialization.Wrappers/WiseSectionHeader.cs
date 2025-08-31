@@ -79,8 +79,8 @@ namespace SabreTools.Serialization.Wrappers
         /// <inheritdoc cref="SectionHeader.Version"/>
         public byte[]? Version => Model.Version;
 
-        /// <inheritdoc cref="SectionHeader.StringValues"/>
-        public byte[]? StringValues => Model.StringValues;
+        /// <inheritdoc cref="SectionHeader.PreStringValues"/>
+        public byte[]? PreStringValues => Model.PreStringValues;
         
         /// <inheritdoc cref="SectionHeader.Strings"/>
         public byte[][]? Strings => Model.Strings;

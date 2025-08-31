@@ -169,7 +169,7 @@ namespace SabreTools.Models.WiseInstaller
         /// Byte array representing string lengths and info. Individual strings not predefined since number of strings
         /// will likely vary between many installers.
         /// </summary>
-        public byte[]? StringValues { get; set; }
+        public byte[]? PreStringValues { get; set; }
 
         /// <summary>
         /// Strings for the section. Size and any breakup of strings currently unknown.

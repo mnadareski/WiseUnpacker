@@ -128,9 +128,14 @@ namespace SabreTools.Serialization.Deserializers
             // Parse strings
             // TODO: Count size of string section for later size verification
 
-            PreStringValuesHelper(data, ref header, initialOffset, localWisOffset, out int preStringBytesSize);
+            PreStringValuesHelper(data, header, initialOffset, localWisOffset, header.Version, out int preStringBytesSize);
             
-            StringHelper(data, ref header, initialOffset, localWisOffset, preStringBytesSize);
+            byte[][]? stringArrays = StringHelper(data, header, initialOffset, localWisOffset, preStringBytesSize);
+            if (stringArrays == null)
+            {
+                return null;
+            }
+            header.Strings = stringArrays;
             
             // Should really be done in the wrapper, but almost everything there is static so there's no good place
             if (header.UnknownDataSize != 0) // Not sure what this data is. Might be a wisescript?
@@ -141,17 +146,17 @@ namespace SabreTools.Serialization.Deserializers
             return header;
         }
 
-        private static void PreStringValuesHelper(Stream data, ref SectionHeader header, long initialOffset, int localWisOffset, out int preStringBytesSize)
+        private static bool PreStringValuesHelper(Stream data, SectionHeader header, long initialOffset, int localWisOffset, byte[] version, out int preStringBytesSize)
         {
             data.Seek(initialOffset + localWisOffset, 0);
             header.TmpString = data.ReadNullTerminatedAnsiString();
             header.GuidString = data.ReadNullTerminatedAnsiString();
             // TODO: better way to figure out how far it's needed to advance?
             int versionSize;
-            if (header.Version[header.Version.Length - 1] == 0x02)
-                versionSize = header.Version[header.Version.Length - 3];
+            if (version[version.Length - 1] == 0x02)
+                versionSize = version[version.Length - 3];
             else
-                versionSize = header.Version[header.Version.Length - 2];
+                versionSize = version[version.Length - 2];
             
             if (versionSize != 1) // third byte seems to indicate size of NonWiseVer
             {
@@ -174,16 +179,18 @@ namespace SabreTools.Serialization.Deserializers
             
             header.FontSize = data.ReadByte(); 
             preStringBytesSize = WiseSectionPreStringBytesSize[localWisOffset];
-            if (header.Version[1] == 0x01)
+            if (version[1] == 0x01)
             {
                 preStringBytesSize = 2; // hack for Codesited5.exe , very early and very strange.
             }
+            
+            return true;
         }
 
-        private static void StringHelper(Stream data, ref SectionHeader header, long initialOffset,
+        private static byte[][]? StringHelper(Stream data, SectionHeader header, long initialOffset,
             int localWisOffset, int preStringBytesSize)
         {
-                        header.StringValues = data.ReadBytes(preStringBytesSize);
+            header.PreStringValues = data.ReadBytes(preStringBytesSize);
             List<byte[]> stringList = new List<byte[]>(); // List of string bytes to be set to final value
             int counter = 0;
             bool endNow = false;
@@ -191,7 +198,7 @@ namespace SabreTools.Serialization.Deserializers
             int languageSectionCounter = 0;
             while (counter < preStringBytesSize) // Iterate pre-string byte array
             {
-                byte currentByte = header.StringValues[counter];
+                byte currentByte = header.PreStringValues[counter];
                 if (languageSectionCounter == 2) // now doing third byte after language section begins
                 {
                     if (currentByte == 0x00) // this should never happen.
@@ -201,7 +208,7 @@ namespace SabreTools.Serialization.Deserializers
                     }
                     else if (currentByte == 0x01) 
                     {
-                        int extraLanguages = header.StringValues[counter + 1];
+                        int extraLanguages = header.PreStringValues[counter + 1];
                         for (int i = 0; i < extraLanguages; i++)
                         {
                             byte[]? incrementBytes = data.ReadBytes(2);
@@ -237,7 +244,7 @@ namespace SabreTools.Serialization.Deserializers
                             endNow = true;
                             break;
                         }
-                        currentByte = header.StringValues[counter];
+                        currentByte = header.PreStringValues[counter];
                         
                         // 0x01 followed by one more 0x01 seems to indicate to skip 2 null bytes, but 0x01 followed by
                         // three more 0x01 seems to indicate an unspecified length of null bytes that must be skipped.
@@ -288,7 +295,7 @@ namespace SabreTools.Serialization.Deserializers
             }
             
             // Strings stored as byte array since one "string" can contain multiple null-terminated strings.
-            header.Strings = [.. stringList]; 
+            return [.. stringList];
         }
     }
 }
