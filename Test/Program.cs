@@ -119,47 +119,8 @@ namespace Test
 
                 // Try to find the overlay header
                 if (!WiseOverlayHeader.FindOverlayHeader(stream, options.Debug, out var header) || header == null)
-                { 
-                    stream.Seek(0, SeekOrigin.Begin);
-                    IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
-                    bool matchFound = false;
-                    if (pe is PortableExecutable pex)
-                    {
-                        // Check section data
-                        foreach (var section in pex.Model.SectionTable ?? [])
-                        {
-                            string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
-                            long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
-                            stream.Seek(sectionOffset, SeekOrigin.Begin);
-
-                            // Check after the resource table
-                            if (sectionName == ".WISE")
-                            {
-                                matchFound = true;
-                                // End of section
-                                uint sectionSize = section.SizeOfRawData;
-                                stream.Seek(sectionOffset, SeekOrigin.Begin);
-                                byte[] sectionData = stream.ReadBytes((int)sectionSize);
-                                MemoryStream sectionDataStream = new MemoryStream();
-                                sectionDataStream.Write(sectionData, 0, sectionData.Length);
-                                sectionDataStream.Seek(0, SeekOrigin.Begin);
-                                if (WiseSectionHeader.ExtractAll(sectionDataStream, outputDirectory, options.Debug))
-                                {
-                                    Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
-                                    _statistics.AddFailedExtractPath(file);
-                                }
-                            }
-                        }
-                    }
-                    if (!matchFound)
-                    {
-                        _statistics.AddInvalidPath(file);
-                        Console.WriteLine($"No valid header could be found in {file}, skipping...");
-                    }
+                {
+                    WiseSectionHelper(stream, outputDirectory, options, file);
                     return;
                 }
 
@@ -203,6 +164,60 @@ namespace Test
                 Console.WriteLine(options.Debug ? ex : "[Exception opening file, please try again]");
                 Console.WriteLine();
             }
+        }
+        
+        /// <summary>
+        /// Helper method to check for .WISE section executable.
+        /// </summary>
+        /// <param name="stream">Stream that represents the extractable data</param>
+        /// <param name="file">File path</param>
+        /// <param name="outputDirectory">Output directory path</param>
+        /// <param name="options">User-defined options</param>
+        private static void WiseSectionHelper(Stream stream, string outputDirectory, Options options, string file)
+        {
+#if NETCOREAPP
+
+#endif
+                    stream.Seek(0, SeekOrigin.Begin);
+                    IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
+                    bool matchFound = false;
+                    if (pe is PortableExecutable pex)
+                    {
+                        // Check section data
+                        foreach (var section in pex.Model.SectionTable ?? [])
+                        {
+                            string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
+                            long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                            stream.Seek(sectionOffset, SeekOrigin.Begin);
+
+                            // Check after the resource table
+                            if (sectionName == ".WISE")
+                            {
+                                matchFound = true;
+                                // End of section
+                                uint sectionSize = section.SizeOfRawData;
+                                stream.Seek(sectionOffset, SeekOrigin.Begin);
+                                byte[] sectionData = stream.ReadBytes((int)sectionSize);
+                                MemoryStream sectionDataStream = new MemoryStream();
+                                sectionDataStream.Write(sectionData, 0, sectionData.Length);
+                                sectionDataStream.Seek(0, SeekOrigin.Begin);
+                                if (WiseSectionHeader.ExtractAll(sectionDataStream, outputDirectory, options.Debug))
+                                {
+                                    Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
+                                    _statistics.AddFailedExtractPath(file);
+                                }
+                            }
+                        }
+                    }
+                    if (!matchFound)
+                    {
+                        _statistics.AddInvalidPath(file);
+                        Console.WriteLine($"No valid header could be found in {file}, skipping...");
+                    }
         }
 
         /// <summary>
