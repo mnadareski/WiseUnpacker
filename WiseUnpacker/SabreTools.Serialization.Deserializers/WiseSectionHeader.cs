@@ -215,10 +215,6 @@ namespace SabreTools.Serialization.Deserializers
         /// <returns>The filled string table on success, false otherwise</returns>
         private static byte[][]? ParseStringTable(Stream data, byte[] preStringValues)
         {
-            // QUESTION: Once `languageSection` below is set, it never
-            // seems to get unset. Is that intentional? Does it indicate
-            // that a new section has started entirely?
-
             // Setup the loop variables
             List<byte[]> stringList = [];
             int counter = 0;
@@ -234,43 +230,23 @@ namespace SabreTools.Serialization.Deserializers
                 if (currentByte == 0x00)
                     break;
 
-                // QUESTION: You only have 2 cases here, one of
-                // which never actually increments the counter.
-                // It's unclear what the `else` statement would
-                // be and if that would be considered an error case.
-                // My poor understanding of the code is reading that
-                // Only values of `0x01` and... something unknown
-                // are valid. The two cases here seem unrelated
-                // otherwise.
-
                 // Now doing third byte after language section begins
-                if (languageSectionCounter == 2)
+                if (currentByte == 0x01 && languageSectionCounter == 2)
                 {
-                    // This should never happen
-                    if (currentByte == 0x00)
-                        break;
-
-                    // QUESTION: What happens if the current byte is not 0 or 1?
-                    // Following this code, it seems to indicate that it just
-                    // reads the next string and continues. Is that the correct
-                    // behavior?
-
-                    if (currentByte == 0x01)
+                    int extraLanguages = preStringValues[counter + 1];
+                    for (int i = 0; i < extraLanguages; i++)
                     {
-                        int extraLanguages = preStringValues[counter + 1];
-                        for (int i = 0; i < extraLanguages; i++)
-                        {
-                            byte[]? incrementBytes = data.ReadBytes(2);
-                            string? extraLanguageString = data.ReadNullTerminatedAnsiString();
-                            if (extraLanguageString == null)
-                                return null;
+                        byte[]? incrementBytes = data.ReadBytes(2);
+                        string? extraLanguageString = data.ReadNullTerminatedAnsiString();
+                        if (extraLanguageString == null)
+                            return null;
 
-                            byte[]? extraLanguageStringArray = Encoding.ASCII.GetBytes(extraLanguageString);
-                            stringList.Add(incrementBytes);
-                            stringList.Add(extraLanguageStringArray);
-                        }
-                        break;
+                        byte[]? extraLanguageStringArray = Encoding.ASCII.GetBytes(extraLanguageString);
+                        stringList.Add(incrementBytes);
+                        stringList.Add(extraLanguageStringArray);
                     }
+
+                    break;
                 }
 
                 // Prepends non-string-size indicators
@@ -282,12 +258,6 @@ namespace SabreTools.Serialization.Deserializers
                     counter++;
                     for (int i = counter; i <= preStringValues.Length; i++)
                     {
-                        // QUESTION: Normally in cases like this, you'd want to
-                        // compare to the last value, not the one at the length.
-                        // In C#, `arr[arr.Length]` is invalid because the final
-                        // index is `arr.Length - 1`. This for loop feels like it
-                        // will error out in that case.
-
                         if (i == preStringValues.Length)
                         {
                             byte checkForZero;
@@ -300,11 +270,6 @@ namespace SabreTools.Serialization.Deserializers
                             endNow = true;
                             break;
                         }
-
-                        // QUESTION: Did you mean for this to pull the
-                        // value from `i` and not `counter`? It seems like
-                        // it would just end up pulling the same value over
-                        // and over again otherwise.
 
                         currentByte = preStringValues[counter];
 
