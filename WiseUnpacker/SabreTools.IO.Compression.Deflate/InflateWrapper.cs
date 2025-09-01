@@ -307,7 +307,7 @@ namespace SabreTools.IO.Compression.Deflate
                 if (extraBytes.Length != header.ExtraFieldLength)
                     return null;
 
-                header.ExtraField = extraBytes;
+                // header.ExtraField = extraBytes;
             }
 
             return header;
