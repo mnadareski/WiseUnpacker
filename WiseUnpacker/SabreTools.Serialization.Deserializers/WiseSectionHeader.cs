@@ -27,24 +27,25 @@ namespace SabreTools.Serialization.Deserializers
                     return null;
 
                 // Main MSI file
-                if (header.MsiFileEntryLength == 0)
+                // If these go wrong, then there actually is a major issue, and the fallback won't work.
+                if (header.MsiFileEntryLength == 0) 
                     return null;
                 else if (header.MsiFileEntryLength >= data.Length)
                     return null;
 
                 // First executable file
                 if (header.FirstExecutableFileEntryLength >= data.Length)
-                    return null;
+                    return header;
 
                 // Second executable file
                 if (header.SecondExecutableFileEntryLength >= data.Length)
-                    return null;
+                    return header;
 
                 return header;
             }
             catch
             {
-                // Ignore the actual error
+                // Could header somehow be returned here too?
                 return null;
             }
         }
@@ -78,14 +79,15 @@ namespace SabreTools.Serialization.Deserializers
                 header.Version = data.ReadBytes(versionOffset);
                 wisOffset = offset;
             }
+            bool earlyReturn = false;
 
             // If the header is invalid
             if (header.Version == null)
-                return null;
+                earlyReturn = true;
             if (wisOffset < 0)
-                return null;
+                earlyReturn =  true;
             if (headerLength < 0)
-                return null;
+                earlyReturn = true;
 
             //Seek back to the beginning of the section
             data.Seek(initialOffset, 0);
@@ -98,6 +100,11 @@ namespace SabreTools.Serialization.Deserializers
             header.UnknownValue4 = data.ReadUInt32LittleEndian();
             header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
             header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
+
+            if (earlyReturn)
+            {
+                return header;
+            }
 
             if (headerLength > 6)
             {
@@ -133,7 +140,7 @@ namespace SabreTools.Serialization.Deserializers
             // Parse the pre-string section
             int preStringBytesSize = GetPreStringBytesSize(data, header, wisOffset);
             if (preStringBytesSize <= 0)
-                return null;
+                return header;
 
             // Read the pre-string bytes
             header.PreStringValues = data.ReadBytes(preStringBytesSize);
@@ -142,7 +149,7 @@ namespace SabreTools.Serialization.Deserializers
             // TODO: Count size of string section for later size verification
             byte[][]? stringArrays = ParseStringTable(data, header.PreStringValues);
             if (stringArrays == null)
-                return null;
+                return header;
 
             // Set the string arrays
             header.Strings = stringArrays;
