@@ -32,9 +32,9 @@ namespace SabreTools.Models.WiseInstaller
     public class SectionHeader
     {
         /// <summary>
-        /// Unknown value 0.
+        /// Unknown Data Size.
         /// </summary>
-        public uint UnknownValue0 { get; set; }
+        public uint UnknownDataSize { get; set; }
 
         /// <summary>
         /// Value 1, (possibly?) the size of the second file entry. This has thus far always been observed
@@ -83,9 +83,9 @@ namespace SabreTools.Models.WiseInstaller
         public uint UnknownValue8 { get; set; }
 
         /// <summary>
-        /// Unknown value 9.
+        /// Value 9, the size of the third entry.
         /// </summary>
-        public uint UnknownValue9 { get; set; }
+        public uint ThirdExecutableFileEntryLength { get; set; }
 
         /// <summary>
         /// Unknown value 10.
@@ -136,10 +136,44 @@ namespace SabreTools.Models.WiseInstaller
         /// Byte array representing version. Byte array used due to unknown size and type for version.
         /// </summary>
         public byte[]? Version { get; set; }
+        
+        /// <summary>
+        /// String representing the WIS[etc].TMP string
+        /// </summary>
+        public string? TmpString { get; set; }
+        
+        /// <summary>
+        /// String representing the GUID string.
+        /// </summary>
+        public string? GuidString { get; set; }
+        
+        /// <summary>
+        /// String representing a version number. This isn't the version of the .WISE installer itself, as it is
+        /// entirely inconsistent even within the same week. Likely refers to a version for what's being installed
+        /// rather than the installer itself
+        /// </summary>
+        public string? NonWiseVersion { get; set; }
+
+        /// <summary>
+        /// Unknown. May also refer to a non-value for pre-78-offset executables and only a value for 78-offset-onwards
+        /// ones.
+        /// </summary>
+        public byte[]? PreFontValue {get; set;}
+        
+        /// <summary>
+        /// Font size
+        /// </summary>
+        public int FontSize { get; set; }
+        
+        /// <summary>
+        /// Byte array representing string lengths and info. Individual strings not predefined since number of strings
+        /// will likely vary between many installers.
+        /// </summary>
+        public byte[]? PreStringValues { get; set; }
 
         /// <summary>
         /// Strings for the section. Size and any breakup of strings currently unknown.
         /// </summary>
-        public string? Strings { get; set; }
+        public byte[][]? Strings { get; set; }
     }
 }

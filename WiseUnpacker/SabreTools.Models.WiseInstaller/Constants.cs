@@ -90,5 +90,18 @@ namespace SabreTools.Models.WiseInstaller
             {78, 6},
             {82, 6},
         };
+        
+        /// <summary>
+        /// Size of pre-string byte array, guessed to be correlated with "WIS" string offset.
+        /// </summary>
+        public static readonly Dictionary<int, int> WiseSectionPreStringBytesSize = new Dictionary<int, int>()
+        {
+            {32, 8},
+            {33, 16},
+            {41, 18},
+            {77, 19},
+            {78, 19},
+            {82, 19}, 
+        };
     }
 }

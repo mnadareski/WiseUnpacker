@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
+using SabreTools.Models.PortableExecutable;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
 
@@ -118,8 +120,7 @@ namespace Test
                 // Try to find the overlay header
                 if (!WiseOverlayHeader.FindOverlayHeader(stream, options.Debug, out var header) || header == null)
                 {
-                    _statistics.AddInvalidPath(file);
-                    Console.WriteLine($"No valid header could be found in {file}, skipping...");
+                    TryExtractWiseSection(stream, outputDirectory, options, file);
                     return;
                 }
 
@@ -608,6 +609,77 @@ namespace Test
             {
                 Console.WriteLine(value: $"Failed to extract {file}!");
                 _statistics.AddFailedExtractPath(file);
+            }
+        }
+
+        /// <summary>
+        /// Helper method to check for .WISE section executable.
+        /// </summary>
+        /// <param name="stream">Stream that represents the extractable data</param>
+        /// <param name="file">File path</param>
+        /// <param name="outputDirectory">Output directory path</param>
+        /// <param name="options">User-defined options</param>
+        private static bool TryExtractWiseSection(Stream stream, string outputDirectory, Options options, string file)
+        {
+            stream.Seek(0, SeekOrigin.Begin);
+
+            // Try to create the executable wrapper
+            var exe = WrapperFactory2.CreateExecutableWrapper(stream);
+            if (exe is not PortableExecutable pex)
+            {
+                _statistics.AddInvalidPath(file);
+                Console.WriteLine($"No valid header could be found in {file}, skipping...");
+                return false;
+            }
+
+            // Check section data
+            SectionHeader? sectionHeader = null;
+            long? sectionOffset = null;
+            foreach (var section in pex.Model.SectionTable ?? [])
+            {
+                string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
+
+                // Check if the section name is .WISE
+                if (sectionName == ".WISE")
+                {
+                    sectionHeader = section;
+                    sectionOffset = sectionHeader.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                    break;
+                }
+            }
+
+            // If the section couldn't be found
+            if (sectionOffset == null || sectionHeader == null)
+            {
+                _statistics.AddInvalidPath(file);
+                Console.WriteLine($"No valid header could be found in {file}, skipping...");
+                return false;
+            }
+
+            // Get the size of the section and seek to the start
+            uint sectionSize = sectionHeader.SizeOfRawData;
+            stream.Seek((long)sectionOffset, SeekOrigin.Begin);
+
+            // Write section data to new stream
+            byte[] sectionData = stream.ReadBytes((int)sectionSize);
+            var header = WiseSectionHeader.Create(sectionData, 0);
+            if (header == null)
+            {
+                if (options.Debug) Console.Error.WriteLine("Could not parse the section header");
+                return false;
+            }
+
+            // Attempt to extract section
+            if (header.Extract(outputDirectory, options.Debug))
+            {
+                Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
+                _statistics.AddFailedExtractPath(file);
+                return false;
             }
         }
 
