@@ -178,46 +178,46 @@ namespace Test
 #if NETCOREAPP
 
 #endif
-                    stream.Seek(0, SeekOrigin.Begin);
-                    IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
-                    bool matchFound = false;
-                    if (pe is PortableExecutable pex)
-                    {
-                        // Check section data
-                        foreach (var section in pex.Model.SectionTable ?? [])
-                        {
-                            string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
-                            long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
-                            stream.Seek(sectionOffset, SeekOrigin.Begin);
+            stream.Seek(0, SeekOrigin.Begin);
+            IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
+            bool matchFound = false;
+            if (pe is PortableExecutable pex)
+            {
+                // Check section data
+                foreach (var section in pex.Model.SectionTable ?? [])
+                {
+                    string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
+                    long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                    stream.Seek(sectionOffset, SeekOrigin.Begin);
 
-                            // Check after the resource table
-                            if (sectionName == ".WISE")
-                            {
-                                matchFound = true;
-                                // End of section
-                                uint sectionSize = section.SizeOfRawData;
-                                stream.Seek(sectionOffset, SeekOrigin.Begin);
-                                byte[] sectionData = stream.ReadBytes((int)sectionSize);
-                                MemoryStream sectionDataStream = new MemoryStream();
-                                sectionDataStream.Write(sectionData, 0, sectionData.Length);
-                                sectionDataStream.Seek(0, SeekOrigin.Begin);
-                                if (WiseSectionHeader.ExtractAll(sectionDataStream, outputDirectory, options.Debug))
-                                {
-                                    Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
-                                    _statistics.AddFailedExtractPath(file);
-                                }
-                            }
+                    // Check after the resource table
+                    if (sectionName == ".WISE")
+                    {
+                        matchFound = true;
+                        // End of section
+                        uint sectionSize = section.SizeOfRawData;
+                        stream.Seek(sectionOffset, SeekOrigin.Begin);
+                        byte[] sectionData = stream.ReadBytes((int)sectionSize);
+                        MemoryStream sectionDataStream = new MemoryStream();
+                        sectionDataStream.Write(sectionData, 0, sectionData.Length);
+                        sectionDataStream.Seek(0, SeekOrigin.Begin);
+                        if (WiseSectionHeader.ExtractAll(sectionDataStream, outputDirectory, options.Debug))
+                        {
+                            Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
+                        }
+                        else
+                        {
+                            Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
+                            _statistics.AddFailedExtractPath(file);
                         }
                     }
-                    if (!matchFound)
-                    {
-                        _statistics.AddInvalidPath(file);
-                        Console.WriteLine($"No valid header could be found in {file}, skipping...");
-                    }
+                }
+            }
+            if (!matchFound)
+            {
+                _statistics.AddInvalidPath(file);
+                Console.WriteLine($"No valid header could be found in {file}, skipping...");
+            }
         }
 
         /// <summary>
