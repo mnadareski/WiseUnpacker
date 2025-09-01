@@ -4,6 +4,7 @@ using System.Text;
 using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
+using SabreTools.Models.PortableExecutable;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Interfaces;
 using SabreTools.Serialization.Wrappers;
@@ -177,40 +178,44 @@ namespace Test
         {
             stream.Seek(0, SeekOrigin.Begin);
             IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
-            bool matchFound = false;
+            SectionHeader? sectionHeader = null;
+            long? sectionOffset = null;
             if (pe is PortableExecutable pex)
             {
                 // Check section data
                 foreach (var section in pex.Model.SectionTable ?? [])
                 {
                     string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
-                    long sectionOffset = section.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
-                    stream.Seek(sectionOffset, SeekOrigin.Begin);
-
+                    
                     // Check after the resource table
                     if (sectionName == ".WISE")
                     {
-                        matchFound = true;
-                        // End of section
-                        uint sectionSize = section.SizeOfRawData;
-                        stream.Seek(sectionOffset, SeekOrigin.Begin);
-                        byte[] sectionData = stream.ReadBytes((int)sectionSize);
-                        MemoryStream sectionDataStream = new MemoryStream();
-                        sectionDataStream.Write(sectionData, 0, sectionData.Length);
-                        sectionDataStream.Seek(0, SeekOrigin.Begin);
-                        if (WiseSectionHeader.ExtractAll(sectionDataStream, outputDirectory, options.Debug))
-                        {
-                            Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
-                        }
-                        else
-                        {
-                            Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
-                            _statistics.AddFailedExtractPath(file);
-                        }
+                        sectionHeader = section;
+                        sectionOffset = sectionHeader.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
+                        break;
                     }
                 }
             }
-            if (!matchFound)
+            if (sectionOffset != null && sectionHeader != null)
+            {
+                // End of section
+                uint sectionSize = sectionHeader.SizeOfRawData;
+                stream.Seek((long)sectionOffset, SeekOrigin.Begin);
+                byte[] sectionData = stream.ReadBytes((int)sectionSize);
+                MemoryStream sectionDataStream = new MemoryStream();
+                sectionDataStream.Write(sectionData, 0, sectionData.Length);
+                sectionDataStream.Seek(0, SeekOrigin.Begin);
+                if (WiseSectionHeader.ExtractAll(sectionDataStream, outputDirectory, options.Debug))
+                {
+                    Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
+                }
+                else
+                {
+                    Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
+                    _statistics.AddFailedExtractPath(file);
+                }
+            }
+            else
             {
                 _statistics.AddInvalidPath(file);
                 Console.WriteLine($"No valid header could be found in {file}, skipping...");
