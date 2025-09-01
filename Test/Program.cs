@@ -175,9 +175,6 @@ namespace Test
         /// <param name="options">User-defined options</param>
         private static void WiseSectionHelper(Stream stream, string outputDirectory, Options options, string file)
         {
-#if NETCOREAPP
-
-#endif
             stream.Seek(0, SeekOrigin.Begin);
             IWrapper? pe = WrapperFactory2.CreateExecutableWrapper(stream);
             bool matchFound = false;
