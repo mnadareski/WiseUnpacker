@@ -198,7 +198,6 @@ namespace Test
             }
             if (sectionOffset != null && sectionHeader != null)
             {
-                // End of section
                 uint sectionSize = sectionHeader.SizeOfRawData;
                 stream.Seek((long)sectionOffset, SeekOrigin.Begin);
                 byte[] sectionData = stream.ReadBytes((int)sectionSize);
