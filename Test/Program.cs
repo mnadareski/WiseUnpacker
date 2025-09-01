@@ -619,7 +619,7 @@ namespace Test
         /// <param name="file">File path</param>
         /// <param name="outputDirectory">Output directory path</param>
         /// <param name="options">User-defined options</param>
-        private static void TryExtractWiseSection(Stream stream, string outputDirectory, Options options, string file)
+        private static bool TryExtractWiseSection(Stream stream, string outputDirectory, Options options, string file)
         {
             stream.Seek(0, SeekOrigin.Begin);
 
@@ -629,7 +629,7 @@ namespace Test
             {
                 _statistics.AddInvalidPath(file);
                 Console.WriteLine($"No valid header could be found in {file}, skipping...");
-                return;
+                return false;
             }
 
             // Check section data
@@ -653,7 +653,7 @@ namespace Test
             {
                 _statistics.AddInvalidPath(file);
                 Console.WriteLine($"No valid header could be found in {file}, skipping...");
-                return;
+                return false;
             }
 
             // Get the size of the section and seek to the start
@@ -666,18 +666,20 @@ namespace Test
             if (header == null)
             {
                 if (options.Debug) Console.Error.WriteLine("Could not parse the section header");
-                return;
+                return false;
             }
 
             // Attempt to extract section
             if (header.Extract(outputDirectory, options.Debug))
             {
                 Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
+                return true;
             }
             else
             {
                 Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
                 _statistics.AddFailedExtractPath(file);
+                return false;
             }
         }
 

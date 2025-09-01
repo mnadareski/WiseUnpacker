@@ -163,9 +163,7 @@ namespace SabreTools.Serialization.Wrappers
                 if (includeDebug) Console.Error.WriteLine("Could not extract header-defined files");
                 return false;
             }
-
-            // TODO: strings are whatever is between the dataStart and the end of the header. Hook this up after everything else is fixed.
-
+            
             return true;
         }
 
@@ -180,12 +178,12 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>True if the files extracted successfully, false otherwise</returns>
         private bool ExtractHeaderDefinedFiles(string outputDirectory, bool includeDebug)
         {
+            // TODO: All reads need to be sequential. At the moment, the data position is at the start of the header;
+            // TODO: it needs to be wherever the header parser was when it finished. This applies to all logic in the
+            // TODO: WiseSectionHeader deserializer and wrapper code.
+            
             // Extract first executable, if it exists
             if (ExtractFile("FirstExecutable.exe", outputDirectory, FirstExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
-                return false;
-
-            // Extract second executable, if it exists
-            if (ExtractFile("SecondExecutable.exe", outputDirectory, SecondExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                 return false;
 
             // Extract second executable, if it exists
@@ -193,6 +191,10 @@ namespace SabreTools.Serialization.Wrappers
             // the second executable appears to be some unrelated value that's larger than the second executable
             // actually is. Currently unable to extract properly in these cases, as no header value in such installers
             // seems to actually correspond to the real size of the second executable.
+            if (ExtractFile("SecondExecutable.exe", outputDirectory, SecondExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
+                return false;
+
+            // Extract third executable, if it exists
             if (ExtractFile("ThirdExecutable.exe", outputDirectory, ThirdExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                 return false;
 
@@ -201,7 +203,7 @@ namespace SabreTools.Serialization.Wrappers
             {
                 // Fallback- seek to the position that's the length of the MSI file entry from the end, then try and
                 // extract from there.
-                _dataSource.Seek(MsiFileEntryLength, SeekOrigin.End);
+                _dataSource.Seek(-MsiFileEntryLength, SeekOrigin.End);
                 if (ExtractFile("ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
                     return false; // The fallback also failed.
             }
@@ -223,7 +225,6 @@ namespace SabreTools.Serialization.Wrappers
             uint entrySize,
             bool includeDebug)
         {
-            // Debug output
             if (includeDebug) Console.WriteLine($"Attempting to extract {filename}");
 
             // Extract the file
@@ -265,11 +266,10 @@ namespace SabreTools.Serialization.Wrappers
             // Debug output
             if (includeDebug) Console.WriteLine($"Offset: {_dataSource.Position:X8}, Expected Read: {entrySize}, Expected Write:{entrySize - 4}"); // clamp to zero
 
-            //if (includeDebug) Console.WriteLine($"Offset: {source.Position:X8}, Expected Read: {entrySize}, Expected Write: {entrySize - 4}, Expected CRC-32: {expected.Crc32:X8}");    
             // Check the validity of the inputs
             if (entrySize == 0)
             {
-                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read 0 bytes");
+                if (includeDebug) Console.Error.WriteLine("Not attempting to extract, expected to read 0 bytes");
                 return ExtractionStatus.GOOD; // If size is 0, then it shouldn't be extracted
             }
             else if (entrySize > (_dataSource.Length - _dataSource.Position))
@@ -297,7 +297,7 @@ namespace SabreTools.Serialization.Wrappers
 
                     if (expectedCrc32 != actualCrc32)
                     {
-                        if (includeDebug) Console.Error.WriteLine($"Mismatched CRC-32 values!");
+                        if (includeDebug) Console.Error.WriteLine("Mismatched CRC-32 values!");
                         return ExtractionStatus.BAD_CRC;
                     }
                 }
@@ -307,7 +307,7 @@ namespace SabreTools.Serialization.Wrappers
             }
             catch
             {
-                if (includeDebug) Console.Error.WriteLine($"Could not extract");
+                if (includeDebug) Console.Error.WriteLine("Could not extract");
                 return ExtractionStatus.FAIL;
             }
         }
@@ -327,7 +327,7 @@ namespace SabreTools.Serialization.Wrappers
             // Check the validity of the inputs
             if (entrySize == 0)
             {
-                if (includeDebug) Console.Error.WriteLine($"Not attempting to extract, expected to read 0 bytes");
+                if (includeDebug) Console.Error.WriteLine("Not attempting to extract, expected to read 0 bytes");
                 return ExtractionStatus.GOOD; // If size is 0, then it shouldn't be extracted
             }
             else if (entrySize > (_dataSource.Length - _dataSource.Position))
@@ -342,14 +342,14 @@ namespace SabreTools.Serialization.Wrappers
                 byte[] actual = _dataSource.ReadBytes((int)entrySize);
 
                 // Debug output
-                if (includeDebug) Console.WriteLine($"No CRC-32!");
+                if (includeDebug) Console.WriteLine("No CRC-32!");
 
                 destination.Write(actual, 0, actual.Length);
                 return ExtractionStatus.GOOD;
             }
             catch
             {
-                if (includeDebug) Console.Error.WriteLine($"Could not extract");
+                if (includeDebug) Console.Error.WriteLine("Could not extract");
                 return ExtractionStatus.FAIL;
             }
         }
