@@ -1400,9 +1400,9 @@ namespace SabreTools.Serialization.Wrappers
                 return ExtractWiseOverlay(outputDirectory, includeDebug, source, offset);
 
             // Try to find the section header
-            offset = FindWiseSectionHeader();
-            if (offset > 0 && offset < Length)
-                return ExtractWiseSection(outputDirectory, includeDebug, source, offset);
+            var section = FindWiseSection();
+            if (section != null)
+                return ExtractWiseSection(outputDirectory, includeDebug, source, section);
 
             // Everything else could not extract
             return false;
@@ -1528,15 +1528,21 @@ namespace SabreTools.Serialization.Wrappers
         /// <param name="outputDirectory">Output directory to write to</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <param name="source">Potentially multi-part stream to read</param>
-        /// <param name="offset">Offset to the start of the section header</param>
+        /// <param name="section">Wise section information</param>
         /// <returns>True if extraction succeeded, false otherwise</returns>
-        private bool ExtractWiseSection(string outputDirectory, bool includeDebug, Stream source, long offset)
+        private bool ExtractWiseSection(string outputDirectory, bool includeDebug, Stream source, Models.PortableExecutable.SectionHeader section)
         {
-            // Get the size of the section and seek to the start
-            source.Seek(offset, SeekOrigin.Begin);
+            // Get the offset
+            long offset = section.VirtualAddress.ConvertVirtualAddress(SectionTable);
+            if (offset < 0 || offset >= source.Length)
+                return false;
 
-            // Write section data to new stream
-            var header = WiseSectionHeader.Create(source);
+            // Read the section into a local array
+            int sectionLength = (int)section.SizeOfRawData;
+            byte[]? sectionData = source.ReadFrom(offset, sectionLength, retainPosition: true);
+
+            // Parse the section header
+            var header = WiseSectionHeader.Create(sectionData, 0);
             if (header == null)
             {
                 if (includeDebug) Console.Error.WriteLine("Could not parse the section header");
@@ -1838,14 +1844,14 @@ namespace SabreTools.Serialization.Wrappers
         }
 
         /// <summary>
-        /// Find the location of a Wise section header, if it exists
+        /// Find the location of a Wise section, if it exists
         /// </summary>
-        /// <returns>Offset to the section header on success, -1 otherwise</returns>
-        public long FindWiseSectionHeader()
+        /// <returns>Wise section on success, null otherwise</returns>
+        public Models.PortableExecutable.SectionHeader? FindWiseSection()
         {
             // If the section table is invalid
             if (SectionTable == null)
-                return -1;
+                return null;
 
             // Find the .WISE section
             foreach (var section in SectionTable)
@@ -1854,11 +1860,11 @@ namespace SabreTools.Serialization.Wrappers
                 if (sectionName != ".WISE")
                     continue;
 
-                return section.VirtualAddress.ConvertVirtualAddress(SectionTable);
+                return section;
             }
 
             // Otherwise, it could not be found
-            return -1;
+            return null;
         }
 
         #endregion

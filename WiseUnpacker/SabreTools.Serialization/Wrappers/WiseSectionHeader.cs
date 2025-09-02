@@ -156,7 +156,7 @@ namespace SabreTools.Serialization.Wrappers
                     return null;
 
                 // HACK: Cache the end-of-header offset
-                long endOffset = data.Position;
+                long endOffset = data.Position - currentOffset;
 
                 data.Seek(currentOffset, SeekOrigin.Begin);
                 return new WiseSectionHeader(model, data) { CompressedDataOffset = endOffset};
