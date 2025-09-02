@@ -250,7 +250,7 @@ namespace SabreTools.Serialization.Wrappers
                 return false;
 
             // Extract main MSI file
-            if (ExtractFile("ExtoutputDirectory: ractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
+            if (ExtractFile("ExtractedMsi.msi", outputDirectory, MsiFileEntryLength, includeDebug) != ExtractionStatus.GOOD)
             {
                 // Fallback- seek to the position that's the length of the MSI file entry from the end, then try and
                 // extract from there.
