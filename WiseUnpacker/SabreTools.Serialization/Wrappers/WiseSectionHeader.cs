@@ -24,6 +24,10 @@ namespace SabreTools.Serialization.Wrappers
         /// where the compressed data lives
         /// </summary>
         /// TODO: Find a way for this to be automatically found based on the model
+        ///     Likely would be able to replace most of the unknown values with
+        ///     an array of values followed by padding bytes. This should be sufficient
+        ///     to ensure that all possible values before the temp string are found
+        ///     and read properly
         public long CompressedDataOffset { get; private set; }
         
         /// <inheritdoc cref="SectionHeader.UnknownDataSize"/>
