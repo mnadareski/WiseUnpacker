@@ -120,10 +120,13 @@ namespace Test
 
                 // Figure out if we have an overlay or section
                 long overlayOffset = -1, sectionOffset = -1;
+                SabreTools.Models.PortableExecutable.SectionHeader? wiseSection = null;
                 if (wrapper is PortableExecutable pex)
                 {
                     overlayOffset = pex.FindWiseOverlayHeader();
-                    sectionOffset = pex.FindWiseSectionHeader();
+                    wiseSection = pex.FindWiseSection();
+                    if (wiseSection != null)
+                        sectionOffset = wiseSection.VirtualAddress.ConvertVirtualAddress(pex.SectionTable);
                 }
                 else if (wrapper is NewExecutable nex)
                 {
@@ -182,10 +185,21 @@ namespace Test
                 }
 
                 // Section headers are checked after
-                if (sectionOffset >= 0 && sectionOffset < stream.Length)
+                if (wiseSection != null)
                 {
-                    stream.Seek(sectionOffset, SeekOrigin.Begin);
-                    var sectionHeader = WiseSectionHeader.Create(stream);
+                    // Verify the offset
+                    if (sectionOffset < 0 || sectionOffset >= stream.Length)
+                    {
+                        _statistics.AddErroredPath(file);
+                        return;
+                    }
+
+                    // Read the section into a local array
+                    int sectionLength = (int)wiseSection.SizeOfRawData;
+                    byte[]? sectionData = stream.ReadFrom(sectionOffset, sectionLength, retainPosition: true);
+
+                    // Parse the section header
+                    var sectionHeader = WiseSectionHeader.Create(sectionData, 0);
                     if (sectionHeader == null)
                     {
                         _statistics.AddErroredPath(file);
