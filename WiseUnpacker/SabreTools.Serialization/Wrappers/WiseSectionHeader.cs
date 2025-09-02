@@ -23,50 +23,9 @@ namespace SabreTools.Serialization.Wrappers
         /// Returns the offset relative to the start of the header
         /// where the compressed data lives
         /// </summary>
-        public long CompressedDataOffset
-        {
-            get
-            {
-                long offset = 0;
-
-                offset += 4; // UnknownDataSize
-                offset += 4; // SecondExecutableFileEntryLength
-                offset += 4; // UnknownValue2
-                offset += 4; // UnknownValue3
-                offset += 4; // UnknownValue4
-                offset += 4; // FirstExecutableFileEntryLength
-                offset += 4; // MsiFileEntryLength
-                offset += 4; // UnknownValue7
-                offset += 4; // UnknownValue8
-                offset += 4; // ThirdExecutableFileEntryLength
-                offset += 4; // UnknownValue10
-                offset += 4; // UnknownValue11
-                offset += 4; // UnknownValue12
-                offset += 4; // UnknownValue13
-                offset += 4; // UnknownValue14
-                offset += 4; // UnknownValue15
-                offset += 4; // UnknownValue16
-                offset += 4; // UnknownValue17
-                offset += 4; // UnknownValue18
-                offset += Version?.Length ?? 0;
-                offset += Model.TmpString == null ? 0 : Model.TmpString.Length + 1;
-                offset += Model.GuidString == null ? 0 : Model.GuidString.Length + 1;
-                offset += Model.NonWiseVersion == null ? 0 : Model.NonWiseVersion.Length + 1;
-                offset += Model.PreFontValue == null ? 0 : Model.PreFontValue.Length;
-                offset += 4; // FontSize
-                offset += Model.PreStringValues == null ? 0 : Model.PreStringValues.Length;
-                if (Model.Strings != null)
-                {
-                    foreach (var str in Model.Strings)
-                    {
-                        offset += str.Length;
-                    }
-                }
-
-                return offset;
-            }
-        }
-
+        /// TODO: Find a way for this to be automatically found based on the model
+        public long CompressedDataOffset { get; private set; }
+        
         /// <inheritdoc cref="SectionHeader.UnknownDataSize"/>
         public uint UnknownDataSize => Model.UnknownDataSize;
 
@@ -192,8 +151,11 @@ namespace SabreTools.Serialization.Wrappers
                 if (model == null)
                     return null;
 
+                // HACK: Cache the end-of-header offset
+                long endOffset = data.Position;
+
                 data.Seek(currentOffset, SeekOrigin.Begin);
-                return new WiseSectionHeader(model, data);
+                return new WiseSectionHeader(model, data) { CompressedDataOffset = endOffset};
             }
             catch
             {
