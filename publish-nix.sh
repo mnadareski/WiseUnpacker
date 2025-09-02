@@ -69,9 +69,6 @@ if [ $NO_BUILD = false ]; then
     echo "Restoring Nuget packages"
     dotnet restore
 
-    # Create Nuget Package
-    dotnet pack WiseUnpacker/WiseUnpacker.csproj --output $BUILD_FOLDER
-
     # Build Program
     for FRAMEWORK in "${FRAMEWORKS[@]}"; do
         for RUNTIME in "${RUNTIMES[@]}"; do
@@ -98,15 +95,15 @@ if [ $NO_BUILD = false ]; then
             if [[ $(echo ${SINGLE_FILE_CAPABLE[@]} | fgrep -w $FRAMEWORK) ]]; then
                 # Only include Debug if set
                 if [ $INCLUDE_DEBUG = true ]; then
-                    dotnet publish Test/Test.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true
+                    dotnet publish WiseUnpacker/WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true
                 fi
-                dotnet publish Test/Test.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+                dotnet publish WiseUnpacker/WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
             else
                 # Only include Debug if set
                 if [ $INCLUDE_DEBUG = true ]; then
-                    dotnet publish Test/Test.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT
+                    dotnet publish WiseUnpacker/WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT
                 fi
-                dotnet publish Test/Test.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:DebugType=None -p:DebugSymbols=false
+                dotnet publish WiseUnpacker/WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:DebugType=None -p:DebugSymbols=false
             fi
         done
     done
@@ -114,7 +111,7 @@ fi
 
 # Only create archives if requested
 if [ $NO_ARCHIVE = false ]; then
-    # Create Test archives
+    # Create WiseUnpacker archives
     for FRAMEWORK in "${FRAMEWORKS[@]}"; do
         for RUNTIME in "${RUNTIMES[@]}"; do
             # Output the current build
@@ -138,10 +135,10 @@ if [ $NO_ARCHIVE = false ]; then
 
             # Only include Debug if set
             if [ $INCLUDE_DEBUG = true ]; then
-                cd $BUILD_FOLDER/Test/bin/Debug/${FRAMEWORK}/${RUNTIME}/publish/
+                cd $BUILD_FOLDER/WiseUnpacker/bin/Debug/${FRAMEWORK}/${RUNTIME}/publish/
                 zip -r $BUILD_FOLDER/WiseUnpacker_${FRAMEWORK}_${RUNTIME}_debug.zip .
             fi
-            cd $BUILD_FOLDER/Test/bin/Release/${FRAMEWORK}/${RUNTIME}/publish/
+            cd $BUILD_FOLDER/WiseUnpacker/bin/Release/${FRAMEWORK}/${RUNTIME}/publish/
             zip -r $BUILD_FOLDER/WiseUnpacker_${FRAMEWORK}_${RUNTIME}_release.zip .
         done
     done

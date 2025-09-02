@@ -2,11 +2,11 @@
 
 [![Build and Test](https://github.com/mnadareski/WiseUnpacker/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/mnadareski/WiseUnpacker/actions/workflows/build_and_test.yml)
 
-C# port of the Wise installer extractor [REWise](https://codeberg.org/CYBERDEV/REWise). This currently compiles as a library so it can be used in any C# application. For an example of usage, see [Binary Object Scanner](https://github.com/SabreTools/BinaryObjectScanner).
+This program is a wrapper around a C# port of the Wise installer extractor [REWise](https://codeberg.org/CYBERDEV/REWise). This currently compiles as a library so it can be used in any C# application.
+
+This code used to compile to a library, but all functionality included is now in [SabreTools.Serialization](https://github.com/SabreTools/SabreTools.Serialization). Do not use old versions of the package as there are critical issues found and fixed since it was integrated.
 
 Older verions of this library were based on [E_WISE](https://kannegieser.net/veit/quelle/index_e.htm) and [Heuristic Wise-Setup Unpacker](http://www.angelfire.com/ego/jmeister/hwun/). The majority of the code implementation stemed from HWUN. The exception to this was the non-heuristic detection of archives based on the signatures detected by E_WISE.
-
-Find the link to the Nuget package [here](https://www.nuget.org/packages/WiseUnpacker).
 
 ## Releases
 

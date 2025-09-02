@@ -60,10 +60,7 @@ if (!$NO_BUILD.IsPresent) {
     Write-Host "Restoring Nuget packages"
     dotnet restore
 
-    # Create Nuget Package
-    dotnet pack WiseUnpacker\WiseUnpacker.csproj --output $BUILD_FOLDER
-
-    # Build Test
+    # Build WiseUnpacker
     foreach ($FRAMEWORK in $FRAMEWORKS) {
         foreach ($RUNTIME in $RUNTIMES) {
             # Output the current build
@@ -85,16 +82,16 @@ if (!$NO_BUILD.IsPresent) {
             if ($SINGLE_FILE_CAPABLE -contains $FRAMEWORK) {
                 # Only include Debug if set
                 if ($INCLUDE_DEBUG.IsPresent) {
-                    dotnet publish Test\Test.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true
+                    dotnet publish WiseUnpacker\WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true
                 }
-                dotnet publish Test\Test.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+                dotnet publish WiseUnpacker\WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
             }
             else {
                 # Only include Debug if set
                 if ($INCLUDE_DEBUG.IsPresent) {
-                    dotnet publish Test\Test.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT
+                    dotnet publish WiseUnpacker\WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Debug --self-contained true --version-suffix $COMMIT
                 }
-                dotnet publish Test\Test.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:DebugType=None -p:DebugSymbols=false
+                dotnet publish WiseUnpacker\WiseUnpacker.csproj -f $FRAMEWORK -r $RUNTIME -c Release --self-contained true --version-suffix $COMMIT -p:DebugType=None -p:DebugSymbols=false
             }
         }
     }
@@ -102,7 +99,7 @@ if (!$NO_BUILD.IsPresent) {
 
 # Only create archives if requested
 if (!$NO_ARCHIVE.IsPresent) {
-    # Create Test archives
+    # Create WiseUnpacker archives
     foreach ($FRAMEWORK in $FRAMEWORKS) {
         foreach ($RUNTIME in $RUNTIMES) {
             # Output the current build
@@ -122,11 +119,11 @@ if (!$NO_ARCHIVE.IsPresent) {
 
             # Only include Debug if set
             if ($INCLUDE_DEBUG.IsPresent) {
-                Set-Location -Path $BUILD_FOLDER\Test\bin\Debug\${FRAMEWORK}\${RUNTIME}\publish\
+                Set-Location -Path $BUILD_FOLDER\WiseUnpacker\bin\Debug\${FRAMEWORK}\${RUNTIME}\publish\
                 7z a -tzip $BUILD_FOLDER\WiseUnpacker_${FRAMEWORK}_${RUNTIME}_debug.zip *
             }
         
-            Set-Location -Path $BUILD_FOLDER\Test\bin\Release\${FRAMEWORK}\${RUNTIME}\publish\
+            Set-Location -Path $BUILD_FOLDER\WiseUnpacker\bin\Release\${FRAMEWORK}\${RUNTIME}\publish\
             7z a -tzip $BUILD_FOLDER\WiseUnpacker_${FRAMEWORK}_${RUNTIME}_release.zip *
         }
     }
