@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using SabreTools.IO.Compression.Deflate;
+#if NETFRAMEWORK || NETSTANDARD
 using SabreTools.IO.Extensions;
+#endif
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Models.WiseInstaller.Actions;
 
@@ -108,10 +109,14 @@ namespace SabreTools.Serialization.Wrappers
 
             try
             {
+                // Cache the current offset
+                long currentOffset = data.Position;
+
                 var model = Deserializers.WiseScript.DeserializeStream(data);
                 if (model == null)
                     return null;
 
+                data.Seek(currentOffset, SeekOrigin.Begin);
                 return new WiseScript(model, data);
             }
             catch
@@ -127,19 +132,14 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Process the state machine and perform all required actions
         /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
+        /// <param name="header">Overlay header used for reference</param>
         /// <param name="sourceDirectory">Directory where installer files live, if possible</param>
-        /// <param name="script">Parsed script to retrieve information from</param>
-        /// <param name="dataStart">Start of the deflated data</param>
         /// <param name="outputDirectory">Output directory to write to</param>
-        /// <param name="isPkzip">Indicates if PKZIP containers are used</param>
         /// <param name="includeDebug">True to include debug data, false otherwise</param>
         /// <returns>True if there were no errors during processing, false otherwise</returns>
-        public bool ProcessStateMachine(Stream data,
+        public bool ProcessStateMachine(WiseOverlayHeader header,
             string? sourceDirectory,
-            long dataStart,
             string outputDirectory,
-            bool isPkzip,
             bool includeDebug)
         {
             // If the state machine is invalid
@@ -162,7 +162,7 @@ namespace SabreTools.Serialization.Wrappers
                             return false;
 
                         // Try to extract to the output directory
-                        ExtractFile(data, dataStart, fileHeader, ++normalFileCount, outputDirectory, isPkzip, includeDebug);
+                        header.ExtractFile(fileHeader, ++normalFileCount, outputDirectory, includeDebug);
                         break;
 
                     case OperationCode.EditIniFile:
@@ -178,7 +178,7 @@ namespace SabreTools.Serialization.Wrappers
                             return false;
 
                         // Try to extract to the output directory
-                        ExtractFile(data, dataStart, displayBillboard, ++normalFileCount, outputDirectory, isPkzip, includeDebug);
+                        header.ExtractFile(displayBillboard, outputDirectory, includeDebug);
                         break;
 
                     case OperationCode.DeleteFile:
@@ -294,7 +294,7 @@ namespace SabreTools.Serialization.Wrappers
 
                         // Try to extract to the output directory
                         ++normalFileCount;
-                        ExtractFile(data, dataStart, customDialogSet, outputDirectory, isPkzip, includeDebug);
+                        header.ExtractFile(customDialogSet, outputDirectory, includeDebug);
                         break;
 
                     case OperationCode.GetTemporaryFilename:
@@ -318,134 +318,6 @@ namespace SabreTools.Serialization.Wrappers
             }
 
             return true;
-        }
-
-        #endregion
-
-        #region Extraction
-
-        /// <summary>
-        /// Attempt to extract a file defined by a file header
-        /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
-        /// <param name="dataStart">Start of the deflated data</param>
-        /// <param name="obj">Deflate information</param>
-        /// <param name="index">File index for automatic naming</param>
-        /// <param name="outputDirectory">Output directory to write to</param>
-        /// <param name="isPkzip">Indicates if PKZIP containers are used</param>
-        /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>True if the file extracted successfully, false otherwise</returns>
-        public static ExtractionStatus ExtractFile(Stream data,
-            long dataStart,
-            InstallFile obj,
-            int index,
-            string outputDirectory,
-            bool isPkzip,
-            bool includeDebug)
-        {
-            // Get expected values
-            var expected = new DeflateInfo
-            {
-                InputSize = obj.DeflateEnd - obj.DeflateStart,
-                OutputSize = obj.InflatedSize,
-                Crc32 = obj.Crc32,
-            };
-
-            // Perform path replacements
-            string filename = obj.DestinationPathname ?? $"WISE{index:X4}";
-            filename = filename.Replace("%", string.Empty);
-            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return InflateWrapper.ExtractFile(data,
-                filename,
-                outputDirectory,
-                expected,
-                isPkzip,
-                includeDebug);
-        }
-
-        /// <summary>
-        /// Attempt to extract a file defined by a file header
-        /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
-        /// <param name="dataStart">Start of the deflated data</param>
-        /// <param name="obj">Deflate information</param>
-        /// <param name="index">File index for automatic naming</param>
-        /// <param name="outputDirectory">Output directory to write to</param>
-        /// <param name="isPkzip">Indicates if PKZIP containers are used</param>
-        /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>True if the file extracted successfully, false otherwise</returns>
-        public static ExtractionStatus ExtractFile(Stream data,
-            long dataStart,
-            DisplayBillboard obj,
-            int index,
-            string outputDirectory,
-            bool isPkzip,
-            bool includeDebug)
-        {
-            // Get the generated base name
-            string baseName = $"CustomBillboardSet_{obj.Flags:X4}-{obj.Operand_2}-{obj.Operand_3}";
-
-            // If there are no deflate objects
-            if (obj.DeflateInfo == null)
-            {
-                if (includeDebug) Console.WriteLine($"Skipping {baseName} because the deflate object array is null!");
-                return ExtractionStatus.FAIL;
-            }
-
-            // Loop through the values
-            for (int i = 0; i < obj.DeflateInfo.Length; i++)
-            {
-                // Get the deflate info object
-                var info = obj.DeflateInfo[i];
-
-                // Get expected values
-                var expected = new DeflateInfo
-                {
-                    InputSize = info.DeflateEnd - info.DeflateStart,
-                    OutputSize = info.InflatedSize,
-                    Crc32 = 0,
-                };
-
-                // Perform path replacements
-                string filename = $"{baseName}{index:X4}";
-                data.Seek(dataStart + info.DeflateStart, SeekOrigin.Begin);
-                _ = InflateWrapper.ExtractFile(data, filename, outputDirectory, expected, isPkzip, includeDebug);
-            }
-
-            // Always return good -- TODO: Fix this
-            return ExtractionStatus.GOOD;
-        }
-
-        /// <summary>
-        /// Attempt to extract a file defined by a file header
-        /// </summary>
-        /// <param name="data">Stream representing the Wise installer</param>
-        /// <param name="dataStart">Start of the deflated data</param>
-        /// <param name="obj">Deflate information</param>
-        /// <param name="outputDirectory">Output directory to write to</param>
-        /// <param name="isPkzip">Indicates if PKZIP containers are used</param>
-        /// <param name="includeDebug">True to include debug data, false otherwise</param>
-        /// <returns>True if the file extracted successfully, false otherwise</returns>
-        public static ExtractionStatus ExtractFile(Stream data,
-            long dataStart,
-            CustomDialogSet obj,
-            string outputDirectory,
-            bool isPkzip,
-            bool includeDebug)
-        {
-            // Get expected values
-            var expected = new DeflateInfo
-            {
-                InputSize = obj.DeflateEnd - obj.DeflateStart,
-                OutputSize = obj.InflatedSize,
-                Crc32 = 0,
-            };
-
-            // Perform path replacements
-            string filename = $"CustomDialogSet_{obj.DisplayVariable}-{obj.Name}";
-            filename = filename.Replace("%", string.Empty);
-            data.Seek(dataStart + obj.DeflateStart, SeekOrigin.Begin);
-            return InflateWrapper.ExtractFile(data, filename, outputDirectory, expected, isPkzip, includeDebug);
         }
 
         /// <summary>
@@ -472,12 +344,10 @@ namespace SabreTools.Serialization.Wrappers
             if (directoryName != null && !Directory.Exists(directoryName))
                 Directory.CreateDirectory(directoryName);
 
-            using (var iniFile = File.Open(iniFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-            {
-                iniFile.Write(Encoding.ASCII.GetBytes($"[{obj.Section}]\n"));
-                iniFile.Write(Encoding.ASCII.GetBytes($"{obj.Values ?? string.Empty}\n"));
-                iniFile.Flush();
-            }
+            using var iniFile = File.Open(iniFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            iniFile.Write(Encoding.ASCII.GetBytes($"[{obj.Section}]\n"));
+            iniFile.Write(Encoding.ASCII.GetBytes($"{obj.Values ?? string.Empty}\n"));
+            iniFile.Flush();
         }
 
         #endregion

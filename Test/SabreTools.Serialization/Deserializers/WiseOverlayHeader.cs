@@ -22,6 +22,10 @@ namespace SabreTools.Serialization.Deserializers
 
                 var overlayHeader = ParseOverlayHeader(data);
 
+                // DllName
+                if (overlayHeader.DllName != null && overlayHeader.DllName.IndexOfAny(Path.GetInvalidFileNameChars()) > 0)
+                    return null;
+
                 // WiseColors.dib
                 if (overlayHeader.DibDeflatedSize >= data.Length)
                     return null;

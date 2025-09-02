@@ -8,7 +8,7 @@ using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
 {
-    public class WiseSectionHeader : WrapperBase2<SectionHeader>, IExtractable
+    public class WiseSectionHeader : WrapperBase<SectionHeader>, IExtractable
     {
         #region Descriptive Properties
 
@@ -18,6 +18,54 @@ namespace SabreTools.Serialization.Wrappers
         #endregion
 
         #region Extension Properties
+
+        /// <summary>
+        /// Returns the offset relative to the start of the header
+        /// where the compressed data lives
+        /// </summary>
+        public long CompressedDataOffset
+        {
+            get
+            {
+                long offset = 0;
+
+                offset += 4; // UnknownDataSize
+                offset += 4; // SecondExecutableFileEntryLength
+                offset += 4; // UnknownValue2
+                offset += 4; // UnknownValue3
+                offset += 4; // UnknownValue4
+                offset += 4; // FirstExecutableFileEntryLength
+                offset += 4; // MsiFileEntryLength
+                offset += 4; // UnknownValue7
+                offset += 4; // UnknownValue8
+                offset += 4; // ThirdExecutableFileEntryLength
+                offset += 4; // UnknownValue10
+                offset += 4; // UnknownValue11
+                offset += 4; // UnknownValue12
+                offset += 4; // UnknownValue13
+                offset += 4; // UnknownValue14
+                offset += 4; // UnknownValue15
+                offset += 4; // UnknownValue16
+                offset += 4; // UnknownValue17
+                offset += 4; // UnknownValue18
+                offset += Version?.Length ?? 0;
+                offset += Model.TmpString == null ? 0 : Model.TmpString.Length + 1;
+                offset += Model.GuidString == null ? 0 : Model.GuidString.Length + 1;
+                offset += Model.NonWiseVersion == null ? 0 : Model.NonWiseVersion.Length + 1;
+                offset += Model.PreFontValue == null ? 0 : Model.PreFontValue.Length;
+                offset += 4; // FontSize
+                offset += Model.PreStringValues == null ? 0 : Model.PreStringValues.Length;
+                if (Model.Strings != null)
+                {
+                    foreach (var str in Model.Strings)
+                    {
+                        offset += str.Length;
+                    }
+                }
+
+                return offset;
+            }
+        }
 
         /// <inheritdoc cref="SectionHeader.UnknownDataSize"/>
         public uint UnknownDataSize => Model.UnknownDataSize;
@@ -137,10 +185,14 @@ namespace SabreTools.Serialization.Wrappers
 
             try
             {
+                // Cache the current offset
+                long currentOffset = data.Position;
+
                 var model = Deserializers.WiseSectionHeader.DeserializeStream(data);
                 if (model == null)
                     return null;
 
+                data.Seek(currentOffset, SeekOrigin.Begin);
                 return new WiseSectionHeader(model, data);
             }
             catch
@@ -178,9 +230,8 @@ namespace SabreTools.Serialization.Wrappers
         /// <returns>True if the files extracted successfully, false otherwise</returns>
         private bool ExtractHeaderDefinedFiles(string outputDirectory, bool includeDebug)
         {
-            // TODO: All reads need to be sequential. At the moment, the data position is at the start of the header;
-            // TODO: it needs to be wherever the header parser was when it finished. This applies to all logic in the
-            // TODO: WiseSectionHeader deserializer and wrapper code.
+            // Seek to the compressed data offset
+            _dataSource.Seek(CompressedDataOffset, SeekOrigin.Begin);
             
             // Extract first executable, if it exists
             if (ExtractFile("FirstExecutable.exe", outputDirectory, FirstExecutableFileEntryLength, includeDebug) != ExtractionStatus.GOOD)

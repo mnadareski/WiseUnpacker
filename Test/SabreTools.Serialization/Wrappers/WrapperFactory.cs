@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using SabreTools.IO.Extensions;
 using SabreTools.Matching;
@@ -6,7 +7,7 @@ using static SabreTools.Matching.Extensions;
 
 namespace SabreTools.Serialization.Wrappers
 {
-    public static class WrapperFactory2
+    public static class WrapperFactory
     {
         /// <summary>
         /// Create an instance of a wrapper based on the executable type
@@ -46,14 +47,6 @@ namespace SabreTools.Serialization.Wrappers
             {
                 stream.Seek(initialOffset, SeekOrigin.Begin);
                 return NewExecutable.Create(stream);
-            }
-
-            // Linear Executable
-            else if (magic.StartsWith(Models.LinearExecutable.Constants.LESignatureBytes)
-                || magic.StartsWith(Models.LinearExecutable.Constants.LXSignatureBytes))
-            {
-                stream.Seek(initialOffset, SeekOrigin.Begin);
-                return LinearExecutable.Create(stream);
             }
 
             // Portable Executable

@@ -22,7 +22,7 @@ namespace SabreTools.Serialization.Deserializers
                 // Cache the current offset
                 long initialOffset = data.Position;
 
-                var header = ParseWiseSectionHeader(data, initialOffset);
+                var header = ParseSectionHeader(data, initialOffset);
                 if (header == null)
                     return null;
 
@@ -56,9 +56,9 @@ namespace SabreTools.Serialization.Deserializers
         /// <param name="data">Stream to parse</param>
         /// <param name="initialOffset">Initial offset to use in address comparisons</param>
         /// <returns>Filled WiseSectionHeader on success, null on error</returns>
-        private static SectionHeader? ParseWiseSectionHeader(Stream data, long initialOffset)
+        public static SectionHeader? ParseSectionHeader(Stream data, long initialOffset)
         {
-            var header = new SectionHeader();
+            var obj = new SectionHeader();
 
             // Setup required variables
             int wisOffset = -1;
@@ -76,90 +76,84 @@ namespace SabreTools.Serialization.Deserializers
                 int versionOffset = WiseSectionVersionOffsetDictionary[offset];
 
                 data.Seek(initialOffset + offset - versionOffset, 0);
-                header.Version = data.ReadBytes(versionOffset);
+                obj.Version = data.ReadBytes(versionOffset);
                 wisOffset = offset;
+                break;
             }
-            bool earlyReturn = false;
-
-            // If the header is invalid
-            if (header.Version == null)
-                earlyReturn = true;
-            if (wisOffset < 0)
-                earlyReturn =  true;
-            if (headerLength < 0)
-                earlyReturn = true;
 
             //Seek back to the beginning of the section
             data.Seek(initialOffset, 0);
 
             // Read common values
-            header.UnknownDataSize = data.ReadUInt32LittleEndian();
-            header.SecondExecutableFileEntryLength = data.ReadUInt32LittleEndian();
-            header.UnknownValue2 = data.ReadUInt32LittleEndian();
-            header.UnknownValue3 = data.ReadUInt32LittleEndian();
-            header.UnknownValue4 = data.ReadUInt32LittleEndian();
-            header.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
-            header.MsiFileEntryLength = data.ReadUInt32LittleEndian();
+            obj.UnknownDataSize = data.ReadUInt32LittleEndian();
+            obj.SecondExecutableFileEntryLength = data.ReadUInt32LittleEndian();
+            obj.UnknownValue2 = data.ReadUInt32LittleEndian();
+            obj.UnknownValue3 = data.ReadUInt32LittleEndian();
+            obj.UnknownValue4 = data.ReadUInt32LittleEndian();
+            obj.FirstExecutableFileEntryLength = data.ReadUInt32LittleEndian();
+            obj.MsiFileEntryLength = data.ReadUInt32LittleEndian();
 
-            if (earlyReturn)
-            {
-                return header;
-            }
+            // If the reported header information is invalid
+            if (obj.Version == null)
+                return obj;
+            if (wisOffset < 0)
+                return obj;
+            if (headerLength < 0)
+                return obj;
 
             if (headerLength > 6)
             {
-                header.UnknownValue7 = data.ReadUInt32LittleEndian();
-                header.UnknownValue8 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue7 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue8 = data.ReadUInt32LittleEndian();
             }
 
             if (headerLength > 8)
             {
-                header.ThirdExecutableFileEntryLength = data.ReadUInt32LittleEndian();
-                header.UnknownValue10 = data.ReadUInt32LittleEndian();
-                header.UnknownValue11 = data.ReadUInt32LittleEndian();
-                header.UnknownValue12 = data.ReadUInt32LittleEndian();
-                header.UnknownValue13 = data.ReadUInt32LittleEndian();
-                header.UnknownValue14 = data.ReadUInt32LittleEndian();
-                header.UnknownValue15 = data.ReadUInt32LittleEndian();
-                header.UnknownValue16 = data.ReadUInt32LittleEndian();
-                header.UnknownValue17 = data.ReadUInt32LittleEndian();
+                obj.ThirdExecutableFileEntryLength = data.ReadUInt32LittleEndian();
+                obj.UnknownValue10 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue11 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue12 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue13 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue14 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue15 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue16 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue17 = data.ReadUInt32LittleEndian();
             }
 
             if (headerLength > 17)
             {
-                header.UnknownValue18 = data.ReadUInt32LittleEndian();
+                obj.UnknownValue18 = data.ReadUInt32LittleEndian();
             }
 
             // Seek to the WIS string offset
             data.Seek(initialOffset + wisOffset, SeekOrigin.Begin);
 
             // Read the consistent strings
-            header.TmpString = data.ReadNullTerminatedAnsiString();
-            header.GuidString = data.ReadNullTerminatedAnsiString();
+            obj.TmpString = data.ReadNullTerminatedAnsiString();
+            obj.GuidString = data.ReadNullTerminatedAnsiString();
 
             // Parse the pre-string section
-            int preStringBytesSize = GetPreStringBytesSize(data, header, wisOffset);
+            int preStringBytesSize = GetPreStringBytesSize(data, obj, wisOffset);
             if (preStringBytesSize <= 0)
-                return header;
+                return obj;
 
             // Read the pre-string bytes
-            header.PreStringValues = data.ReadBytes(preStringBytesSize);
+            obj.PreStringValues = data.ReadBytes(preStringBytesSize);
 
             // Try to read the string arrays
             // TODO: Count size of string section for later size verification
-            byte[][]? stringArrays = ParseStringTable(data, header.PreStringValues);
+            byte[][]? stringArrays = ParseStringTable(data, obj.PreStringValues);
             if (stringArrays == null)
-                return header;
+                return obj;
 
             // Set the string arrays
-            header.Strings = stringArrays;
+            obj.Strings = stringArrays;
 
             // Not sure what this data is. Might be a wisescript?
-            // TODO: Should really be done in the wrapper, but almost everything there is static so there's no good place\
-            if (header.UnknownDataSize != 0)
-                data.Seek(header.UnknownDataSize, SeekOrigin.Current);
+            if (obj.UnknownDataSize != 0)
+                data.Seek(obj.UnknownDataSize, SeekOrigin.Current);
 
-            return header;
+            return obj;
         }
 
         /// <summary>
@@ -187,7 +181,7 @@ namespace SabreTools.Serialization.Deserializers
                 versionSize = header.Version[header.Version.Length - 2];
 
             // Third byte seems to indicate size of NonWiseVer
-            if (versionSize <= 1)
+            if (versionSize > 1)
             {
                 byte[] stringBytes = data.ReadBytes(versionSize);
                 header.NonWiseVersion = Encoding.ASCII.GetString(stringBytes);
@@ -216,9 +210,8 @@ namespace SabreTools.Serialization.Deserializers
         /// <summary>
         /// Parse the string table, if possible
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="header"></param>
-        /// <param name="preStringBytesSize"></param>
+        /// <param name="data">Stream to parse</param>
+        /// <param name="preStringValues">Pre-string byte array containing string lengths</param>
         /// <returns>The filled string table on success, false otherwise</returns>
         private static byte[][]? ParseStringTable(Stream data, byte[] preStringValues)
         {

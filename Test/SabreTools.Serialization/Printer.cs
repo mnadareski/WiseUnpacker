@@ -17,7 +17,7 @@ namespace SabreTools.Serialization
         /// </summary>
         public static void PrintToConsole(this IWrapper wrapper)
         {
-            var sb = wrapper.ExportStringBuilderExt();
+            var sb = wrapper.ExportStringBuilder();
             if (sb == null)
             {
                 Console.WriteLine("No item information could be generated");
@@ -30,12 +30,13 @@ namespace SabreTools.Serialization
         /// <summary>
         /// Export the item information as a StringBuilder
         /// </summary>
-        public static StringBuilder? ExportStringBuilderExt(this IWrapper wrapper)
+        public static StringBuilder? ExportStringBuilder(this IWrapper wrapper)
         {
             return wrapper switch
             {
                 Wrapper.WiseOverlayHeader item => item.PrettyPrint(),
                 Wrapper.WiseScript item => item.PrettyPrint(),
+                Wrapper.WiseSectionHeader item => item.PrettyPrint(),
                 _ => null,
             };
         }
@@ -44,12 +45,13 @@ namespace SabreTools.Serialization
         /// <summary>
         /// Export the item information as JSON
         /// </summary>
-        public static string ExportJSONExt(this IWrapper wrapper)
+        public static string ExportJSON(this IWrapper wrapper)
         {
             return wrapper switch
             {
                 Wrapper.WiseOverlayHeader item => item.ExportJSON(),
                 Wrapper.WiseScript item => item.ExportJSON(),
+                Wrapper.WiseSectionHeader item => item.ExportJSON(),
                 _ => string.Empty,
             };
         }
@@ -74,6 +76,16 @@ namespace SabreTools.Serialization
         {
             var builder = new StringBuilder();
             WiseScript.Print(builder, item.Model);
+            return builder;
+        }
+
+        /// <summary>
+        /// Export the item information as pretty-printed text
+        /// </summary>
+        private static StringBuilder PrettyPrint(this Wrapper.WiseSectionHeader item)
+        {
+            var builder = new StringBuilder();
+            WiseSectionHeader.Print(builder, item.Model);
             return builder;
         }
 

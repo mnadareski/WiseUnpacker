@@ -1,10 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
-using SabreTools.Models.PortableExecutable;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
 
@@ -117,46 +115,88 @@ namespace Test
             {
                 using Stream stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-                // Try to find the overlay header
-                if (!WiseOverlayHeader.FindOverlayHeader(stream, options.Debug, out var header) || header == null)
+                // Read the stream as an executable
+                var wrapper = WrapperFactory.CreateExecutableWrapper(stream);
+
+                // Figure out if we have an overlay or section
+                long overlayOffset = -1, sectionOffset = -1;
+                if (wrapper is PortableExecutable pex)
                 {
-                    TryExtractWiseSection(stream, outputDirectory, options, file);
+                    overlayOffset = pex.FindWiseOverlayHeader();
+                    sectionOffset = pex.FindWiseSectionHeader();
+                }
+                else if (wrapper is NewExecutable nex)
+                {
+                    overlayOffset = nex.FindWiseOverlayHeader();
+                }
+                else
+                {
+                    _statistics.AddInvalidPath(file);
                     return;
                 }
 
-                // Process header statistics and print
-                _statistics.ProcessStatistics(file, header);
-                PrintOverlayHeader(filenameBase, header, options);
-
-                // Process header-defined files
-                var scriptStream = ProcessHeaderDefinedFiles(stream, options, fileStatistics, header);
-                if (scriptStream == null)
+                // Overlay headers take precedence
+                if (overlayOffset >= 0 && overlayOffset < stream.Length)
                 {
+                    stream.Seek(overlayOffset, SeekOrigin.Begin);
+                    var overlayHeader = WiseOverlayHeader.Create(stream);
+                    if (overlayHeader == null)
+                    {
+                        _statistics.AddErroredPath(file);
+                        return;
+                    }
+
+                    // Process header statistics and print
+                    _statistics.ProcessStatistics(file, overlayHeader);
+                    PrintOverlayHeader(filenameBase, overlayHeader, options);
+
+                    // Process header-defined files
+                    var scriptStream = ProcessHeaderDefinedFiles(stream, options, fileStatistics, overlayHeader);
+                    if (scriptStream == null)
+                    {
+                        if (options.PerFile)
+                            PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
+
+                        return;
+                    }
+
+                    // Output overlay header stats with WISE0001.DLL hashes
                     if (options.PerFile)
                         PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
 
-                    return;
+                    // Try to parse the script information
+                    scriptStream?.Seek(0, SeekOrigin.Begin);
+                    var script = WiseScript.Create(scriptStream);
+                    if (script == null)
+                    {
+                        _statistics.AddErroredPath(file);
+                        Console.WriteLine($"No valid script could be extracted from {file}, skipping...");
+                        return;
+                    }
+
+                    // Process script statistics and print
+                    _statistics.ProcessStatistics(file, script);
+                    PrintScript(filenameBase, script, options);
+                    if (options.PerFile)
+                        PrintScriptStatistics(filenameBase, fileStatistics, options);
                 }
 
-                // Output overlay header stats with WISE0001.DLL hashes
-                if (options.PerFile)
-                    PrintOverlayHeaderStats(filenameBase, fileStatistics, options);
-
-                // Try to parse the script information
-                scriptStream?.Seek(0, SeekOrigin.Begin);
-                var script = WiseScript.Create(scriptStream);
-                if (script == null)
+                // Section headers are checked after
+                if (sectionOffset >= 0 && sectionOffset < stream.Length)
                 {
-                    _statistics.AddErroredPath(file);
-                    Console.WriteLine($"No valid script could be extracted from {file}, skipping...");
-                    return;
-                }
+                    stream.Seek(sectionOffset, SeekOrigin.Begin);
+                    var sectionHeader = WiseSectionHeader.Create(stream);
+                    if (sectionHeader == null)
+                    {
+                        _statistics.AddErroredPath(file);
+                        return;
+                    }
 
-                // Process script statistics and print
-                _statistics.ProcessStatistics(file, script);
-                PrintScript(filenameBase, script, options);
-                if (options.PerFile)
-                    PrintScriptStatistics(filenameBase, fileStatistics, options);
+                    // Process header statistics and print
+                    // TODO: Add statistics for the section header somewhere
+                    //_statistics.ProcessStatistics(file, sectionHeader);
+                    PrintSectionHeader(filenameBase, sectionHeader, options);
+                }
             }
             catch (Exception ex)
             {
@@ -494,7 +534,7 @@ namespace Test
 #endif
 
             // Create the header output data
-            var builder = header.ExportStringBuilderExt();
+            var builder = header.ExportStringBuilder();
             if (builder == null)
             {
                 Console.WriteLine("No header information could be generated");
@@ -555,7 +595,7 @@ namespace Test
 #endif
 
             // Create script output data
-            var builder = script.ExportStringBuilderExt();
+            var builder = script.ExportStringBuilder();
             if (builder == null)
             {
                 Console.WriteLine("No header information could be generated");
@@ -589,6 +629,44 @@ namespace Test
             sw.Flush();
         }
 
+        /// <summary>
+        /// Print section header information, if possible
+        /// </summary>
+        /// <param name="filenameBase">Base filename pattern to use for output</param>
+        /// <param name="options">User-defined options</param>
+        private static void PrintSectionHeader(string filenameBase, WiseSectionHeader header, Options options)
+        {
+#if NETCOREAPP
+            // If we have the JSON flag
+            if (options.Json)
+            {
+                // Create the output data
+                string serializedData = header.ExportJSON();
+
+                // Write the output data
+                using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.json"));
+                jsw.WriteLine(serializedData);
+                jsw.Flush();
+            }
+#endif
+
+            // Create the header output data
+            var builder = header.ExportStringBuilder();
+            if (builder == null)
+            {
+                Console.WriteLine("No header information could be generated");
+                return;
+            }
+
+            // Only print to console if enabled
+            if (!options.FileOnly)
+                Console.WriteLine(builder);
+
+            using var sw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.txt"));
+            sw.WriteLine(builder.ToString());
+            sw.Flush();
+        }
+
         #endregion
 
         #region Extract
@@ -601,85 +679,40 @@ namespace Test
         /// <param name="includeDebug">Enable including debug information</param>
         private static void ExtractFile(string file, string outputDirectory, bool includeDebug)
         {
-            if (WiseOverlayHeader.ExtractAll(file, outputDirectory, includeDebug))
-            {
-                Console.WriteLine($"Extracted {file} to {outputDirectory}");
-            }
-            else
-            {
-                Console.WriteLine(value: $"Failed to extract {file}!");
-                _statistics.AddFailedExtractPath(file);
-            }
-        }
+            using Stream stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-        /// <summary>
-        /// Helper method to check for .WISE section executable.
-        /// </summary>
-        /// <param name="stream">Stream that represents the extractable data</param>
-        /// <param name="file">File path</param>
-        /// <param name="outputDirectory">Output directory path</param>
-        /// <param name="options">User-defined options</param>
-        private static bool TryExtractWiseSection(Stream stream, string outputDirectory, Options options, string file)
-        {
-            stream.Seek(0, SeekOrigin.Begin);
+            // Read the stream as an executable
+            var wrapper = WrapperFactory.CreateExecutableWrapper(stream);
 
-            // Try to create the executable wrapper
-            var exe = WrapperFactory2.CreateExecutableWrapper(stream);
-            if (exe is not PortableExecutable pex)
+            // Extract based on the executable
+            if (wrapper is PortableExecutable pex)
             {
-                _statistics.AddInvalidPath(file);
-                Console.WriteLine($"No valid header could be found in {file}, skipping...");
-                return false;
-            }
-
-            // Check section data
-            SectionHeader? sectionHeader = null;
-            long? sectionOffset = null;
-            foreach (var section in pex.Model.SectionTable ?? [])
-            {
-                string sectionName = Encoding.ASCII.GetString(section.Name ?? []).TrimEnd('\0');
-
-                // Check if the section name is .WISE
-                if (sectionName == ".WISE")
+                if (pex.ExtractWise(outputDirectory, includeDebug))
                 {
-                    sectionHeader = section;
-                    sectionOffset = sectionHeader.VirtualAddress.ConvertVirtualAddress(pex.Model.SectionTable);
-                    break;
+                    Console.WriteLine($"Extracted {file} to {outputDirectory}");
+                }
+                else
+                {
+                    Console.WriteLine(value: $"Failed to extract {file}!");
+                    _statistics.AddFailedExtractPath(file);
                 }
             }
-
-            // If the section couldn't be found
-            if (sectionOffset == null || sectionHeader == null)
+            else if (wrapper is NewExecutable nex)
             {
-                _statistics.AddInvalidPath(file);
-                Console.WriteLine($"No valid header could be found in {file}, skipping...");
-                return false;
-            }
-
-            // Get the size of the section and seek to the start
-            uint sectionSize = sectionHeader.SizeOfRawData;
-            stream.Seek((long)sectionOffset, SeekOrigin.Begin);
-
-            // Write section data to new stream
-            byte[] sectionData = stream.ReadBytes((int)sectionSize);
-            var header = WiseSectionHeader.Create(sectionData, 0);
-            if (header == null)
-            {
-                if (options.Debug) Console.Error.WriteLine("Could not parse the section header");
-                return false;
-            }
-
-            // Attempt to extract section
-            if (header.Extract(outputDirectory, options.Debug))
-            {
-                Console.WriteLine($"Extracted Wise SFX {file} to {outputDirectory}");
-                return true;
+                if (nex.ExtractWise(outputDirectory, includeDebug))
+                {
+                    Console.WriteLine($"Extracted {file} to {outputDirectory}");
+                }
+                else
+                {
+                    Console.WriteLine(value: $"Failed to extract {file}!");
+                    _statistics.AddFailedExtractPath(file);
+                }
             }
             else
             {
-                Console.WriteLine(value: $"Failed to extract Wise SFX {file}!");
-                _statistics.AddFailedExtractPath(file);
-                return false;
+                _statistics.AddInvalidPath(file);
+                return;
             }
         }
 

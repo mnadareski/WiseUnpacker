@@ -4,7 +4,7 @@ using SabreTools.Serialization.Interfaces;
 
 namespace SabreTools.Serialization.Wrappers
 {
-    public abstract class WrapperBase2<T> : WrapperBase2, IWrapper<T>
+    public abstract class WrapperBase<T> : WrapperBase, IWrapper<T>
     {
         #region Properties
 
@@ -23,7 +23,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Construct a new instance of the wrapper from a byte array
         /// </summary>
-        protected WrapperBase2(T? model, byte[]? data, int offset)
+        protected WrapperBase(T? model, byte[]? data, int offset)
             : base(data, offset)
         {
             if (model == null)
@@ -39,7 +39,7 @@ namespace SabreTools.Serialization.Wrappers
         /// <summary>
         /// Construct a new instance of the wrapper from a Stream
         /// </summary>
-        protected WrapperBase2(T? model, Stream? data)
+        protected WrapperBase(T? model, Stream? data)
             : base(data)
         {
             if (model == null)
