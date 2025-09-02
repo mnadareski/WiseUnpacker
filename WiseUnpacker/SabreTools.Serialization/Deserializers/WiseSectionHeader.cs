@@ -28,7 +28,7 @@ namespace SabreTools.Serialization.Deserializers
 
                 // Main MSI file
                 // If these go wrong, then there actually is a major issue, and the fallback won't work.
-                if (header.MsiFileEntryLength == 0) 
+                if (header.MsiFileEntryLength == 0)
                     return null;
                 else if (header.MsiFileEntryLength >= data.Length)
                     return null;
@@ -125,8 +125,12 @@ namespace SabreTools.Serialization.Deserializers
                 obj.UnknownValue18 = data.ReadUInt32LittleEndian();
             }
 
-            // Seek to the WIS string offset
-            data.Seek(initialOffset + wisOffset, SeekOrigin.Begin);
+            // If the WIS string has not been hit, read the padding bytes
+            if (data.Position < initialOffset + wisOffset)
+            {
+                int paddingLength = (int)(initialOffset + wisOffset - data.Position);
+                _ = data.ReadBytes(paddingLength);
+            }
 
             // Read the consistent strings
             obj.TmpString = data.ReadNullTerminatedAnsiString();
