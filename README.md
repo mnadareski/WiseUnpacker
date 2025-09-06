@@ -2,7 +2,7 @@
 
 [![Build and Test](https://github.com/mnadareski/WiseUnpacker/actions/workflows/build_and_test.yml/badge.svg)](https://github.com/mnadareski/WiseUnpacker/actions/workflows/build_and_test.yml)
 
-This program is a wrapper around a C# port of the Wise installer extractor [REWise](https://codeberg.org/CYBERDEV/REWise). This currently compiles as a library so it can be used in any C# application.
+This program is a wrapper around a C# port of the Wise installer extractor [REWise](https://codeberg.org/CYBERDEV/REWise). The library code has been expanded from the source, with many findings being reported back to the original project.
 
 This code used to compile to a library, but all functionality included is now in [SabreTools.Serialization](https://github.com/SabreTools/SabreTools.Serialization). Do not use old versions of the package as there are critical issues found and fixed since it was integrated.
 
