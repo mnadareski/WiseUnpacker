@@ -119,14 +119,12 @@ namespace Test
                 var wrapper = WrapperFactory.CreateExecutableWrapper(stream);
 
                 // Figure out if we have an overlay or section
-                long overlayOffset = -1, sectionOffset = -1;
-                SabreTools.Models.PortableExecutable.SectionHeader? wiseSection = null;
+                long overlayOffset = -1;
+                WiseSectionHeader? wiseSection = null;
                 if (wrapper is PortableExecutable pex)
                 {
                     overlayOffset = pex.FindWiseOverlayHeader();
-                    wiseSection = pex.FindWiseSection();
-                    if (wiseSection != null)
-                        sectionOffset = wiseSection.VirtualAddress.ConvertVirtualAddress(pex.SectionTable);
+                    wiseSection = pex.WiseSection;
                 }
                 else if (wrapper is NewExecutable nex)
                 {
@@ -187,29 +185,10 @@ namespace Test
                 // Section headers are checked after
                 if (wiseSection != null)
                 {
-                    // Verify the offset
-                    if (sectionOffset < 0 || sectionOffset >= stream.Length)
-                    {
-                        _statistics.AddErroredPath(file);
-                        return;
-                    }
-
-                    // Read the section into a local array
-                    int sectionLength = (int)wiseSection.SizeOfRawData;
-                    byte[]? sectionData = stream.ReadFrom(sectionOffset, sectionLength, retainPosition: true);
-
-                    // Parse the section header
-                    var sectionHeader = WiseSectionHeader.Create(sectionData, 0);
-                    if (sectionHeader == null)
-                    {
-                        _statistics.AddErroredPath(file);
-                        return;
-                    }
-
                     // Process header statistics and print
                     // TODO: Add statistics for the section header somewhere
                     //_statistics.ProcessStatistics(file, sectionHeader);
-                    PrintSectionHeader(filenameBase, sectionHeader, options);
+                    PrintSectionHeader(filenameBase, wiseSection, options);
                 }
             }
             catch (Exception ex)
