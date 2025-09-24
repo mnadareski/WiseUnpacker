@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using SabreTools.Models.WiseInstaller;
 using SabreTools.Models.WiseInstaller.Actions;
-using SabreTools.Serialization;
+using SabreTools.Serialization.Extensions;
 using SabreTools.Serialization.Wrappers;
 
-namespace Test
+namespace WiseUnpacker
 {
     /// <summary>
     /// Represents the statistics for a single installer
@@ -142,7 +142,7 @@ namespace Test
         /// Process statistics for a WiseScript
         /// </summary>
         /// <param name="script">WiseScript to gather statistics from</param>
-        public void ProcessStatistics(WiseScript script)
+        public void ProcessStatistics(SabreTools.Serialization.Wrappers.WiseScript script)
         {
             // First Flags
             FirstFlag = script.Flags;

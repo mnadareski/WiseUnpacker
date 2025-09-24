@@ -6,7 +6,7 @@ using SabreTools.IO.Extensions;
 using SabreTools.Serialization;
 using SabreTools.Serialization.Wrappers;
 
-namespace Test
+namespace WiseUnpacker
 {
     class Program
     {

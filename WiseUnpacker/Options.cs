@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Test
+namespace WiseUnpacker
 {
     /// <summary>
     /// Set of options for the test executable

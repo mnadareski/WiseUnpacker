@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using SabreTools.Models.WiseInstaller;
-using SabreTools.Serialization;
+using SabreTools.Serialization.Extensions;
 using SabreTools.Serialization.Wrappers;
 
-namespace Test
+namespace WiseUnpacker
 {
     internal class Statistics
     {
@@ -91,7 +91,7 @@ namespace Test
         /// </summary>
         /// <param name="file">Path of the file that contained the script</param>
         /// <param name="script">WiseScript to gather statistics from</param>
-        public void ProcessStatistics(string file, WiseScript script)
+        public void ProcessStatistics(string file, SabreTools.Serialization.Wrappers.WiseScript script)
         {
             if (!FilesMap.ContainsKey(file))
                 FilesMap[file] = new();
@@ -211,7 +211,7 @@ namespace Test
             });
             for (int i = 0; i < shouldContainFile.Length; i++)
             {
-                string filename = Test.PerFileStatistics.MapFileIndexToName(i);
+                string filename = WiseUnpacker.PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {shouldContainFile[i].Count}");
                 shouldContainFile[i].Sort();
                 foreach (string path in shouldContainFile[i])
@@ -253,7 +253,7 @@ namespace Test
                 List<string> headerDefinedFileHashesKeys = [.. headerDefinedFilesHashes[i].Keys];
                 headerDefinedFileHashesKeys.Sort();
 
-                string filename = Test.PerFileStatistics.MapFileIndexToName(i);
+                string filename = WiseUnpacker.PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}):");
 
                 for (int j = 0; j < headerDefinedFileHashesKeys.Count; j++)
@@ -409,7 +409,7 @@ namespace Test
 
             foreach (int length in headerLengthsKeys)
             {
-                string lengthName = Test.PerFileStatistics.MapHeaderLengthToDescriptor(length);
+                string lengthName = WiseUnpacker.PerFileStatistics.MapHeaderLengthToDescriptor(length);
                 sw.WriteLine($"  {lengthName} ({length}): {headerLengths[length].Count}");
                 headerLengths[length].Sort();
                 foreach (string path in headerLengths[length])
