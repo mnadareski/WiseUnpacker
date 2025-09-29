@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using SabreTools.Models.WiseInstaller;
-using SabreTools.Models.WiseInstaller.Actions;
-using SabreTools.Serialization.Extensions;
+using SabreTools.Data.Extensions;
+using SabreTools.Data.Models.WiseInstaller;
+using SabreTools.Data.Models.WiseInstaller.Actions;
 using SabreTools.Serialization.Wrappers;
 
 namespace WiseUnpacker

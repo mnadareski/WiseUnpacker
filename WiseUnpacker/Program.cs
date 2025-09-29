@@ -680,7 +680,11 @@ namespace WiseUnpacker
             // Extract based on the executable
             if (wrapper is PortableExecutable pex)
             {
-                if (pex.ExtractWise(outputDirectory, includeDebug))
+                if (pex.ExtractWiseOverlay(outputDirectory, includeDebug))
+                {
+                    Console.WriteLine($"Extracted {file} to {outputDirectory}");
+                }
+                else if (pex.ExtractWiseSection(outputDirectory, includeDebug))
                 {
                     Console.WriteLine($"Extracted {file} to {outputDirectory}");
                 }
