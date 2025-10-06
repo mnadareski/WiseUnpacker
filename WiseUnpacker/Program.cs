@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using SabreTools.CommandLine;
+using SabreTools.CommandLine.Inputs;
 using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
@@ -10,6 +13,22 @@ namespace WiseUnpacker
 {
     class Program
     {
+        #region Constants
+
+        private const string _debugName = "debug";
+        private const string _extractName = "extract";
+        private const string _fileOnlyName = "file-only";
+        private const string _helpName = "help";
+        private const string _infoName = "info";
+#if NETCOREAPP
+        private const string _jsonName = "json";
+#endif
+        private const string _perFileName = "per-file";
+
+        private const string _outputPathName = "output-path";
+
+        #endregion
+
         /// <summary>
         /// Statistics for tracking
         /// </summary>
@@ -17,25 +36,111 @@ namespace WiseUnpacker
 
         static void Main(string[] args)
         {
-            // Get the options from the arguments
-            var options = Options.ParseOptions(args);
+            // Create the command set
+            var commandSet = CreateCommands();
 
-            // If we have an invalid state
-            if (options == null)
+            // If we have no args, show the help and quit
+            if (args == null || args.Length == 0)
             {
-                Options.DisplayHelp();
+                commandSet.OutputAllHelp();
+                return;
+            }
+
+            // Loop through and process the options
+            int firstFileIndex = 0;
+            for (; firstFileIndex < args.Length; firstFileIndex++)
+            {
+                string arg = args[firstFileIndex];
+
+                var input = commandSet.GetTopLevel(arg);
+                if (input == null)
+                    break;
+
+                input.ProcessInput(args, ref firstFileIndex);
+            }
+
+            // If help was specified
+            if (commandSet.GetBoolean(_helpName))
+            {
+                commandSet.OutputAllHelp();
+                return;
+            }
+
+            // Get the options from the arguments
+            var options = new Options
+            {
+                Debug = commandSet.GetBoolean(_debugName),
+                Extract = commandSet.GetBoolean(_extractName),
+                FileOnly = commandSet.GetBoolean(_fileOnlyName),
+                Info = commandSet.GetBoolean(_infoName),
+#if NETCOREAPP
+                Json = commandSet.GetBoolean(_jsonName),
+#endif
+                OutputPath = commandSet.GetString(_outputPathName) ?? string.Empty,
+            };
+
+            // If neither info nor extract is defined, default to extract
+            if (!options.Info && !options.Extract)
+                options.Extract = true;
+
+            // Validate we have any input paths to work on
+            if (options.InputPaths.Count == 0)
+            {
+                Console.WriteLine("At least one path is required!");
+                commandSet.OutputAllHelp();
+                return;
+            }
+
+            // Validate the output path
+            if (options.Extract && !options.ValidateExtractionPath())
+            {
+                bool validPath = options.ValidateExtractionPath();
+                commandSet.OutputAllHelp();
                 return;
             }
 
             // Loop through the input paths
-            foreach (string inputPath in options.InputPaths)
+            for (int i = firstFileIndex; i < args.Length; i++)
             {
-                ProcessPath(inputPath, options);
+                string arg = args[i];
+                ProcessPath(arg, options);
             }
 
             // Export statistics
             if (options.Info)
                 _statistics.ExportStatistics();
+        }
+
+        /// <summary>
+        /// Create the command set for the program
+        /// </summary>
+        private static CommandSet CreateCommands()
+        {
+            List<string> header = [
+                "Wise Installer Reference Implementation",
+                string.Empty,
+                "WiseUnpacker <options> file|directory ...",
+                string.Empty,
+            ];
+
+            var commandSet = new CommandSet(header);
+
+            commandSet.Add(new FlagInput(_helpName, ["-?", "-h", "--help"], "Display this help text"));
+            commandSet.Add(new FlagInput(_debugName, ["-d", "--debug"], "Enable debug mode"));
+
+            // Handle nested info flags
+            var info = new FlagInput(_infoName, ["-i", "--info"], "Print overlay and script info");
+#if NETCOREAPP
+            info.Add(new FlagInput(_jsonName, ["-j", "--json"], "Print info as JSON"));
+#endif
+            info.Add(new FlagInput(_fileOnlyName, ["-f", "--file"], "Print to file only"));
+            info.Add(new FlagInput(_perFileName, ["-p", "--per-file"], "Print per-file statistics"));
+            commandSet.Add(info);
+
+            commandSet.Add(new FlagInput(_extractName, ["-x", "--extract"], "Extract files (default if nothing else provided)"));
+            commandSet.Add(new StringInput(_outputPathName, ["-o", "--outdir"], "Set output path for extraction (required)"));
+
+            return commandSet;
         }
 
         /// <summary>
