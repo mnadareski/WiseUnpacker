@@ -82,14 +82,6 @@ namespace WiseUnpacker
             if (!options.Info && !options.Extract)
                 options.Extract = true;
 
-            // Validate we have any input paths to work on
-            if (options.InputPaths.Count == 0)
-            {
-                Console.WriteLine("At least one path is required!");
-                commandSet.OutputAllHelp();
-                return;
-            }
-
             // Validate the output path
             if (options.Extract && !options.ValidateExtractionPath())
             {
