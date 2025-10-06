@@ -24,7 +24,6 @@ namespace WiseUnpacker
         private const string _jsonName = "json";
 #endif
         private const string _perFileName = "per-file";
-
         private const string _outputPathName = "output-path";
 
         #endregion
