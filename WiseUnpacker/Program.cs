@@ -85,7 +85,6 @@ namespace WiseUnpacker
             // Validate the output path
             if (options.Extract && !options.ValidateExtractionPath())
             {
-                bool validPath = options.ValidateExtractionPath();
                 commandSet.OutputAllHelp();
                 return;
             }
