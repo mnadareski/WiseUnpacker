@@ -57,28 +57,6 @@ namespace WiseUnpacker
         #endregion
 
         /// <summary>
-        /// Display help text
-        /// </summary>
-        public static void DisplayHelp()
-        {
-            Console.WriteLine("Wise Installer Reference Implementation");
-            Console.WriteLine();
-            Console.WriteLine("WiseUnpacker <options> file|directory ...");
-            Console.WriteLine();
-            Console.WriteLine("Options:");
-            Console.WriteLine("-?, -h, --help           Display this help text and quit");
-            Console.WriteLine("-d, --debug              Enable debug mode");
-            Console.WriteLine("-i, --info               Print overlay and script info");
-#if NETCOREAPP
-            Console.WriteLine("-j, --json               Print info as JSON (requires --info)");
-#endif
-            Console.WriteLine("-f, --file               Print to file only (requires --info)");
-            Console.WriteLine("-p, --per-file           Print per-file statistics (requires --info)");
-            Console.WriteLine("-x, --extract            Extract files (default if nothing else provided)");
-            Console.WriteLine("-o, --outdir [PATH]      Set output path for extraction (required)");
-        }
-
-        /// <summary>
         /// Validate the extraction path
         /// </summary>
         public bool ValidateExtractionPath()
