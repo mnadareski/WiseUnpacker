@@ -5,7 +5,7 @@ using System.IO;
 namespace WiseUnpacker
 {
     /// <summary>
-    /// Set of options for the test executable
+    /// Set of options for the executable
     /// </summary>
     internal sealed class Options
     {
