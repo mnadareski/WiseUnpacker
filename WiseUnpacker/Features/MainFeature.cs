@@ -56,40 +56,40 @@ namespace WiseUnpacker.Features
         /// <summary>
         /// Enable debug output for relevant operations
         /// </summary>
-        public bool Debug { get; set; }
+        public bool Debug { get; private set; }
 
         /// <summary>
         /// Enable extraction for the input file
         /// </summary>
-        public bool Extract { get; set; }
+        public bool Extract { get; private set; }
 
         /// <summary>
         /// Output information to file only, skip printing to console
         /// </summary>
-        public bool FileOnly { get; set; }
+        public bool FileOnly { get; private set; }
 
         /// <summary>
         /// Print both the overlay and script information
         /// to screen and file, if possible
         /// </summary>
-        public bool Info { get; set; }
+        public bool Info { get; private set; }
 
 #if NETCOREAPP
         /// <summary>
         /// Enable JSON output
         /// </summary>
-        public bool Json { get; set; }
+        public bool Json { get; private set; }
 #endif
 
         /// <summary>
         /// Print per-file statistics information
         /// </summary>
-        public bool PerFile { get; set; }
+        public bool PerFile { get; private set; }
 
         /// <summary>
         /// Output path for archive extraction
         /// </summary>
-        public string OutputPath { get; set; } = string.Empty;
+        public string OutputPath { get; private set; } = string.Empty;
 
         #endregion
 
