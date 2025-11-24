@@ -11,7 +11,7 @@
         <Nullable>enable</Nullable>
         <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <Version>2.0.0</Version>
+        <Version>2.1.0</Version>
     </PropertyGroup>
 
     <!-- Support All Frameworks -->
