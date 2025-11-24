@@ -352,7 +352,7 @@ namespace WiseUnpacker.Features
         /// <param name="fileStatistics">Per-file statistics to add hashes to</param>
         /// <param name="header">Overlay header to pull information from</param>
         /// <returns>Populated stream representing the script on success, null otherwise</returns>
-        private Stream? ProcessHeaderDefinedFiles(Stream stream, PerFileStatistics fileStatistics, WiseOverlayHeader header)
+        private MemoryStream? ProcessHeaderDefinedFiles(Stream stream, PerFileStatistics fileStatistics, WiseOverlayHeader header)
         {
             #region WiseColors.dib
 

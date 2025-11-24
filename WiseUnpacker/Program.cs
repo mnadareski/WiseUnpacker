@@ -64,7 +64,7 @@ namespace WiseUnpacker
 
             var commandSet = new CommandSet(header);
 
-            commandSet.Add(new Help( ["-?", "-h", "--help"]));
+            commandSet.Add(new Help(["-?", "-h", "--help"]));
             commandSet.Add(mainFeature.DebugInput);
             commandSet.Add(mainFeature.InfoInput);
             commandSet.Add(mainFeature.ExtractInput);

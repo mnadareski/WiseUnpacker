@@ -424,7 +424,11 @@ namespace WiseUnpacker
 
             #region Opcodes
 
+#if NET5_0_OR_GREATER
+            var enumValues = Enum.GetValues<OperationCode>();
+#else
             var enumValues = (OperationCode[])Enum.GetValues(typeof(OperationCode));
+#endif
             Dictionary<OperationCode, List<string>> opcodes = [];
             Array.ForEach([.. FilesMap], kvp =>
             {
