@@ -245,7 +245,7 @@ namespace WiseUnpacker.Features
 
             // Ensure the directory is created
             string? tempDirectory = Path.GetDirectoryName(filenameBase);
-            if (tempDirectory != null)
+            if (tempDirectory is not null)
                 Directory.CreateDirectory(tempDirectory);
 
             // Ensure the statistics object is created
@@ -286,7 +286,7 @@ namespace WiseUnpacker.Features
                 {
                     stream.Seek(overlayOffset, SeekOrigin.Begin);
                     var overlayHeader = WiseOverlayHeader.Create(stream);
-                    if (overlayHeader == null)
+                    if (overlayHeader is null)
                     {
                         _statistics.AddErroredPath(file);
                         return;
@@ -298,7 +298,7 @@ namespace WiseUnpacker.Features
 
                     // Process header-defined files
                     var scriptStream = ProcessHeaderDefinedFiles(stream, fileStatistics, overlayHeader);
-                    if (scriptStream == null)
+                    if (scriptStream is null)
                     {
                         if (PerFile)
                             PrintOverlayHeaderStats(filenameBase, fileStatistics);
@@ -313,7 +313,7 @@ namespace WiseUnpacker.Features
                     // Try to parse the script information
                     scriptStream?.Seek(0, SeekOrigin.Begin);
                     var script = WiseScript.Create(scriptStream);
-                    if (script == null)
+                    if (script is null)
                     {
                         _statistics.AddErroredPath(file);
                         Console.WriteLine($"No valid script could be extracted from {file}, skipping...");
@@ -328,7 +328,7 @@ namespace WiseUnpacker.Features
                 }
 
                 // Section headers are checked after
-                if (wiseSection != null)
+                if (wiseSection is not null)
                 {
                     // Process header statistics and print
                     // TODO: Add statistics for the section header somewhere
@@ -369,7 +369,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[0] = tempHash;
                 }
             }
@@ -397,7 +397,7 @@ namespace WiseUnpacker.Features
             {
                 scriptStream.Seek(0, SeekOrigin.Begin);
                 string? tempHash = HashTool.GetStreamHash(scriptStream, HashType.SHA1, leaveOpen: true);
-                if (tempHash != null)
+                if (tempHash is not null)
                     fileStatistics.HeaderDefinedFileHashes[1] = tempHash;
 
                 scriptStream.Seek(0, SeekOrigin.Begin);
@@ -420,7 +420,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[2] = tempHash;
                 }
             }
@@ -442,7 +442,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[3] = tempHash;
                 }
             }
@@ -464,7 +464,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[4] = tempHash;
                 }
             }
@@ -486,7 +486,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[5] = tempHash;
                 }
             }
@@ -508,7 +508,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[6] = tempHash;
                 }
             }
@@ -530,7 +530,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[7] = tempHash;
                 }
             }
@@ -552,7 +552,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[8] = tempHash;
                 }
             }
@@ -574,7 +574,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[9] = tempHash;
                 }
             }
@@ -596,7 +596,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[10] = tempHash;
                 }
             }
@@ -618,7 +618,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[11] = tempHash;
                 }
             }
@@ -640,7 +640,7 @@ namespace WiseUnpacker.Features
                 {
                     tempStream.Seek(0, SeekOrigin.Begin);
                     string? tempHash = HashTool.GetStreamHash(tempStream, HashType.SHA1, leaveOpen: true);
-                    if (tempHash != null)
+                    if (tempHash is not null)
                         fileStatistics.HeaderDefinedFileHashes[12] = tempHash;
                 }
             }
@@ -673,7 +673,7 @@ namespace WiseUnpacker.Features
 
             // Create the header output data
             var builder = header.ExportStringBuilder();
-            if (builder == null)
+            if (builder is null)
             {
                 Console.WriteLine("No header information could be generated");
                 return;
@@ -732,7 +732,7 @@ namespace WiseUnpacker.Features
 
             // Create script output data
             var builder = script.ExportStringBuilder();
-            if (builder == null)
+            if (builder is null)
             {
                 Console.WriteLine("No header information could be generated");
                 return;
@@ -787,7 +787,7 @@ namespace WiseUnpacker.Features
 
             // Create the header output data
             var builder = header.ExportStringBuilder();
-            if (builder == null)
+            if (builder is null)
             {
                 Console.WriteLine("No header information could be generated");
                 return;

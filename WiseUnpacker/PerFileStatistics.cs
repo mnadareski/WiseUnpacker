@@ -170,7 +170,7 @@ namespace WiseUnpacker
             }
 
             // Function Calls
-            if (script.States != null && Array.Exists(script.States, s => s.Op == OperationCode.CallDllFunction))
+            if (script.States is not null && Array.Exists(script.States, s => s.Op == OperationCode.CallDllFunction))
             {
                 var states = Array.FindAll(script.States, s => s.Op == OperationCode.CallDllFunction);
                 foreach (var state in states)
@@ -277,7 +277,7 @@ namespace WiseUnpacker
             var unmappedFunctions = Functions.FindAll(k =>
             {
                 string? functionName = k.FromWiseFunctionId();
-                return functionName == null || functionName.StartsWith("UNDEFINED");
+                return functionName is null || functionName.StartsWith("UNDEFINED");
             });
             sw.WriteLine($"Contains Unmapped Function: {unmappedFunctions.Count > 0}");
             sw.WriteLine();

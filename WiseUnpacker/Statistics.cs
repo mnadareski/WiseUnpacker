@@ -234,7 +234,7 @@ namespace WiseUnpacker
                 for (int i = 0; i < 13; i++)
                 {
                     string? hash = kvp.Value.HeaderDefinedFileHashes[i];
-                    if (hash == null)
+                    if (hash is null)
                         continue;
 
                     if (headerDefinedFilesHashes[i] == default)
@@ -247,7 +247,7 @@ namespace WiseUnpacker
             });
             for (int i = 0; i < 13; i++)
             {
-                if (headerDefinedFilesHashes[i] == null || headerDefinedFilesHashes[i].Count == 0)
+                if (headerDefinedFilesHashes[i] is null || headerDefinedFilesHashes[i].Count == 0)
                     continue;
 
                 List<string> headerDefinedFileHashesKeys = [.. headerDefinedFilesHashes[i].Keys];
@@ -293,7 +293,7 @@ namespace WiseUnpacker
             Array.ForEach([.. FilesMap], kvp =>
             {
                 ushort? flag = kvp.Value.FirstFlag;
-                if (flag == null)
+                if (flag is null)
                     return;
 
                 if (!firstFlags.ContainsKey(flag.Value))
@@ -327,7 +327,7 @@ namespace WiseUnpacker
             Array.ForEach([.. FilesMap], kvp =>
             {
                 ushort? flag = kvp.Value.SecondFlag;
-                if (flag == null)
+                if (flag is null)
                     return;
 
                 if (!secondFlags.ContainsKey(flag.Value))
@@ -361,7 +361,7 @@ namespace WiseUnpacker
             Array.ForEach([.. FilesMap], kvp =>
             {
                 ushort? flag = kvp.Value.ThirdFlag;
-                if (flag == null)
+                if (flag is null)
                     return;
 
                 if (!thirdFlags.ContainsKey(flag.Value))
@@ -395,7 +395,7 @@ namespace WiseUnpacker
             Array.ForEach([.. FilesMap], kvp =>
             {
                 int? length = kvp.Value.HeaderPrefixLength;
-                if (length == null)
+                if (length is null)
                     return;
 
                 if (!headerLengths.ContainsKey(length.Value))
@@ -593,7 +593,7 @@ namespace WiseUnpacker
             var unmappedFunctions = Array.FindAll([.. functions.Keys], k =>
             {
                 string? functionName = k.FromWiseFunctionId();
-                return functionName == null || functionName.StartsWith("UNDEFINED");
+                return functionName is null || functionName.StartsWith("UNDEFINED");
             });
             if (unmappedFunctions.Length > 0)
             {
