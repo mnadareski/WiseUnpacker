@@ -211,7 +211,7 @@ namespace WiseUnpacker
             });
             for (int i = 0; i < shouldContainFile.Length; i++)
             {
-                string filename = WiseUnpacker.PerFileStatistics.MapFileIndexToName(i);
+                string filename = PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}): {shouldContainFile[i].Count}");
                 shouldContainFile[i].Sort();
                 foreach (string path in shouldContainFile[i])
@@ -253,7 +253,7 @@ namespace WiseUnpacker
                 List<string> headerDefinedFileHashesKeys = [.. headerDefinedFilesHashes[i].Keys];
                 headerDefinedFileHashesKeys.Sort();
 
-                string filename = WiseUnpacker.PerFileStatistics.MapFileIndexToName(i);
+                string filename = PerFileStatistics.MapFileIndexToName(i);
                 sw.WriteLine($"  {filename} ({i}):");
 
                 for (int j = 0; j < headerDefinedFileHashesKeys.Count; j++)
@@ -409,7 +409,7 @@ namespace WiseUnpacker
 
             foreach (int length in headerLengthsKeys)
             {
-                string lengthName = WiseUnpacker.PerFileStatistics.MapHeaderLengthToDescriptor(length);
+                string lengthName = PerFileStatistics.MapHeaderLengthToDescriptor(length);
                 sw.WriteLine($"  {lengthName} ({length}): {headerLengths[length].Count}");
                 headerLengths[length].Sort();
                 foreach (string path in headerLengths[length])
