@@ -4,7 +4,7 @@ using System.IO;
 using SabreTools.Data.Extensions;
 using SabreTools.Data.Models.WiseInstaller;
 using SabreTools.Data.Models.WiseInstaller.Actions;
-using SabreTools.Serialization.Wrappers;
+using SabreTools.Wrappers;
 
 namespace WiseUnpacker
 {
@@ -142,7 +142,7 @@ namespace WiseUnpacker
         /// Process statistics for a WiseScript
         /// </summary>
         /// <param name="script">WiseScript to gather statistics from</param>
-        public void ProcessStatistics(SabreTools.Serialization.Wrappers.WiseScript script)
+        public void ProcessStatistics(WiseScript script)
         {
             // First Flags
             FirstFlag = script.Flags;

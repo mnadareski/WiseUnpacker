@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using SabreTools.Data.Extensions;
 using SabreTools.Data.Models.WiseInstaller;
-using SabreTools.Serialization.Wrappers;
+using SabreTools.Wrappers;
 
 namespace WiseUnpacker
 {
@@ -91,7 +91,7 @@ namespace WiseUnpacker
         /// </summary>
         /// <param name="file">Path of the file that contained the script</param>
         /// <param name="script">WiseScript to gather statistics from</param>
-        public void ProcessStatistics(string file, SabreTools.Serialization.Wrappers.WiseScript script)
+        public void ProcessStatistics(string file, WiseScript script)
         {
             if (!FilesMap.ContainsKey(file))
                 FilesMap[file] = new();

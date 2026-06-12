@@ -1,12 +1,12 @@
 using System;
 using System.IO;
+using System.Text;
 using SabreTools.CommandLine;
 using SabreTools.CommandLine.Inputs;
 using SabreTools.Hashing;
 using SabreTools.IO.Compression.Deflate;
 using SabreTools.IO.Extensions;
-using SabreTools.Serialization;
-using SabreTools.Serialization.Wrappers;
+using SabreTools.Wrappers;
 
 namespace WiseUnpacker.Features
 {
@@ -662,7 +662,7 @@ namespace WiseUnpacker.Features
             if (Json)
             {
                 // Create the output data
-                string serializedData = header.ExportJSON();
+                string serializedData = header.ExportJSON(recursive: false);
 
                 // Write the output data
                 using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.json"));
@@ -672,8 +672,9 @@ namespace WiseUnpacker.Features
 #endif
 
             // Create the header output data
-            var builder = header.ExportStringBuilder();
-            if (builder is null)
+            var builder = new StringBuilder();
+            header.PrintInformation(builder, recursive: false);
+            if (builder.Length == 0)
             {
                 Console.WriteLine("No header information could be generated");
                 return;
@@ -721,7 +722,7 @@ namespace WiseUnpacker.Features
             if (Json)
             {
                 // Create the output data
-                string serializedData = script.ExportJSON();
+                string serializedData = script.ExportJSON(recursive: false);
 
                 // Write the output data
                 using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-script.json"));
@@ -731,8 +732,9 @@ namespace WiseUnpacker.Features
 #endif
 
             // Create script output data
-            var builder = script.ExportStringBuilder();
-            if (builder is null)
+            var builder = new StringBuilder();
+            script.PrintInformation(builder, recursive: false);
+            if (builder.Length == 0)
             {
                 Console.WriteLine("No header information could be generated");
                 return;
@@ -776,7 +778,7 @@ namespace WiseUnpacker.Features
             if (Json)
             {
                 // Create the output data
-                string serializedData = header.ExportJSON();
+                string serializedData = header.ExportJSON(recursive: false);
 
                 // Write the output data
                 using var jsw = new StreamWriter(File.OpenWrite($"{filenameBase}-overlay.json"));
@@ -786,8 +788,9 @@ namespace WiseUnpacker.Features
 #endif
 
             // Create the header output data
-            var builder = header.ExportStringBuilder();
-            if (builder is null)
+            var builder = new StringBuilder();
+            header.PrintInformation(builder, recursive: false);
+            if (builder.Length == 0)
             {
                 Console.WriteLine("No header information could be generated");
                 return;
